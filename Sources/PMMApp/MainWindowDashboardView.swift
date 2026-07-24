@@ -534,8 +534,8 @@ private struct DashboardDiscoverPackageLink: View {
                             .font(.caption)
                             .foregroundStyle(SystemColor.secondaryText)
                     }
-                    if let category = package.category {
-                        Label(category.replacingOccurrences(of: "-", with: " ").capitalized, systemImage: "tag")
+                    if let category = mainWindowCategoryTitle(package.category) {
+                        Label(category, systemImage: "tag")
                             .font(.caption)
                             .foregroundStyle(Color.accentColor)
                     }

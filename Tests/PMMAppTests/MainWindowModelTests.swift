@@ -1399,6 +1399,7 @@ private func attributeRunCount(in string: NSAttributedString) -> Int {
 }
 
 @Test func categoryTitleHumanizesPackageCategories() {
+    #expect(mainWindowCategoryTitle("ai") == "AI")
     #expect(mainWindowCategoryTitle("developer-tools") == "Developer Tools")
     #expect(mainWindowCategoryTitle("custom-category") == "Custom Category")
     #expect(mainWindowCategoryTitle(nil) == nil)

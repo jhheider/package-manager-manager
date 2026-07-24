@@ -115,6 +115,7 @@ enum MainWindowSection: Hashable, Identifiable, Sendable {
 
     private static func categoryTitle(_ identifier: String) -> String {
         switch identifier {
+        case "ai": "AI"
         case "developer-tools": "Developer Tools"
         case "cloud-infrastructure": "Cloud Infrastructure"
         case "language-runtime": "Language Runtime"
