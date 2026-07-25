@@ -122,9 +122,7 @@
         "brew:woxi",
         "brew:faker",
         "brew:mosdepth",
-        "brew:cyclonedx-npm",
-        "brew:soar",
-        "brew:perlnavigator"
+        "brew:cyclonedx-npm"
       ],
       "title": "New Packages",
       "type": "newPackages"
@@ -386,7 +384,7 @@
       "type": "editorial"
     }
   ],
-  "generatedAt": "2026-07-24T13:02:46Z",
+  "generatedAt": "2026-07-25T13:01:15Z",
   "packages": {
     "brew:advai-cli": {
       "agentSummary": "advai-cli is a local-first command line tool that combines skill management, external CLI workflows, browser-bridge automation, and a terminal AI chat interface.",
@@ -1031,53 +1029,6 @@
       "upstreamSummary": "High-performance formatting tool for JavaScript and TypeScript",
       "version": null
     },
-    "brew:perlnavigator": {
-      "agentSummary": "Perl Navigator provides language-server features for Perl editors, including navigation, diagnostics, completion, formatting, and documentation within modern integrated development environments.",
-      "assessment": {
-        "alternatives": [
-          "Built-in platform tools or another package in the same category"
-        ],
-        "audiences": [
-          "Developers and teams whose workflow matches the documented scope"
-        ],
-        "caveats": [
-          "Confirm compatibility, update policy, and operational impact before production use"
-        ],
-        "complements": [
-          "Version control, CI, and project-specific documentation"
-        ],
-        "prerequisites": [
-          "A compatible runtime, operating system, or project configuration"
-        ],
-        "useCases": [
-          "Automating the task described by the upstream project"
-        ]
-      },
-      "category": "developer-tools",
-      "displayName": "perlnavigator",
-      "docs": "https://github.com/bscan/PerlNavigator#readme",
-      "homepage": "https://github.com/bscan/PerlNavigator",
-      "id": "brew:perlnavigator",
-      "installURL": "pkgmgrmgr://install?package=brew%3Aperlnavigator",
-      "lastUpdatedAt": "2026-07-11T11:05:28Z",
-      "manager": "homebrew",
-      "repository": "https://github.com/bscan/PerlNavigator",
-      "researchedAt": "2026-07-16T17:09:55Z",
-      "sources": [
-        {
-          "kind": "primary",
-          "title": "perlnavigator documentation",
-          "url": "https://github.com/bscan/PerlNavigator#readme"
-        },
-        {
-          "kind": "primary",
-          "title": "perlnavigator project and release information",
-          "url": "https://github.com/bscan/PerlNavigator"
-        }
-      ],
-      "upstreamSummary": "Perl language server",
-      "version": null
-    },
     "brew:pnpm": {
       "agentSummary": "pnpm installs JavaScript dependencies through a shared content-addressed store, saving disk space while enforcing stricter, more predictable dependency boundaries across projects.",
       "assessment": {
@@ -1173,53 +1124,6 @@
         }
       ],
       "upstreamSummary": "Fast local AI engine for Apple Silicon with an OpenAI-compatible API",
-      "version": null
-    },
-    "brew:soar": {
-      "agentSummary": "Soar manages static binaries and portable application formats, offering fast installation and updates for software distributed outside traditional system package repositories.",
-      "assessment": {
-        "alternatives": [
-          "Built-in platform tools or another package in the same category"
-        ],
-        "audiences": [
-          "Developers and teams whose workflow matches the documented scope"
-        ],
-        "caveats": [
-          "Confirm compatibility, update policy, and operational impact before production use"
-        ],
-        "complements": [
-          "Version control, CI, and project-specific documentation"
-        ],
-        "prerequisites": [
-          "A compatible runtime, operating system, or project configuration"
-        ],
-        "useCases": [
-          "Automating the task described by the upstream project"
-        ]
-      },
-      "category": "developer-tools",
-      "displayName": "soar",
-      "docs": "https://soar.qaidvoid.dev/",
-      "homepage": "https://soar.qaidvoid.dev",
-      "id": "brew:soar",
-      "installURL": "pkgmgrmgr://install?package=brew%3Asoar",
-      "lastUpdatedAt": "2026-07-11T11:08:17Z",
-      "manager": "homebrew",
-      "repository": "https://github.com/pkgforge/soar",
-      "researchedAt": "2026-07-16T17:09:55Z",
-      "sources": [
-        {
-          "kind": "primary",
-          "title": "soar documentation",
-          "url": "https://soar.qaidvoid.dev/"
-        },
-        {
-          "kind": "primary",
-          "title": "soar project and release information",
-          "url": "https://github.com/pkgforge/soar"
-        }
-      ],
-      "upstreamSummary": "Fast, modern package manager for Static Binaries, Portable Formats and more",
       "version": null
     },
     "brew:topgrade": {
@@ -2326,7 +2230,7 @@
   },
   "schemaVersion": 1,
   "source": {
-    "generatedAt": "2026-07-24T04:59:39Z",
+    "generatedAt": "2026-07-25T05:17:15Z",
     "url": "https://www.automicvault.com/db.json"
   }
 }
