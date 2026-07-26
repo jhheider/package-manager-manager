@@ -114,6 +114,7 @@
     {
       "id": "new-packages",
       "packageIDs": [
+        "brew:apm",
         "brew:droast",
         "brew:rapid-mlx",
         "brew:dskditto",
@@ -130,6 +131,7 @@
     {
       "id": "recently-updated",
       "packageIDs": [
+        "brew:apm",
         "brew:ty",
         "brew:agent-browser",
         "brew:oxfmt",
@@ -140,8 +142,7 @@
         "brew:zsh-patina",
         "brew:woxi",
         "brew:vals",
-        "brew:pnpm",
-        "brew:ggshield"
+        "brew:pnpm"
       ],
       "title": "Recently Updated",
       "type": "recentlyUpdated"
@@ -384,7 +385,7 @@
       "type": "editorial"
     }
   ],
-  "generatedAt": "2026-07-25T13:01:15Z",
+  "generatedAt": "2026-07-26T13:03:11Z",
   "packages": {
     "brew:advai-cli": {
       "agentSummary": "advai-cli is a local-first command line tool that combines skill management, external CLI workflows, browser-bridge automation, and a terminal AI chat interface.",
@@ -493,6 +494,53 @@
         }
       ],
       "upstreamSummary": "Browser automation CLI for AI agents",
+      "version": null
+    },
+    "brew:apm": {
+      "agentSummary": "Microsoft’s Agent Package Manager declares, installs, and governs AI-agent skills, prompts, plugins, and MCP servers across supported coding tools from a single project manifest.",
+      "assessment": {
+        "alternatives": [
+          "Manually maintained per-tool configuration files"
+        ],
+        "audiences": [
+          "Teams standardizing AI coding-agent configuration"
+        ],
+        "caveats": [
+          "The project is new; verify target compatibility and policy behavior before organization-wide adoption"
+        ],
+        "complements": [
+          "Repository-level agent instructions and CI policy checks"
+        ],
+        "prerequisites": [
+          "A supported AI coding tool and an APM project manifest"
+        ],
+        "useCases": [
+          "Reproduce skills, prompts, plugins, and MCP setup from a manifest"
+        ]
+      },
+      "category": "ai",
+      "displayName": "apm",
+      "docs": "https://microsoft.github.io/apm",
+      "homepage": "https://microsoft.github.io/apm/",
+      "id": "brew:apm",
+      "installURL": "pkgmgrmgr://install?package=brew%3Aapm",
+      "lastUpdatedAt": "2026-07-25T09:54:32Z",
+      "manager": "homebrew",
+      "repository": "https://github.com/microsoft/apm",
+      "researchedAt": "2026-07-26T13:03:11Z",
+      "sources": [
+        {
+          "kind": "primary",
+          "title": "Microsoft APM repository",
+          "url": "https://github.com/microsoft/apm"
+        },
+        {
+          "kind": "primary",
+          "title": "apm-cli 0.1.0 on PyPI",
+          "url": "https://pypi.org/project/apm-cli/0.1.0/"
+        }
+      ],
+      "upstreamSummary": "Dependency manager for AI agent configuration",
       "version": null
     },
     "brew:cyclonedx-npm": {
@@ -2230,7 +2278,7 @@
   },
   "schemaVersion": 1,
   "source": {
-    "generatedAt": "2026-07-25T05:17:15Z",
+    "generatedAt": "2026-07-26T04:54:11Z",
     "url": "https://www.automicvault.com/db.json"
   }
 }
