@@ -2,56 +2,54 @@
   "content": [
     {
       "artwork": {
-        "alt": "An abstract compass joins three looping paths on a luminous mountain grid at sunrise.",
+        "alt": "A luminous origami rulebook connects by teal, amber, and violet paths to six abstract developer workspaces on a deep navy background.",
         "attribution": "Generated with OpenAI image generation",
         "boxColors": {
-          "backgroundEnd": "#B8DCCB",
-          "backgroundStart": "#09253A",
+          "backgroundEnd": "#112548",
+          "backgroundStart": "#061329",
           "foreground": "#FFFFFF"
         },
-        "license": "OpenAI-generated asset for PMM Discover",
-        "path": "feed/assets/feedback-loops-2026-07-23.png"
+        "license": "OpenAI terms of use",
+        "path": "feed/assets/rulesync-unified-agent-rules.png"
       },
-      "body": "## A faster tool is not automatically a faster team\n\nDeveloper tooling earns its keep by shortening the interval between a change and a trustworthy decision. A formatter that finishes quickly is useful when it lets a pull request move from \"did we agree on this file?\" to the next substantive question. A type checker is useful when its diagnostics arrive while the code is still in the editor, not after a long CI queue. Browser automation is useful when it makes a real workflow observable without turning every verification into a manual ritual.\n\nThat framing matters because tool speed is easy to measure and team feedback is not. The three projects here—Oxfmt, ty, and agent-browser—sit at different points in the loop. Their appeal is not that every repository should replace its existing stack. It is that they make the boundaries of the loop visible: formatting, static analysis, and behavior in an actual browser.\n\n## Oxfmt: a new formatter direction\n\nOxfmt entered alpha in December 2025 and reached beta in February 2026. The Oxc team describes it as a Rust-powered, Prettier-compatible formatter for JavaScript and TypeScript. Its stated early performance figures are impressive, but compatibility is the more practical reason to look: formatters only save time when they produce stable, reviewable output across the code a team actually owns.\n\nFor a repository already using Prettier, the safe question is not \"is Oxfmt faster?\" It is **which files, options, embedded languages, and plugins behave the same enough for us?** Start with `--check` on a representative branch, then inspect differences by category. A one-off formatting migration can create a noisy diff; a gradual trial on new or contained packages gives the team a clean rollback path.\n\nBeta status is a real tradeoff. Oxfmt's roadmap still includes compatibility and plugin work, and a formatter's edge cases can be exactly where a mature codebase has accumulated conventions. That does not rule it out. It argues for treating it as a measured experiment, with a baseline and an exit.\n\n## Ty: keep type feedback near the edit\n\nAstral's ty is a Rust-based Python type checker with official binaries, package installation paths, and editor-oriented documentation. It belongs in the same conversation because formatting is only one kind of cheap feedback. Type diagnostics can turn an integration mistake into a local correction before it becomes a failed test, a review comment, or a production bug.\n\nPython teams should expect differences from their current checker. Annotation interpretation, supported features, configuration, and diagnostic wording all affect adoption. That makes a shadow run more useful than a wholesale switch: run ty beside Pyright or mypy in CI, classify the new findings, and decide which are signal. The goal is not to maximize the number of warnings. The goal is to make **useful** warnings arrive early enough to change behavior.\n\n## Agent Browser: the boundary where state becomes real\n\nAgent-browser addresses the last, messier segment of the loop: observing and interacting with a browser. Its release history documents a fast-moving command-line surface for snapshots, navigation, sessions, network inspection, and browser providers. That can be a strong fit for agent workflows and repeatable browser checks, especially when raw browser state is easier to inspect than a screenshot alone.\n\nBut browser automation has a different failure mode from formatting and type checking: it can cause side effects. A script that clicks a destructive control, submits a form, or operates with a logged-in session needs explicit limits. Keep production credentials out of exploratory runs, use test accounts where possible, and constrain destinations with allowlists or environment-level safeguards. Speed without containment is merely a quicker route to a bad action.\n\n## Build the loop in layers\n\nA pragmatic trial can be small:\n\n- Use Oxfmt in check-only mode on one JavaScript or TypeScript package.\n- Run ty alongside the existing Python checker and review only the disagreements.\n- Point agent-browser at a staging workflow with a deliberately narrow action policy.\n\nThe shared lesson is that fast tools work best as **small, reversible feedback loops**. Measure wall-clock time, but also measure review noise, false positives, and whether a developer can act on the result without opening another ticket. Retain the tools that make a decision faster; leave the rest at the boundary until their maturity catches up.",
-      "deck": "Three newer developer tools show why speed matters most when it shortens a decision, not simply a benchmark.",
-      "id": "editorial:2026-07-23:feedback-loops-where-fast-tools-help-and-where-they-dont",
-      "primaryPackageID": "brew:oxfmt",
-      "publishedAt": "2026-07-23T14:05:45Z",
+      "body": "## Configuration Is Becoming a Compatibility Problem\n\nA repository can now carry instructions for several coding agents: project rules, commands, skills, tool permissions, hooks, ignore lists, and MCP servers. Each agent has useful ideas about filenames and structure, but the formats are not interchangeable. A change to one policy can become a small, error-prone copy-and-paste campaign. The obvious shortcut—keeping only one tool's file—makes the setup less portable and gives contributors different behavior depending on the agent they choose.\n\n**Rulesync** takes a different route. It keeps a source tree for shared AI-agent guidance, imports some existing configurations, and generates target-specific output. Its repository documents targets for Claude Code, Codex CLI, GitHub Copilot, Cursor, OpenCode, and many other tools, alongside an `AGENTS.md` target. The intent is not to claim every agent behaves identically. It is to make the differences explicit while giving the common policy one place to live.\n\n## A Young Tool in a Fast-Moving Space\n\nRulesync published its first stable `0.1.0` release on June 18, 2025. That timing matters: the surrounding agent ecosystem changes quickly, with new configuration surfaces appearing alongside familiar instruction files. The project's release history shows steady iteration, and the documentation tracks feature support per target rather than pretending every output can represent every capability. That is the right posture for a compatibility tool: generation is useful only if it is honest about what can be generated.\n\nThe basic workflow is deliberately small. Initialize a rulesync layout, put reusable rules and components in it, then generate selected targets. Existing repositories can also import tool-specific files before adopting the source-of-truth layout. A conversion command supports direct translation when a repository needs to move from one format to another without immediately adopting a managed tree. Generated files should still be reviewed like any other derived artifact; they influence how tools read, edit, and execute inside a repository.\n\n## What Belongs in the Shared Layer\n\nThe shared layer works best for stable repository facts and working agreements:\n\n- architecture boundaries and naming conventions;\n- test and validation commands;\n- security or data-handling constraints;\n- review expectations and prohibited shortcuts;\n- reusable agent skills and task commands.\n\nIt works less well for instructions that only make sense in a single product. One agent may support a hook event, permission rule, or custom-agent setting that another does not expose. Flattening that distinction can create a configuration that looks standardized but silently loses behavior. Rulesync's supported-tools matrix is useful here: treat it as a compatibility map, not a promise of semantic equivalence. Keep genuinely tool-specific settings scoped to the target that needs them.\n\nA shared file also needs normal software ownership. Put changes through review, pin the generator version where repeatability matters, and decide whether CI should regenerate and fail on a diff. A generated configuration file is not documentation someone can casually edit in a panic; the source layout is the place to make the enduring change. That discipline prevents the source and output from drifting apart.\n\n## Evidence of Use, With Limits\n\nThe upstream repository shows an active project with over a thousand GitHub stars, forks, issue activity, releases, and documentation for a broad set of agent targets. Those signals demonstrate attention and public use beyond an unpublished experiment. They do not measure production deployments, reliability in a particular organization, or the quality of every generated integration. The project is still young enough that a cautious evaluation is sensible.\n\nStart with one repository that already has two or three agent configurations. Import or recreate only the instructions that are actually shared, generate those targets, and inspect the diff line by line. Run each agent's normal workflow against a disposable branch. Pay special attention to permissions, hooks, commands, and MCP settings because those surfaces can have real operational consequences. If the generated output is clearer and remains in sync through one policy change, expand from there.\n\n## Adjacent Tools, Different Jobs\n\nThis pattern is broader than agent configuration. **vfox** offers one command surface for selecting several language runtimes, while recognizing familiar version files; it is a practical companion when teams want fewer per-language setup rituals. **yutu** shows the opposite boundary: it automates authenticated YouTube work, where capabilities are intentionally specific and account permissions matter. Neither tool is a Rulesync substitute, but together they underline the principle: consolidate the policy that is truly shared, and leave specialized behavior close to the system that owns it.\n\nRulesync earns its place when a team already maintains multiple agent files and can name the common rules. For a single agent or a small repository, a well-kept `AGENTS.md` may be all that is needed. The value begins when duplication is real—and ends if the generator obscures more than it removes.",
+      "deck": "A focused CLI for turning one maintained ruleset into the differing files that modern coding agents expect.",
+      "id": "editorial:2026-07-27:rulesync-shared-agent-instructions",
+      "primaryPackageID": "brew:rulesync",
+      "publishedAt": "2026-07-27T13:01:16Z",
       "relatedPackageIDs": [
-        "brew:oxfmt",
-        "brew:ty",
-        "brew:agent-browser"
+        "brew:rulesync",
+        "brew:vfox",
+        "brew:yutu"
       ],
       "selection": {
-        "newerOverride": {
-          "reason": "Oxfmt is a newly introduced formatter direction: it entered alpha in December 2025 and beta in February 2026, with a distinct Prettier-compatible Rust implementation.",
-          "sourceURL": "https://oxc.rs/blog/2026-02-24-oxfmt-beta"
-        },
+        "firstStableReleaseAt": "2025-06-18T14:13:17Z",
+        "firstStableReleaseSourceURL": "https://github.com/dyoshikawa/rulesync/releases/tag/0.1.0",
         "rationale": "newer"
       },
       "sources": [
         {
           "kind": "primary",
-          "title": "Oxfmt alpha announcement",
-          "url": "https://oxc.rs/blog/2025-12-01-oxfmt-alpha.html"
+          "title": "Rulesync project repository",
+          "url": "https://github.com/dyoshikawa/rulesync"
         },
         {
           "kind": "primary",
-          "title": "Oxfmt beta announcement",
-          "url": "https://oxc.rs/blog/2026-02-24-oxfmt-beta"
+          "title": "Rulesync releases",
+          "url": "https://github.com/dyoshikawa/rulesync/releases"
         },
         {
           "kind": "primary",
-          "title": "Ty documentation",
-          "url": "https://docs.astral.sh/ty/"
+          "title": "Rulesync documentation",
+          "url": "https://rulesync.dyoshikawa.com/"
         },
         {
-          "kind": "primary",
-          "title": "Agent Browser release history",
-          "url": "https://github.com/vercel-labs/agent-browser/releases"
+          "kind": "independent",
+          "title": "AGENTS.md open format",
+          "url": "https://agents.md/"
         }
       ],
-      "title": "Faster Feedback Loops Need Clear Boundaries",
+      "title": "Rulesync: One Set of Instructions, Many Agents",
       "type": "editorial"
     },
     {
@@ -121,9 +119,7 @@
         "brew:advai-cli",
         "brew:zsh-patina",
         "brew:woxi",
-        "brew:faker",
-        "brew:mosdepth",
-        "brew:cyclonedx-npm"
+        "brew:faker"
       ],
       "title": "New Packages",
       "type": "newPackages"
@@ -131,6 +127,9 @@
     {
       "id": "recently-updated",
       "packageIDs": [
+        "brew:rulesync",
+        "brew:vfox",
+        "brew:yutu",
         "brew:apm",
         "brew:ty",
         "brew:agent-browser",
@@ -139,13 +138,64 @@
         "brew:rapid-mlx",
         "brew:dskditto",
         "brew:advai-cli",
-        "brew:zsh-patina",
-        "brew:woxi",
-        "brew:vals",
-        "brew:pnpm"
+        "brew:zsh-patina"
       ],
       "title": "Recently Updated",
       "type": "recentlyUpdated"
+    },
+    {
+      "artwork": {
+        "alt": "An abstract compass joins three looping paths on a luminous mountain grid at sunrise.",
+        "attribution": "Generated with OpenAI image generation",
+        "boxColors": {
+          "backgroundEnd": "#B8DCCB",
+          "backgroundStart": "#09253A",
+          "foreground": "#FFFFFF"
+        },
+        "license": "OpenAI-generated asset for PMM Discover",
+        "path": "feed/assets/feedback-loops-2026-07-23.png"
+      },
+      "body": "## A faster tool is not automatically a faster team\n\nDeveloper tooling earns its keep by shortening the interval between a change and a trustworthy decision. A formatter that finishes quickly is useful when it lets a pull request move from \"did we agree on this file?\" to the next substantive question. A type checker is useful when its diagnostics arrive while the code is still in the editor, not after a long CI queue. Browser automation is useful when it makes a real workflow observable without turning every verification into a manual ritual.\n\nThat framing matters because tool speed is easy to measure and team feedback is not. The three projects here—Oxfmt, ty, and agent-browser—sit at different points in the loop. Their appeal is not that every repository should replace its existing stack. It is that they make the boundaries of the loop visible: formatting, static analysis, and behavior in an actual browser.\n\n## Oxfmt: a new formatter direction\n\nOxfmt entered alpha in December 2025 and reached beta in February 2026. The Oxc team describes it as a Rust-powered, Prettier-compatible formatter for JavaScript and TypeScript. Its stated early performance figures are impressive, but compatibility is the more practical reason to look: formatters only save time when they produce stable, reviewable output across the code a team actually owns.\n\nFor a repository already using Prettier, the safe question is not \"is Oxfmt faster?\" It is **which files, options, embedded languages, and plugins behave the same enough for us?** Start with `--check` on a representative branch, then inspect differences by category. A one-off formatting migration can create a noisy diff; a gradual trial on new or contained packages gives the team a clean rollback path.\n\nBeta status is a real tradeoff. Oxfmt's roadmap still includes compatibility and plugin work, and a formatter's edge cases can be exactly where a mature codebase has accumulated conventions. That does not rule it out. It argues for treating it as a measured experiment, with a baseline and an exit.\n\n## Ty: keep type feedback near the edit\n\nAstral's ty is a Rust-based Python type checker with official binaries, package installation paths, and editor-oriented documentation. It belongs in the same conversation because formatting is only one kind of cheap feedback. Type diagnostics can turn an integration mistake into a local correction before it becomes a failed test, a review comment, or a production bug.\n\nPython teams should expect differences from their current checker. Annotation interpretation, supported features, configuration, and diagnostic wording all affect adoption. That makes a shadow run more useful than a wholesale switch: run ty beside Pyright or mypy in CI, classify the new findings, and decide which are signal. The goal is not to maximize the number of warnings. The goal is to make **useful** warnings arrive early enough to change behavior.\n\n## Agent Browser: the boundary where state becomes real\n\nAgent-browser addresses the last, messier segment of the loop: observing and interacting with a browser. Its release history documents a fast-moving command-line surface for snapshots, navigation, sessions, network inspection, and browser providers. That can be a strong fit for agent workflows and repeatable browser checks, especially when raw browser state is easier to inspect than a screenshot alone.\n\nBut browser automation has a different failure mode from formatting and type checking: it can cause side effects. A script that clicks a destructive control, submits a form, or operates with a logged-in session needs explicit limits. Keep production credentials out of exploratory runs, use test accounts where possible, and constrain destinations with allowlists or environment-level safeguards. Speed without containment is merely a quicker route to a bad action.\n\n## Build the loop in layers\n\nA pragmatic trial can be small:\n\n- Use Oxfmt in check-only mode on one JavaScript or TypeScript package.\n- Run ty alongside the existing Python checker and review only the disagreements.\n- Point agent-browser at a staging workflow with a deliberately narrow action policy.\n\nThe shared lesson is that fast tools work best as **small, reversible feedback loops**. Measure wall-clock time, but also measure review noise, false positives, and whether a developer can act on the result without opening another ticket. Retain the tools that make a decision faster; leave the rest at the boundary until their maturity catches up.",
+      "deck": "Three newer developer tools show why speed matters most when it shortens a decision, not simply a benchmark.",
+      "id": "editorial:2026-07-23:feedback-loops-where-fast-tools-help-and-where-they-dont",
+      "primaryPackageID": "brew:oxfmt",
+      "publishedAt": "2026-07-23T14:05:45Z",
+      "relatedPackageIDs": [
+        "brew:oxfmt",
+        "brew:ty",
+        "brew:agent-browser"
+      ],
+      "selection": {
+        "newerOverride": {
+          "reason": "Oxfmt is a newly introduced formatter direction: it entered alpha in December 2025 and beta in February 2026, with a distinct Prettier-compatible Rust implementation.",
+          "sourceURL": "https://oxc.rs/blog/2026-02-24-oxfmt-beta"
+        },
+        "rationale": "newer"
+      },
+      "sources": [
+        {
+          "kind": "primary",
+          "title": "Oxfmt alpha announcement",
+          "url": "https://oxc.rs/blog/2025-12-01-oxfmt-alpha.html"
+        },
+        {
+          "kind": "primary",
+          "title": "Oxfmt beta announcement",
+          "url": "https://oxc.rs/blog/2026-02-24-oxfmt-beta"
+        },
+        {
+          "kind": "primary",
+          "title": "Ty documentation",
+          "url": "https://docs.astral.sh/ty/"
+        },
+        {
+          "kind": "primary",
+          "title": "Agent Browser release history",
+          "url": "https://github.com/vercel-labs/agent-browser/releases"
+        }
+      ],
+      "title": "Faster Feedback Loops Need Clear Boundaries",
+      "type": "editorial"
     },
     {
       "artwork": {
@@ -385,7 +435,7 @@
       "type": "editorial"
     }
   ],
-  "generatedAt": "2026-07-26T13:03:11Z",
+  "generatedAt": "2026-07-27T13:01:16Z",
   "packages": {
     "brew:advai-cli": {
       "agentSummary": "advai-cli is a local-first command line tool that combines skill management, external CLI workflows, browser-bridge automation, and a terminal AI chat interface.",
@@ -541,53 +591,6 @@
         }
       ],
       "upstreamSummary": "Dependency manager for AI agent configuration",
-      "version": null
-    },
-    "brew:cyclonedx-npm": {
-      "agentSummary": "CycloneDX npm creates software bills of materials for npm projects, helping teams inventory dependencies for security review, compliance, and release automation.",
-      "assessment": {
-        "alternatives": [
-          "Built-in platform tools or another package in the same category"
-        ],
-        "audiences": [
-          "Developers and teams whose workflow matches the documented scope"
-        ],
-        "caveats": [
-          "Confirm compatibility, update policy, and operational impact before production use"
-        ],
-        "complements": [
-          "Version control, CI, and project-specific documentation"
-        ],
-        "prerequisites": [
-          "A compatible runtime, operating system, or project configuration"
-        ],
-        "useCases": [
-          "Automating the task described by the upstream project"
-        ]
-      },
-      "category": "security",
-      "displayName": "cyclonedx-npm",
-      "docs": "https://cyclonedx.org/tool-center",
-      "homepage": "https://github.com/CycloneDX/cyclonedx-node-npm",
-      "id": "brew:cyclonedx-npm",
-      "installURL": "pkgmgrmgr://install?package=brew%3Acyclonedx-npm",
-      "lastUpdatedAt": "2026-07-13T03:36:27Z",
-      "manager": "homebrew",
-      "repository": "https://github.com/CycloneDX/cyclonedx-node-npm",
-      "researchedAt": "2026-07-16T17:09:55Z",
-      "sources": [
-        {
-          "kind": "primary",
-          "title": "cyclonedx-npm documentation",
-          "url": "https://cyclonedx.org/tool-center"
-        },
-        {
-          "kind": "primary",
-          "title": "cyclonedx-npm project and release information",
-          "url": "https://github.com/CycloneDX/cyclonedx-node-npm"
-        }
-      ],
-      "upstreamSummary": "Creates CycloneDX Software Bill of Materials (SBOM) from npm projects",
       "version": null
     },
     "brew:datasette": {
@@ -977,53 +980,6 @@
       "upstreamSummary": "Command-line music player",
       "version": null
     },
-    "brew:mosdepth": {
-      "agentSummary": "mosdepth calculates sequencing depth quickly for BAM and CRAM files, supporting whole-genome, exome, and targeted genomics coverage analysis workflows efficiently.",
-      "assessment": {
-        "alternatives": [
-          "Built-in platform tools or another package in the same category"
-        ],
-        "audiences": [
-          "Developers and teams whose workflow matches the documented scope"
-        ],
-        "caveats": [
-          "Confirm compatibility, update policy, and operational impact before production use"
-        ],
-        "complements": [
-          "Version control, CI, and project-specific documentation"
-        ],
-        "prerequisites": [
-          "A compatible runtime, operating system, or project configuration"
-        ],
-        "useCases": [
-          "Automating the task described by the upstream project"
-        ]
-      },
-      "category": "science",
-      "displayName": "mosdepth",
-      "docs": "https://github.com/brentp/mosdepth#readme",
-      "homepage": "https://github.com/brentp/mosdepth",
-      "id": "brew:mosdepth",
-      "installURL": "pkgmgrmgr://install?package=brew%3Amosdepth",
-      "lastUpdatedAt": "2026-07-13T04:04:09Z",
-      "manager": "homebrew",
-      "repository": "https://github.com/brentp/mosdepth",
-      "researchedAt": "2026-07-16T17:09:55Z",
-      "sources": [
-        {
-          "kind": "primary",
-          "title": "mosdepth documentation",
-          "url": "https://github.com/brentp/mosdepth#readme"
-        },
-        {
-          "kind": "primary",
-          "title": "mosdepth project and release information",
-          "url": "https://github.com/brentp/mosdepth"
-        }
-      ],
-      "upstreamSummary": "Fast BAM/CRAM depth calculation for WGS, exome, or targeted sequencing",
-      "version": null
-    },
     "brew:oxfmt": {
       "agentSummary": "Oxfmt is a Rust-powered formatter for JavaScript and TypeScript projects, aiming for Prettier compatibility while reducing formatting time in large repositories and continuous-integration workflows.",
       "assessment": {
@@ -1172,6 +1128,60 @@
         }
       ],
       "upstreamSummary": "Fast local AI engine for Apple Silicon with an OpenAI-compatible API",
+      "version": null
+    },
+    "brew:rulesync": {
+      "agentSummary": "Rulesync keeps AI coding-agent instructions in one source tree, then generates and imports tool-specific rules, commands, skills, hooks, permissions, and MCP configuration.",
+      "assessment": {
+        "alternatives": [
+          "Maintaining each agent configuration by hand",
+          "Using only a cross-tool AGENTS.md file"
+        ],
+        "audiences": [
+          "Teams using more than one AI coding agent",
+          "Maintainers standardizing repository guidance"
+        ],
+        "caveats": [
+          "Tool capabilities and file formats differ, so generated output cannot make every feature portable",
+          "A shared source still needs careful ownership and review"
+        ],
+        "complements": [
+          "Version control review",
+          "Repository-local AGENTS.md guidance",
+          "CI checks for generated configuration"
+        ],
+        "prerequisites": [
+          "A repository with AI-agent configuration worth maintaining",
+          "Time to review generated files before committing them"
+        ],
+        "useCases": [
+          "Generating agent-specific configuration from shared rules",
+          "Migrating existing agent instructions into a managed source tree"
+        ]
+      },
+      "category": "ai",
+      "displayName": "rulesync",
+      "docs": "https://rulesync.dyoshikawa.com/",
+      "homepage": "https://github.com/dyoshikawa/rulesync",
+      "id": "brew:rulesync",
+      "installURL": "pkgmgrmgr://install?package=brew%3Arulesync",
+      "lastUpdatedAt": "2026-07-26T04:19:04Z",
+      "manager": "homebrew",
+      "repository": "https://github.com/dyoshikawa/rulesync",
+      "researchedAt": "2026-07-27T13:01:16Z",
+      "sources": [
+        {
+          "kind": "primary",
+          "title": "Rulesync project repository",
+          "url": "https://github.com/dyoshikawa/rulesync"
+        },
+        {
+          "kind": "primary",
+          "title": "Rulesync documentation",
+          "url": "https://rulesync.dyoshikawa.com/"
+        }
+      ],
+      "upstreamSummary": "Unified AI rules management CLI tool",
       "version": null
     },
     "brew:topgrade": {
@@ -1324,6 +1334,60 @@
       "upstreamSummary": "Helm-like configuration values loader with support for various sources",
       "version": null
     },
+    "brew:vfox": {
+      "agentSummary": "vfox is a cross-platform, plugin-driven SDK version manager that installs and selects language runtimes globally or per project while recognizing several existing version files.",
+      "assessment": {
+        "alternatives": [
+          "asdf for a long-established plugin ecosystem",
+          "Dedicated managers such as nvm, pyenv, or sdkman"
+        ],
+        "audiences": [
+          "Developers who work across several language runtimes",
+          "Teams seeking one version-manager command surface"
+        ],
+        "caveats": [
+          "Plugin quality and maintenance vary by runtime",
+          "Shell hooks add another startup integration to support"
+        ],
+        "complements": [
+          "Pinned runtime files",
+          "CI runtime setup",
+          "Project onboarding documentation"
+        ],
+        "prerequisites": [
+          "A shell activation hook",
+          "Plugins for the runtimes a project needs"
+        ],
+        "useCases": [
+          "Selecting project-specific Node, Python, Go, or Java versions",
+          "Migrating from existing runtime-version files"
+        ]
+      },
+      "category": "developer-tools",
+      "displayName": "vfox",
+      "docs": "https://vfox.dev/",
+      "homepage": "https://vfox.dev/",
+      "id": "brew:vfox",
+      "installURL": "pkgmgrmgr://install?package=brew%3Avfox",
+      "lastUpdatedAt": "2026-07-25T22:30:01Z",
+      "manager": "homebrew",
+      "repository": "https://github.com/version-fox/vfox",
+      "researchedAt": "2026-07-27T13:01:16Z",
+      "sources": [
+        {
+          "kind": "primary",
+          "title": "vfox project repository",
+          "url": "https://github.com/version-fox/vfox"
+        },
+        {
+          "kind": "primary",
+          "title": "vfox documentation",
+          "url": "https://vfox.dev/"
+        }
+      ],
+      "upstreamSummary": "Version manager with support for Java, Node.js, Flutter, .NET & more",
+      "version": null
+    },
     "brew:woxi": {
       "agentSummary": "Woxi is an experimental Rust implementation of Wolfram Language features, providing a lightweight command-line evaluator, script runner, and interactive REPL.",
       "assessment": {
@@ -1377,6 +1441,60 @@
         }
       ],
       "upstreamSummary": "Interpreter for a subset of the Wolfram Language",
+      "version": null
+    },
+    "brew:yutu": {
+      "agentSummary": "yutu is an AI-assisted command-line and agent toolkit for authenticated YouTube workflows, including research, uploads, metadata, playlists, comments, captions, and channel management.",
+      "assessment": {
+        "alternatives": [
+          "YouTube Studio for manual management",
+          "Purpose-built scripts using the YouTube Data API"
+        ],
+        "audiences": [
+          "YouTube channel operators comfortable with command-line tools",
+          "Developers automating approved YouTube workflows"
+        ],
+        "caveats": [
+          "Automation can make consequential public changes",
+          "OAuth tokens and channel permissions require careful handling"
+        ],
+        "complements": [
+          "YouTube Studio",
+          "Secure credential storage",
+          "A human editorial review process"
+        ],
+        "prerequisites": [
+          "A Google OAuth client and authorized YouTube account",
+          "Understanding of YouTube permissions and API quotas"
+        ],
+        "useCases": [
+          "Managing video metadata and playlists",
+          "Researching channel and video information through authenticated APIs"
+        ]
+      },
+      "category": "ai",
+      "displayName": "yutu",
+      "docs": "https://github.com/eat-pray-ai/yutu#readme",
+      "homepage": "https://yutu.ifor.dev",
+      "id": "brew:yutu",
+      "installURL": "pkgmgrmgr://install?package=brew%3Ayutu",
+      "lastUpdatedAt": "2026-07-25T22:12:53Z",
+      "manager": "homebrew",
+      "repository": "https://github.com/eat-pray-ai/yutu",
+      "researchedAt": "2026-07-27T13:01:16Z",
+      "sources": [
+        {
+          "kind": "primary",
+          "title": "yutu project repository",
+          "url": "https://github.com/eat-pray-ai/yutu"
+        },
+        {
+          "kind": "primary",
+          "title": "yutu product documentation",
+          "url": "https://yutu.ifor.dev/"
+        }
+      ],
+      "upstreamSummary": "MCP server and CLI for YouTube",
       "version": null
     },
     "brew:zsh-patina": {

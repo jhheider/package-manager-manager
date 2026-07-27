@@ -2,434 +2,6 @@
   "content": [
     {
       "artwork": {
-        "alt": "A luminous origami rulebook connects by teal, amber, and violet paths to six abstract developer workspaces on a deep navy background.",
-        "attribution": "Generated with OpenAI image generation",
-        "boxColors": {
-          "backgroundEnd": "#112548",
-          "backgroundStart": "#061329",
-          "foreground": "#FFFFFF"
-        },
-        "license": "OpenAI terms of use",
-        "path": "feed/assets/rulesync-unified-agent-rules.png"
-      },
-      "batchID": "20260727T130116Z-f872b433",
-      "body": "## Configuration Is Becoming a Compatibility Problem\n\nA repository can now carry instructions for several coding agents: project rules, commands, skills, tool permissions, hooks, ignore lists, and MCP servers. Each agent has useful ideas about filenames and structure, but the formats are not interchangeable. A change to one policy can become a small, error-prone copy-and-paste campaign. The obvious shortcut—keeping only one tool's file—makes the setup less portable and gives contributors different behavior depending on the agent they choose.\n\n**Rulesync** takes a different route. It keeps a source tree for shared AI-agent guidance, imports some existing configurations, and generates target-specific output. Its repository documents targets for Claude Code, Codex CLI, GitHub Copilot, Cursor, OpenCode, and many other tools, alongside an `AGENTS.md` target. The intent is not to claim every agent behaves identically. It is to make the differences explicit while giving the common policy one place to live.\n\n## A Young Tool in a Fast-Moving Space\n\nRulesync published its first stable `0.1.0` release on June 18, 2025. That timing matters: the surrounding agent ecosystem changes quickly, with new configuration surfaces appearing alongside familiar instruction files. The project's release history shows steady iteration, and the documentation tracks feature support per target rather than pretending every output can represent every capability. That is the right posture for a compatibility tool: generation is useful only if it is honest about what can be generated.\n\nThe basic workflow is deliberately small. Initialize a rulesync layout, put reusable rules and components in it, then generate selected targets. Existing repositories can also import tool-specific files before adopting the source-of-truth layout. A conversion command supports direct translation when a repository needs to move from one format to another without immediately adopting a managed tree. Generated files should still be reviewed like any other derived artifact; they influence how tools read, edit, and execute inside a repository.\n\n## What Belongs in the Shared Layer\n\nThe shared layer works best for stable repository facts and working agreements:\n\n- architecture boundaries and naming conventions;\n- test and validation commands;\n- security or data-handling constraints;\n- review expectations and prohibited shortcuts;\n- reusable agent skills and task commands.\n\nIt works less well for instructions that only make sense in a single product. One agent may support a hook event, permission rule, or custom-agent setting that another does not expose. Flattening that distinction can create a configuration that looks standardized but silently loses behavior. Rulesync's supported-tools matrix is useful here: treat it as a compatibility map, not a promise of semantic equivalence. Keep genuinely tool-specific settings scoped to the target that needs them.\n\nA shared file also needs normal software ownership. Put changes through review, pin the generator version where repeatability matters, and decide whether CI should regenerate and fail on a diff. A generated configuration file is not documentation someone can casually edit in a panic; the source layout is the place to make the enduring change. That discipline prevents the source and output from drifting apart.\n\n## Evidence of Use, With Limits\n\nThe upstream repository shows an active project with over a thousand GitHub stars, forks, issue activity, releases, and documentation for a broad set of agent targets. Those signals demonstrate attention and public use beyond an unpublished experiment. They do not measure production deployments, reliability in a particular organization, or the quality of every generated integration. The project is still young enough that a cautious evaluation is sensible.\n\nStart with one repository that already has two or three agent configurations. Import or recreate only the instructions that are actually shared, generate those targets, and inspect the diff line by line. Run each agent's normal workflow against a disposable branch. Pay special attention to permissions, hooks, commands, and MCP settings because those surfaces can have real operational consequences. If the generated output is clearer and remains in sync through one policy change, expand from there.\n\n## Adjacent Tools, Different Jobs\n\nThis pattern is broader than agent configuration. **vfox** offers one command surface for selecting several language runtimes, while recognizing familiar version files; it is a practical companion when teams want fewer per-language setup rituals. **yutu** shows the opposite boundary: it automates authenticated YouTube work, where capabilities are intentionally specific and account permissions matter. Neither tool is a Rulesync substitute, but together they underline the principle: consolidate the policy that is truly shared, and leave specialized behavior close to the system that owns it.\n\nRulesync earns its place when a team already maintains multiple agent files and can name the common rules. For a single agent or a small repository, a well-kept `AGENTS.md` may be all that is needed. The value begins when duplication is real—and ends if the generator obscures more than it removes.",
-      "deck": "A focused CLI for turning one maintained ruleset into the differing files that modern coding agents expect.",
-      "id": "editorial:2026-07-27:rulesync-shared-agent-instructions",
-      "package": {
-        "agentSummary": "Rulesync keeps AI coding-agent instructions in one source tree, then generates and imports tool-specific rules, commands, skills, hooks, permissions, and MCP configuration.",
-        "assessment": {
-          "alternatives": [
-            "Maintaining each agent configuration by hand",
-            "Using only a cross-tool AGENTS.md file"
-          ],
-          "audiences": [
-            "Teams using more than one AI coding agent",
-            "Maintainers standardizing repository guidance"
-          ],
-          "caveats": [
-            "Tool capabilities and file formats differ, so generated output cannot make every feature portable",
-            "A shared source still needs careful ownership and review"
-          ],
-          "complements": [
-            "Version control review",
-            "Repository-local AGENTS.md guidance",
-            "CI checks for generated configuration"
-          ],
-          "prerequisites": [
-            "A repository with AI-agent configuration worth maintaining",
-            "Time to review generated files before committing them"
-          ],
-          "useCases": [
-            "Generating agent-specific configuration from shared rules",
-            "Migrating existing agent instructions into a managed source tree"
-          ]
-        },
-        "category": "ai",
-        "displayName": "rulesync",
-        "docs": "https://rulesync.dyoshikawa.com/",
-        "homepage": "https://github.com/dyoshikawa/rulesync",
-        "id": "brew:rulesync",
-        "installURL": "pkgmgrmgr://install?package=brew%3Arulesync",
-        "lastUpdatedAt": "2026-07-26T04:19:04Z",
-        "manager": "homebrew",
-        "repository": "https://github.com/dyoshikawa/rulesync",
-        "researchedAt": "2026-07-27T13:01:16Z",
-        "sources": [
-          {
-            "kind": "primary",
-            "title": "Rulesync project repository",
-            "url": "https://github.com/dyoshikawa/rulesync"
-          },
-          {
-            "kind": "primary",
-            "title": "Rulesync documentation",
-            "url": "https://rulesync.dyoshikawa.com/"
-          }
-        ],
-        "upstreamSummary": "Unified AI rules management CLI tool",
-        "version": null
-      },
-      "primaryPackageID": "brew:rulesync",
-      "publishedAt": "2026-07-27T13:01:16Z",
-      "relatedPackages": [
-        {
-          "agentSummary": "Rulesync keeps AI coding-agent instructions in one source tree, then generates and imports tool-specific rules, commands, skills, hooks, permissions, and MCP configuration.",
-          "assessment": {
-            "alternatives": [
-              "Maintaining each agent configuration by hand",
-              "Using only a cross-tool AGENTS.md file"
-            ],
-            "audiences": [
-              "Teams using more than one AI coding agent",
-              "Maintainers standardizing repository guidance"
-            ],
-            "caveats": [
-              "Tool capabilities and file formats differ, so generated output cannot make every feature portable",
-              "A shared source still needs careful ownership and review"
-            ],
-            "complements": [
-              "Version control review",
-              "Repository-local AGENTS.md guidance",
-              "CI checks for generated configuration"
-            ],
-            "prerequisites": [
-              "A repository with AI-agent configuration worth maintaining",
-              "Time to review generated files before committing them"
-            ],
-            "useCases": [
-              "Generating agent-specific configuration from shared rules",
-              "Migrating existing agent instructions into a managed source tree"
-            ]
-          },
-          "category": "ai",
-          "displayName": "rulesync",
-          "docs": "https://rulesync.dyoshikawa.com/",
-          "homepage": "https://github.com/dyoshikawa/rulesync",
-          "id": "brew:rulesync",
-          "installURL": "pkgmgrmgr://install?package=brew%3Arulesync",
-          "lastUpdatedAt": "2026-07-26T04:19:04Z",
-          "manager": "homebrew",
-          "repository": "https://github.com/dyoshikawa/rulesync",
-          "researchedAt": "2026-07-27T13:01:16Z",
-          "sources": [
-            {
-              "kind": "primary",
-              "title": "Rulesync project repository",
-              "url": "https://github.com/dyoshikawa/rulesync"
-            },
-            {
-              "kind": "primary",
-              "title": "Rulesync documentation",
-              "url": "https://rulesync.dyoshikawa.com/"
-            }
-          ],
-          "upstreamSummary": "Unified AI rules management CLI tool",
-          "version": null
-        },
-        {
-          "agentSummary": "vfox is a cross-platform, plugin-driven SDK version manager that installs and selects language runtimes globally or per project while recognizing several existing version files.",
-          "assessment": {
-            "alternatives": [
-              "asdf for a long-established plugin ecosystem",
-              "Dedicated managers such as nvm, pyenv, or sdkman"
-            ],
-            "audiences": [
-              "Developers who work across several language runtimes",
-              "Teams seeking one version-manager command surface"
-            ],
-            "caveats": [
-              "Plugin quality and maintenance vary by runtime",
-              "Shell hooks add another startup integration to support"
-            ],
-            "complements": [
-              "Pinned runtime files",
-              "CI runtime setup",
-              "Project onboarding documentation"
-            ],
-            "prerequisites": [
-              "A shell activation hook",
-              "Plugins for the runtimes a project needs"
-            ],
-            "useCases": [
-              "Selecting project-specific Node, Python, Go, or Java versions",
-              "Migrating from existing runtime-version files"
-            ]
-          },
-          "category": "developer-tools",
-          "displayName": "vfox",
-          "docs": "https://vfox.dev/",
-          "homepage": "https://vfox.dev/",
-          "id": "brew:vfox",
-          "installURL": "pkgmgrmgr://install?package=brew%3Avfox",
-          "lastUpdatedAt": "2026-07-25T22:30:01Z",
-          "manager": "homebrew",
-          "repository": "https://github.com/version-fox/vfox",
-          "researchedAt": "2026-07-27T13:01:16Z",
-          "sources": [
-            {
-              "kind": "primary",
-              "title": "vfox project repository",
-              "url": "https://github.com/version-fox/vfox"
-            },
-            {
-              "kind": "primary",
-              "title": "vfox documentation",
-              "url": "https://vfox.dev/"
-            }
-          ],
-          "upstreamSummary": "Version manager with support for Java, Node.js, Flutter, .NET & more",
-          "version": null
-        },
-        {
-          "agentSummary": "yutu is an AI-assisted command-line and agent toolkit for authenticated YouTube workflows, including research, uploads, metadata, playlists, comments, captions, and channel management.",
-          "assessment": {
-            "alternatives": [
-              "YouTube Studio for manual management",
-              "Purpose-built scripts using the YouTube Data API"
-            ],
-            "audiences": [
-              "YouTube channel operators comfortable with command-line tools",
-              "Developers automating approved YouTube workflows"
-            ],
-            "caveats": [
-              "Automation can make consequential public changes",
-              "OAuth tokens and channel permissions require careful handling"
-            ],
-            "complements": [
-              "YouTube Studio",
-              "Secure credential storage",
-              "A human editorial review process"
-            ],
-            "prerequisites": [
-              "A Google OAuth client and authorized YouTube account",
-              "Understanding of YouTube permissions and API quotas"
-            ],
-            "useCases": [
-              "Managing video metadata and playlists",
-              "Researching channel and video information through authenticated APIs"
-            ]
-          },
-          "category": "ai",
-          "displayName": "yutu",
-          "docs": "https://github.com/eat-pray-ai/yutu#readme",
-          "homepage": "https://yutu.ifor.dev",
-          "id": "brew:yutu",
-          "installURL": "pkgmgrmgr://install?package=brew%3Ayutu",
-          "lastUpdatedAt": "2026-07-25T22:12:53Z",
-          "manager": "homebrew",
-          "repository": "https://github.com/eat-pray-ai/yutu",
-          "researchedAt": "2026-07-27T13:01:16Z",
-          "sources": [
-            {
-              "kind": "primary",
-              "title": "yutu project repository",
-              "url": "https://github.com/eat-pray-ai/yutu"
-            },
-            {
-              "kind": "primary",
-              "title": "yutu product documentation",
-              "url": "https://yutu.ifor.dev/"
-            }
-          ],
-          "upstreamSummary": "MCP server and CLI for YouTube",
-          "version": null
-        }
-      ],
-      "selection": {
-        "firstStableReleaseAt": "2025-06-18T14:13:17Z",
-        "firstStableReleaseSourceURL": "https://github.com/dyoshikawa/rulesync/releases/tag/0.1.0",
-        "rationale": "newer"
-      },
-      "sources": [
-        {
-          "kind": "primary",
-          "title": "Rulesync project repository",
-          "url": "https://github.com/dyoshikawa/rulesync"
-        },
-        {
-          "kind": "primary",
-          "title": "Rulesync releases",
-          "url": "https://github.com/dyoshikawa/rulesync/releases"
-        },
-        {
-          "kind": "primary",
-          "title": "Rulesync documentation",
-          "url": "https://rulesync.dyoshikawa.com/"
-        },
-        {
-          "kind": "independent",
-          "title": "AGENTS.md open format",
-          "url": "https://agents.md/"
-        }
-      ],
-      "title": "Rulesync: One Set of Instructions, Many Agents",
-      "type": "editorial"
-    },
-    {
-      "batchID": "20260727T130116Z-edd93d29",
-      "id": "recently-updated:other:20260727T130116Z-f220bb45",
-      "packages": [
-        {
-          "agentSummary": "F1 Live Timing TUI for all F1 sessions with variable delay to sync to your TV",
-          "category": "other",
-          "displayName": "undercutf1",
-          "homepage": "https://amandhoot.com",
-          "id": "brew:undercutf1",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aundercutf1",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "TIFF library and utilities",
-          "category": "other",
-          "displayName": "libtiff",
-          "homepage": "https://libtiff.gitlab.io/libtiff/",
-          "id": "brew:libtiff",
-          "installURL": "pkgmgrmgr://install?package=brew%3Alibtiff",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Generic library support script",
-          "category": "other",
-          "displayName": "libtool",
-          "homepage": "https://www.gnu.org/software/libtool/",
-          "id": "brew:libtool",
-          "installURL": "pkgmgrmgr://install?package=brew%3Alibtool",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Provides cross-platform access to statistics about the system",
-          "category": "other",
-          "displayName": "libstatgrab",
-          "homepage": "https://libstatgrab.org/",
-          "id": "brew:libstatgrab",
-          "installURL": "pkgmgrmgr://install?package=brew%3Alibstatgrab",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Command-line editing facilities similar to the tcsh shell",
-          "category": "other",
-          "displayName": "libtecla",
-          "homepage": "https://sites.astro.caltech.edu/~mcs/tecla/",
-          "id": "brew:libtecla",
-          "installURL": "pkgmgrmgr://install?package=brew%3Alibtecla",
-          "manager": "homebrew"
-        }
-      ],
-      "publishedAt": "2026-07-27T13:01:16Z",
-      "title": "Recently Updated in Other",
-      "type": "recentlyUpdated"
-    },
-    {
-      "batchID": "20260727T130116Z-edd93d29",
-      "id": "new-packages:developer-tools:20260727T130116Z-f220bb45",
-      "packages": [
-        {
-          "agentSummary": "Opinionated Dockerfile linter",
-          "category": "developer-tools",
-          "displayName": "droast",
-          "homepage": "https://ewry.net/droast-dockerfile-linter/",
-          "id": "brew:droast",
-          "installURL": "pkgmgrmgr://install?package=brew%3Adroast",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Manage multiple git repos with sanity",
-          "category": "developer-tools",
-          "displayName": "gita",
-          "homepage": "https://github.com/nosarthur/gita",
-          "id": "brew:gita",
-          "installURL": "pkgmgrmgr://install?package=brew%3Agita",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Language server implementation for WGSL and WESL",
-          "category": "developer-tools",
-          "displayName": "wgsl-analyzer",
-          "homepage": "https://wgsl-analyzer.github.io",
-          "id": "brew:wgsl-analyzer",
-          "installURL": "pkgmgrmgr://install?package=brew%3Awgsl-analyzer",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Very fast linker for Linux",
-          "category": "developer-tools",
-          "displayName": "wild",
-          "homepage": "https://github.com/wild-linker/wild",
-          "id": "brew:wild",
-          "installURL": "pkgmgrmgr://install?package=brew%3Awild",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Human-friendly console utility for interacting with NEAR Protocol",
-          "category": "developer-tools",
-          "displayName": "near",
-          "homepage": "https://near.cli.rs",
-          "id": "brew:near",
-          "installURL": "pkgmgrmgr://install?package=brew%3Anear",
-          "manager": "homebrew"
-        }
-      ],
-      "publishedAt": "2026-07-27T13:01:16Z",
-      "title": "New Packages in Developer Tools",
-      "type": "newPackages"
-    },
-    {
-      "batchID": "20260727T130116Z-edd93d29",
-      "id": "recently-updated:data:20260727T130116Z-f220bb45",
-      "packages": [
-        {
-          "agentSummary": "Lightweight scripting language for querying databases",
-          "category": "data",
-          "displayName": "flux",
-          "homepage": "https://www.influxdata.com/products/flux/",
-          "id": "brew:flux",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aflux",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Interactive minimalist TUI to query JSON, CSV, and TSV using SQL",
-          "category": "data",
-          "displayName": "qo",
-          "homepage": "https://github.com/kiki-ki/go-qo",
-          "id": "brew:qo",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aqo",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Database clustering system for horizontal scaling of MySQL",
-          "category": "data",
-          "displayName": "vitess",
-          "homepage": "https://vitess.io",
-          "id": "brew:vitess",
-          "installURL": "pkgmgrmgr://install?package=brew%3Avitess",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Cost-effective and scalable monitoring solution and time series database",
-          "category": "data",
-          "displayName": "victoriametrics",
-          "homepage": "https://victoriametrics.com/",
-          "id": "brew:victoriametrics",
-          "installURL": "pkgmgrmgr://install?package=brew%3Avictoriametrics",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Open source user-friendly database for logs from VictoriaMetrics",
-          "category": "data",
-          "displayName": "victorialogs",
-          "homepage": "https://docs.victoriametrics.com/victorialogs/",
-          "id": "brew:victorialogs",
-          "installURL": "pkgmgrmgr://install?package=brew%3Avictorialogs",
-          "manager": "homebrew"
-        }
-      ],
-      "publishedAt": "2026-07-27T13:01:16Z",
-      "title": "Recently Updated in Data",
-      "type": "recentlyUpdated"
-    },
-    {
-      "artwork": {
         "alt": "An abstract compass joins three looping paths on a luminous mountain grid at sunrise.",
         "attribution": "Generated with OpenAI image generation",
         "boxColors": {
@@ -698,61 +270,169 @@
     },
     {
       "batchID": "20260723T140545Z-264ab575",
-      "id": "for-you:language-runtime:20260727T130116Z-f220bb45",
+      "id": "recently-updated:networking:20260723T140545Z-f220bb45",
       "packages": [
         {
-          "agentSummary": "Runtime typescript and ESM support for Node.js",
-          "category": "language-runtime",
-          "displayName": "jiti",
-          "homepage": "https://github.com/unjs/jiti#readme",
-          "id": "npm:jiti",
-          "installURL": "pkgmgrmgr://install?package=npm%3Ajiti",
+          "agentSummary": "Execute scripts on IMAP mailbox changes using IDLE",
+          "category": "networking",
+          "displayName": "goimapnotify",
+          "homepage": "https://gitlab.com/shackra/goimapnotify",
+          "id": "brew:goimapnotify",
+          "installURL": "pkgmgrmgr://install?package=brew%3Agoimapnotify",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Highly OpenSSH-compatible client with extended features",
+          "category": "networking",
+          "displayName": "trzsz-ssh",
+          "homepage": "https://trzsz.github.io/tssh",
+          "id": "brew:trzsz-ssh",
+          "installURL": "pkgmgrmgr://install?package=brew%3Atrzsz-ssh",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Utility to detect various technology for a given IP address",
+          "category": "networking",
+          "displayName": "cdncheck",
+          "homepage": "https://projectdiscovery.io",
+          "id": "brew:cdncheck",
+          "installURL": "pkgmgrmgr://install?package=brew%3Acdncheck",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Easiest, most secure way to use WireGuard and 2FA",
+          "category": "networking",
+          "displayName": "tailscale",
+          "homepage": "https://tailscale.com",
+          "id": "brew:tailscale",
+          "installURL": "pkgmgrmgr://install?package=brew%3Atailscale",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Network relay tool and a typo :)",
+          "category": "networking",
+          "displayName": "ehco",
+          "homepage": "https://github.com/Ehco1996/ehco",
+          "id": "brew:ehco",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aehco",
+          "manager": "homebrew"
+        }
+      ],
+      "publishedAt": "2026-07-23T14:05:45Z",
+      "title": "Recently Updated in Networking",
+      "type": "recentlyUpdated"
+    },
+    {
+      "batchID": "20260723T140545Z-264ab575",
+      "id": "for-you:cloud-infrastructure:20260723T140545Z-f220bb45",
+      "packages": [
+        {
+          "agentSummary": "Fun, full-featured, fully-local simulator for Cloudflare Workers",
+          "category": "cloud-infrastructure",
+          "displayName": "miniflare",
+          "homepage": "https://github.com/cloudflare/workers-sdk/tree/main/packages/miniflare#readme",
+          "id": "npm:miniflare",
+          "installURL": "pkgmgrmgr://install?package=npm%3Aminiflare",
           "manager": "npm"
         },
         {
-          "agentSummary": "Vite as Node.js runtime",
-          "category": "language-runtime",
-          "displayName": "vite-node",
-          "homepage": "https://github.com/antfu-collective/vite-node#readme",
-          "id": "npm:vite-node",
-          "installURL": "pkgmgrmgr://install?package=npm%3Avite-node",
+          "agentSummary": "Command-line interface for all things Cloudflare Workers",
+          "category": "cloud-infrastructure",
+          "displayName": "wrangler",
+          "homepage": "https://github.com/cloudflare/workers-sdk#readme",
+          "id": "npm:wrangler",
+          "installURL": "pkgmgrmgr://install?package=npm%3Awrangler",
           "manager": "npm"
         },
         {
-          "agentSummary": "👷 workerd, Cloudflare's JavaScript/Wasm Runtime",
-          "category": "language-runtime",
-          "displayName": "workerd",
-          "homepage": "https://github.com/cloudflare/workerd#readme",
-          "id": "npm:workerd",
-          "installURL": "pkgmgrmgr://install?package=npm%3Aworkerd",
+          "agentSummary": "AWS CDK CLI, the command line tool for CDK apps",
+          "category": "cloud-infrastructure",
+          "displayName": "aws-cdk",
+          "homepage": "https://github.com/aws/aws-cdk",
+          "id": "npm:aws-cdk",
+          "installURL": "pkgmgrmgr://install?package=npm%3Aaws-cdk",
           "manager": "npm"
         },
         {
-          "agentSummary": "Run any Edge Function from CLI or Node.js module.",
-          "category": "language-runtime",
-          "displayName": "edge-runtime",
-          "homepage": "https://edge-runtime.vercel.app/packages/runtime",
-          "id": "npm:edge-runtime",
-          "installURL": "pkgmgrmgr://install?package=npm%3Aedge-runtime",
+          "agentSummary": "The command-line interface for Vercel",
+          "category": "cloud-infrastructure",
+          "displayName": "vercel",
+          "homepage": "https://vercel.com",
+          "id": "npm:vercel",
+          "installURL": "pkgmgrmgr://install?package=npm%3Avercel",
           "manager": "npm"
         },
         {
-          "agentSummary": "node",
-          "category": "language-runtime",
-          "displayName": "node",
-          "homepage": "https://github.com/aredridel/node-bin-gen#readme",
-          "id": "npm:node",
-          "installURL": "pkgmgrmgr://install?package=npm%3Anode",
+          "agentSummary": "A Mock API for AWS Kinesis",
+          "category": "cloud-infrastructure",
+          "displayName": "kinesis-local",
+          "homepage": "https://github.com/etspaceman/kinesis-mock#readme",
+          "id": "npm:kinesis-local",
+          "installURL": "pkgmgrmgr://install?package=npm%3Akinesis-local",
           "manager": "npm"
         }
       ],
       "publishedAt": "2026-07-23T14:05:45Z",
-      "title": "For You in Language Runtime",
+      "title": "For You in Cloud Infrastructure",
       "type": "personalizedRecommendations"
     },
     {
       "batchID": "20260723T140545Z-264ab575",
-      "id": "new-packages:media:20260727T130116Z-f220bb45",
+      "id": "recently-updated:toys:20260723T140545Z-f220bb45",
+      "packages": [
+        {
+          "agentSummary": "Creates ASCII Art from text. A full implementation of the FIGfont spec.",
+          "category": "toys",
+          "displayName": "figlet",
+          "homepage": "https://github.com/patorjk/figlet.js#readme",
+          "id": "npm:figlet",
+          "installURL": "pkgmgrmgr://install?package=npm%3Afiglet",
+          "manager": "npm"
+        },
+        {
+          "agentSummary": "Cowsay but with ponies",
+          "category": "toys",
+          "displayName": "ponysay",
+          "homepage": "https://github.com/erkin/ponysay/",
+          "id": "brew:ponysay",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aponysay",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Generates ASCII tractor art",
+          "category": "toys",
+          "displayName": "tractorgen",
+          "homepage": "https://vergenet.net/~conrad/software/tractorgen/",
+          "id": "brew:tractorgen",
+          "installURL": "pkgmgrmgr://install?package=brew%3Atractorgen",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Small, configurable CLI that displays Japanese quotes in the terminal",
+          "category": "toys",
+          "displayName": "kotofetch",
+          "homepage": "https://github.com/hxpe-dev/kotofetch",
+          "id": "brew:kotofetch",
+          "installURL": "pkgmgrmgr://install?package=brew%3Akotofetch",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Infamous electronic fortune-cookie generator",
+          "category": "toys",
+          "displayName": "fortune",
+          "homepage": "https://www.ibiblio.org/pub/linux/games/amusements/fortune/!INDEX.html",
+          "id": "brew:fortune",
+          "installURL": "pkgmgrmgr://install?package=brew%3Afortune",
+          "manager": "homebrew"
+        }
+      ],
+      "publishedAt": "2026-07-23T14:05:45Z",
+      "title": "Recently Updated in Toys",
+      "type": "recentlyUpdated"
+    },
+    {
+      "batchID": "20260723T140545Z-264ab575",
+      "id": "new-packages:media:20260723T140545Z-f220bb45",
       "packages": [
         {
           "agentSummary": "Self-hosted media streaming server and Plex alternative for movies and TV",
@@ -770,156 +450,57 @@
     },
     {
       "batchID": "20260723T140545Z-264ab575",
-      "id": "recently-updated:cloud-infrastructure:20260727T130116Z-f220bb45",
+      "id": "recently-updated:science:20260723T140545Z-f220bb45",
       "packages": [
         {
-          "agentSummary": "<img style=\"margin-bottom: 20px;\" src=\"https://myvaltech.s3.us-east-2.amazonaws.com/logo-terminal-rounded.png\" width=\"60px\" />",
-          "category": "cloud-infrastructure",
-          "displayName": "valtech-components",
-          "homepage": "https://github.com/solucionesvaltech/myvaltech#readme",
-          "id": "npm:valtech-components",
-          "installURL": "pkgmgrmgr://install?package=npm%3Avaltech-components",
+          "agentSummary": "Successor of BWA-MEM for short-read alignment",
+          "category": "science",
+          "displayName": "minibwa",
+          "homepage": "https://github.com/lh3/minibwa",
+          "id": "brew:minibwa",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aminibwa",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Make electronics using Typescript, React, and AI tools.",
+          "category": "science",
+          "displayName": "tscircuit",
+          "homepage": "https://github.com/tscircuit/tscircuit#readme",
+          "id": "npm:tscircuit",
+          "installURL": "pkgmgrmgr://install?package=npm%3Atscircuit",
           "manager": "npm"
         },
         {
-          "agentSummary": "Official Go implementation of the Ethereum protocol",
-          "category": "cloud-infrastructure",
-          "displayName": "ethereum",
-          "homepage": "https://geth.ethereum.org/",
-          "id": "brew:ethereum",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aethereum",
+          "agentSummary": "Annotate a VCF with other VCFs/BEDs/tabixed files",
+          "category": "science",
+          "displayName": "vcfanno",
+          "homepage": "https://genomebiology.biomedcentral.com/articles/10.1186/s13059-016-0973-5",
+          "id": "brew:vcfanno",
+          "installURL": "pkgmgrmgr://install?package=brew%3Avcfanno",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "CLI for Epinio, the Application Development Engine for Kubernetes",
-          "category": "cloud-infrastructure",
-          "displayName": "epinio",
-          "homepage": "https://epinio.io/",
-          "id": "brew:epinio",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aepinio",
+          "agentSummary": "Elpi extension language for Rocq",
+          "category": "science",
+          "displayName": "rocq-elpi",
+          "homepage": "https://github.com/LPCIC/coq-elpi",
+          "id": "brew:rocq-elpi",
+          "installURL": "pkgmgrmgr://install?package=brew%3Arocq-elpi",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Command-line utility for operating Envoy Gateway",
-          "category": "cloud-infrastructure",
-          "displayName": "egctl",
-          "homepage": "https://gateway.envoyproxy.io/",
-          "id": "brew:egctl",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aegctl",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "DevOps management tool",
-          "category": "cloud-infrastructure",
-          "displayName": "juju",
-          "homepage": "https://canonical.com/juju",
-          "id": "brew:juju",
-          "installURL": "pkgmgrmgr://install?package=brew%3Ajuju",
+          "agentSummary": "Structure-from-Motion and Multi-View Stereo",
+          "category": "science",
+          "displayName": "colmap",
+          "homepage": "https://colmap.github.io/",
+          "id": "brew:colmap",
+          "installURL": "pkgmgrmgr://install?package=brew%3Acolmap",
           "manager": "homebrew"
         }
       ],
       "publishedAt": "2026-07-23T14:05:45Z",
-      "title": "Recently Updated in Cloud Infrastructure",
+      "title": "Recently Updated in Science",
       "type": "recentlyUpdated"
-    },
-    {
-      "batchID": "20260723T140545Z-264ab575",
-      "id": "new-packages:ai:20260727T130116Z-f220bb45",
-      "packages": [
-        {
-          "agentSummary": "Fast local AI engine for Apple Silicon with an OpenAI-compatible API",
-          "category": "ai",
-          "displayName": "rapid-mlx",
-          "homepage": "https://github.com/raullenchai/Rapid-MLX",
-          "id": "brew:rapid-mlx",
-          "installURL": "pkgmgrmgr://install?package=brew%3Arapid-mlx",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Dependency manager for AI agent configuration",
-          "category": "ai",
-          "displayName": "apm",
-          "homepage": "https://microsoft.github.io/apm/",
-          "id": "brew:apm",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aapm",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "CLI for managing skills and external CLIs",
-          "category": "ai",
-          "displayName": "advai-cli",
-          "homepage": "https://github.com/Advai-X/advai-cli",
-          "id": "brew:advai-cli",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aadvai-cli",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Terminal pixel-art office for AI coding agents",
-          "category": "ai",
-          "displayName": "pixtuoid",
-          "homepage": "https://github.com/IvanWng97/pixtuoid",
-          "id": "brew:pixtuoid",
-          "installURL": "pkgmgrmgr://install?package=brew%3Apixtuoid",
-          "manager": "homebrew"
-        }
-      ],
-      "publishedAt": "2026-07-23T14:05:45Z",
-      "title": "New Packages in Ai",
-      "type": "newPackages"
-    },
-    {
-      "batchID": "20260723T140545Z-264ab575",
-      "id": "for-you:games:20260727T130116Z-f220bb45",
-      "packages": [
-        {
-          "agentSummary": "Query for the status of any game server in Node.JS",
-          "category": "games",
-          "displayName": "gamedig",
-          "homepage": "https://github.com/gamedig/node-gamedig#readme",
-          "id": "npm:gamedig",
-          "installURL": "pkgmgrmgr://install?package=npm%3Agamedig",
-          "manager": "npm"
-        },
-        {
-          "agentSummary": "The Stockfish chess engine in Web Assembly (WASM)",
-          "category": "games",
-          "displayName": "stockfish",
-          "homepage": "https://github.com/nmrugg/stockfish.js#readme",
-          "id": "npm:stockfish",
-          "installURL": "pkgmgrmgr://install?package=npm%3Astockfish",
-          "manager": "npm"
-        },
-        {
-          "agentSummary": "Rom manager for AdvanceMAME/MESS",
-          "category": "games",
-          "displayName": "advancescan",
-          "homepage": "https://www.advancemame.it/scan-readme.html",
-          "id": "brew:advancescan",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aadvancescan",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Near-future Sci-Fi roguelike and tactical squad combat game",
-          "category": "games",
-          "displayName": "allureofthestars",
-          "homepage": "https://allureofthestars.com/",
-          "id": "brew:allureofthestars",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aallureofthestars",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Dungeon exploration game",
-          "category": "games",
-          "displayName": "angband",
-          "homepage": "https://rephial.org/",
-          "id": "brew:angband",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aangband",
-          "manager": "homebrew"
-        }
-      ],
-      "publishedAt": "2026-07-23T14:05:45Z",
-      "title": "For You in Games",
-      "type": "personalizedRecommendations"
     },
     {
       "artwork": {
@@ -1156,115 +737,61 @@
     },
     {
       "batchID": "20260720T130253Z-661909b5",
-      "id": "recently-updated:security:20260727T130116Z-f220bb45",
+      "id": "for-you:ai:20260723T140545Z-f220bb45",
       "packages": [
         {
-          "agentSummary": "Enpass command-line client",
-          "category": "security",
-          "displayName": "enpass-cli",
-          "homepage": "https://github.com/hazcod/enpass-cli",
-          "id": "brew:enpass-cli",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aenpass-cli",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Static Application Security Testing (SAST) tool",
-          "category": "security",
-          "displayName": "intercept",
-          "homepage": "https://intercept.cc",
-          "id": "brew:intercept",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aintercept",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Fast and multi-purpose HTTP toolkit",
-          "category": "security",
-          "displayName": "httpx",
-          "homepage": "https://github.com/projectdiscovery/httpx",
-          "id": "brew:httpx",
-          "installURL": "pkgmgrmgr://install?package=brew%3Ahttpx",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Fast web fuzzer written in Go",
-          "category": "security",
-          "displayName": "ffuf",
-          "homepage": "https://github.com/ffuf/ffuf",
-          "id": "brew:ffuf",
-          "installURL": "pkgmgrmgr://install?package=brew%3Affuf",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Uses favicon.ico to improve the target recon phase",
-          "category": "security",
-          "displayName": "favirecon",
-          "homepage": "https://edoardottt.com/",
-          "id": "brew:favirecon",
-          "installURL": "pkgmgrmgr://install?package=brew%3Afavirecon",
-          "manager": "homebrew"
-        }
-      ],
-      "publishedAt": "2026-07-20T13:02:53Z",
-      "title": "Recently Updated in Security",
-      "type": "recentlyUpdated"
-    },
-    {
-      "batchID": "20260720T130253Z-661909b5",
-      "id": "for-you:networking:20260727T130116Z-f220bb45",
-      "packages": [
-        {
-          "agentSummary": "ECMAScript parser",
-          "category": "networking",
-          "displayName": "acorn",
-          "homepage": "https://github.com/acornjs/acorn",
-          "id": "npm:acorn",
-          "installURL": "pkgmgrmgr://install?package=npm%3Aacorn",
+          "agentSummary": "MCP server for Chrome DevTools",
+          "category": "ai",
+          "displayName": "chrome-devtools-mcp",
+          "homepage": "https://github.com/ChromeDevTools/chrome-devtools-mcp#readme",
+          "id": "npm:chrome-devtools-mcp",
+          "installURL": "pkgmgrmgr://install?package=npm%3Achrome-devtools-mcp",
           "manager": "npm"
         },
         {
-          "agentSummary": "Share target browsers between different front-end tools, like Autoprefixer, Stylelint and babel-env-preset",
-          "category": "networking",
-          "displayName": "browserslist",
-          "homepage": "https://github.com/browserslist/browserslist#readme",
-          "id": "npm:browserslist",
-          "installURL": "pkgmgrmgr://install?package=npm%3Abrowserslist",
+          "agentSummary": "Multi-channel AI gateway with extensible messaging integrations",
+          "category": "ai",
+          "displayName": "openclaw",
+          "homepage": "https://github.com/openclaw/openclaw#readme",
+          "id": "npm:openclaw",
+          "installURL": "pkgmgrmgr://install?package=npm%3Aopenclaw",
           "manager": "npm"
         },
         {
-          "agentSummary": "A library for obtaining browser versions with their maximum supported Baseline feature set and Widely Available status.",
-          "category": "networking",
-          "displayName": "baseline-browser-mapping",
-          "homepage": "https://github.com/web-platform-dx/baseline-browser-mapping#readme",
-          "id": "npm:baseline-browser-mapping",
-          "installURL": "pkgmgrmgr://install?package=npm%3Abaseline-browser-mapping",
+          "agentSummary": "Lean output compaction for terminal-heavy agent workflows.",
+          "category": "ai",
+          "displayName": "tokenjuice",
+          "homepage": "https://github.com/vincentkoc/tokenjuice",
+          "id": "npm:tokenjuice",
+          "installURL": "pkgmgrmgr://install?package=npm%3Atokenjuice",
           "manager": "npm"
         },
         {
-          "agentSummary": "Parse CSS and add vendor prefixes to CSS rules using values from the Can I Use website",
-          "category": "networking",
-          "displayName": "autoprefixer",
-          "homepage": "https://github.com/postcss/autoprefixer#readme",
-          "id": "npm:autoprefixer",
-          "installURL": "pkgmgrmgr://install?package=npm%3Aautoprefixer",
+          "agentSummary": "The open agent skills ecosystem",
+          "category": "ai",
+          "displayName": "skills",
+          "homepage": "https://github.com/vercel-labs/skills#readme",
+          "id": "npm:skills",
+          "installURL": "pkgmgrmgr://install?package=npm%3Askills",
           "manager": "npm"
         },
         {
-          "agentSummary": "Minimal H(TTP) framework built for high performance and portability.",
-          "category": "networking",
-          "displayName": "h3",
-          "homepage": "https://h3.dev",
-          "id": "npm:h3",
-          "installURL": "pkgmgrmgr://install?package=npm%3Ah3",
+          "agentSummary": "opencode-ai is available through npm for installation and management in Package Manager Manager.",
+          "category": "ai",
+          "displayName": "opencode-ai",
+          "homepage": null,
+          "id": "npm:opencode-ai",
+          "installURL": "pkgmgrmgr://install?package=npm%3Aopencode-ai",
           "manager": "npm"
         }
       ],
       "publishedAt": "2026-07-20T13:02:53Z",
-      "title": "For You in Networking",
+      "title": "For You in Ai",
       "type": "personalizedRecommendations"
     },
     {
       "batchID": "20260720T130253Z-661909b5",
-      "id": "recently-updated:system:20260727T130116Z-f220bb45",
+      "id": "recently-updated:system:20260723T140545Z-f220bb45",
       "packages": [
         {
           "agentSummary": "Cross-platform system diagnostics TUI",
@@ -1318,183 +845,373 @@
     },
     {
       "batchID": "20260720T130253Z-661909b5",
-      "id": "for-you:security:20260727T130116Z-f220bb45",
+      "id": "for-you:productivity:20260723T140545Z-f220bb45",
       "packages": [
         {
-          "agentSummary": "A tiny (118 bytes), secure URL-friendly unique string ID generator",
-          "category": "security",
-          "displayName": "nanoid",
-          "homepage": "https://github.com/ai/nanoid#readme",
-          "id": "npm:nanoid",
-          "installURL": "pkgmgrmgr://install?package=npm%3Ananoid",
+          "agentSummary": "A live preview of your emails right in your browser.",
+          "category": "productivity",
+          "displayName": "react-email",
+          "homepage": null,
+          "id": "npm:react-email",
+          "installURL": "pkgmgrmgr://install?package=npm%3Areact-email",
           "manager": "npm"
         },
         {
-          "agentSummary": "Streamable SHA hashes in pure javascript",
-          "category": "security",
-          "displayName": "sha.js",
-          "homepage": "https://github.com/crypto-browserify/sha.js",
-          "id": "npm:sha.js",
-          "installURL": "pkgmgrmgr://install?package=npm%3Asha.js",
+          "agentSummary": "This package helps to transform resources to be used in a typesafe i18next project.",
+          "category": "productivity",
+          "displayName": "i18next-resources-for-ts",
+          "homepage": "https://github.com/i18next/i18next-resources-for-ts",
+          "id": "npm:i18next-resources-for-ts",
+          "installURL": "pkgmgrmgr://install?package=npm%3Ai18next-resources-for-ts",
           "manager": "npm"
         },
         {
-          "agentSummary": "Optimized bcrypt in plain JavaScript with zero dependencies, with TypeScript support. Compatible to 'bcrypt'.",
-          "category": "security",
-          "displayName": "bcryptjs",
-          "homepage": "https://github.com/dcodeIO/bcrypt.js#readme",
-          "id": "npm:bcryptjs",
-          "installURL": "pkgmgrmgr://install?package=npm%3Abcryptjs",
+          "agentSummary": "Read and modify Office Add-in manifest files.",
+          "category": "productivity",
+          "displayName": "office-addin-manifest",
+          "homepage": "https://github.com/OfficeDev/Office-Addin-Scripts#readme",
+          "id": "npm:office-addin-manifest",
+          "installURL": "pkgmgrmgr://install?package=npm%3Aoffice-addin-manifest",
           "manager": "npm"
         },
         {
-          "agentSummary": "detect possibly catastrophic, exponential-time regular expressions",
-          "category": "security",
-          "displayName": "safe-regex2",
-          "homepage": "https://github.com/fastify/safe-regex2",
-          "id": "npm:safe-regex2",
-          "installURL": "pkgmgrmgr://install?package=npm%3Asafe-regex2",
+          "agentSummary": "Google Workspace CLI — dynamic command surface from Discovery Service",
+          "category": "productivity",
+          "displayName": "gws-with-audit-log",
+          "homepage": "https://github.com/googleworkspace/cli",
+          "id": "npm:gws-with-audit-log",
+          "installURL": "pkgmgrmgr://install?package=npm%3Agws-with-audit-log",
           "manager": "npm"
         },
         {
-          "agentSummary": "Sanitize untrusted HTML (to prevent XSS) with a configuration specified by a Whitelist",
-          "category": "security",
-          "displayName": "xss",
-          "homepage": "https://github.com/leizongmin/js-xss",
-          "id": "npm:xss",
-          "installURL": "pkgmgrmgr://install?package=npm%3Axss",
+          "agentSummary": "A unified, high-performance i18next CLI.",
+          "category": "productivity",
+          "displayName": "i18next-cli",
+          "homepage": "https://github.com/i18next/i18next-cli",
+          "id": "npm:i18next-cli",
+          "installURL": "pkgmgrmgr://install?package=npm%3Ai18next-cli",
           "manager": "npm"
         }
       ],
       "publishedAt": "2026-07-20T13:02:53Z",
-      "title": "For You in Security",
+      "title": "For You in Productivity",
       "type": "personalizedRecommendations"
     },
     {
       "batchID": "20260720T130253Z-661909b5",
-      "id": "recently-updated:language-runtime:20260727T130116Z-f220bb45",
+      "id": "recently-updated:security:20260723T140545Z-f220bb45",
       "packages": [
         {
-          "agentSummary": "👷 workerd, Cloudflare's JavaScript/Wasm Runtime",
-          "category": "language-runtime",
-          "displayName": "workerd",
-          "homepage": "https://github.com/cloudflare/workerd#readme",
-          "id": "npm:workerd",
-          "installURL": "pkgmgrmgr://install?package=npm%3Aworkerd",
-          "manager": "npm"
-        },
-        {
-          "agentSummary": "Small Clojure interpreter, linter and formatter",
-          "category": "language-runtime",
-          "displayName": "joker",
-          "homepage": "https://joker-lang.org/",
-          "id": "brew:joker",
-          "installURL": "pkgmgrmgr://install?package=brew%3Ajoker",
+          "agentSummary": "Enpass command-line client",
+          "category": "security",
+          "displayName": "enpass-cli",
+          "homepage": "https://github.com/hazcod/enpass-cli",
+          "id": "brew:enpass-cli",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aenpass-cli",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Asynchronous I/O for Lua",
-          "category": "language-runtime",
-          "displayName": "luvit",
-          "homepage": "https://luvit.io",
-          "id": "brew:luvit",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aluvit",
+          "agentSummary": "Static Application Security Testing (SAST) tool",
+          "category": "security",
+          "displayName": "intercept",
+          "homepage": "https://intercept.cc",
+          "id": "brew:intercept",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aintercept",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Just-In-Time Compiler (JIT) for the Lua programming language",
-          "category": "language-runtime",
-          "displayName": "luajit",
-          "homepage": "https://luajit.org/luajit.html",
-          "id": "brew:luajit",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aluajit",
+          "agentSummary": "Fast and multi-purpose HTTP toolkit",
+          "category": "security",
+          "displayName": "httpx",
+          "homepage": "https://github.com/projectdiscovery/httpx",
+          "id": "brew:httpx",
+          "installURL": "pkgmgrmgr://install?package=brew%3Ahttpx",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Mature, production-ready implementation of the Raku language",
-          "category": "language-runtime",
-          "displayName": "rakudo",
-          "homepage": "https://rakudo.org",
-          "id": "brew:rakudo",
-          "installURL": "pkgmgrmgr://install?package=brew%3Arakudo",
+          "agentSummary": "Fast web fuzzer written in Go",
+          "category": "security",
+          "displayName": "ffuf",
+          "homepage": "https://github.com/ffuf/ffuf",
+          "id": "brew:ffuf",
+          "installURL": "pkgmgrmgr://install?package=brew%3Affuf",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Uses favicon.ico to improve the target recon phase",
+          "category": "security",
+          "displayName": "favirecon",
+          "homepage": "https://edoardottt.com/",
+          "id": "brew:favirecon",
+          "installURL": "pkgmgrmgr://install?package=brew%3Afavirecon",
           "manager": "homebrew"
         }
       ],
       "publishedAt": "2026-07-20T13:02:53Z",
-      "title": "Recently Updated in Language Runtime",
+      "title": "Recently Updated in Security",
       "type": "recentlyUpdated"
     },
     {
       "batchID": "20260720T130253Z-661909b5",
-      "id": "new-packages:cloud-infrastructure:20260727T130116Z-f220bb45",
+      "id": "for-you:networking:20260723T140545Z-f220bb45",
       "packages": [
         {
-          "agentSummary": "Command-line interface for Vercel",
-          "category": "cloud-infrastructure",
-          "displayName": "vercel",
-          "homepage": "https://vercel.com/home",
-          "id": "brew:vercel",
-          "installURL": "pkgmgrmgr://install?package=brew%3Avercel",
+          "agentSummary": "ECMAScript parser",
+          "category": "networking",
+          "displayName": "acorn",
+          "homepage": "https://github.com/acornjs/acorn",
+          "id": "npm:acorn",
+          "installURL": "pkgmgrmgr://install?package=npm%3Aacorn",
+          "manager": "npm"
+        },
+        {
+          "agentSummary": "Share target browsers between different front-end tools, like Autoprefixer, Stylelint and babel-env-preset",
+          "category": "networking",
+          "displayName": "browserslist",
+          "homepage": "https://github.com/browserslist/browserslist#readme",
+          "id": "npm:browserslist",
+          "installURL": "pkgmgrmgr://install?package=npm%3Abrowserslist",
+          "manager": "npm"
+        },
+        {
+          "agentSummary": "A library for obtaining browser versions with their maximum supported Baseline feature set and Widely Available status.",
+          "category": "networking",
+          "displayName": "baseline-browser-mapping",
+          "homepage": "https://github.com/web-platform-dx/baseline-browser-mapping#readme",
+          "id": "npm:baseline-browser-mapping",
+          "installURL": "pkgmgrmgr://install?package=npm%3Abaseline-browser-mapping",
+          "manager": "npm"
+        },
+        {
+          "agentSummary": "Parse CSS and add vendor prefixes to CSS rules using values from the Can I Use website",
+          "category": "networking",
+          "displayName": "autoprefixer",
+          "homepage": "https://github.com/postcss/autoprefixer#readme",
+          "id": "npm:autoprefixer",
+          "installURL": "pkgmgrmgr://install?package=npm%3Aautoprefixer",
+          "manager": "npm"
+        },
+        {
+          "agentSummary": "Minimal H(TTP) framework built for high performance and portability.",
+          "category": "networking",
+          "displayName": "h3",
+          "homepage": "https://h3.dev",
+          "id": "npm:h3",
+          "installURL": "pkgmgrmgr://install?package=npm%3Ah3",
+          "manager": "npm"
+        }
+      ],
+      "publishedAt": "2026-07-20T13:02:53Z",
+      "title": "For You in Networking",
+      "type": "personalizedRecommendations"
+    },
+    {
+      "batchID": "20260720T130253Z-661909b5",
+      "id": "recently-updated:media:20260723T140545Z-f220bb45",
+      "packages": [
+        {
+          "agentSummary": "Utility for exporting data from Ente and decrypt the export from Ente Auth",
+          "category": "media",
+          "displayName": "ente-cli",
+          "homepage": "https://github.com/ente-io/",
+          "id": "brew:ente-cli",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aente-cli",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Fast and secure server for resizing and converting remote images",
+          "category": "media",
+          "displayName": "imgproxy",
+          "homepage": "https://imgproxy.net",
+          "id": "brew:imgproxy",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aimgproxy",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Optimize and resize images",
+          "category": "media",
+          "displayName": "imgdiet",
+          "homepage": "https://git.sr.ht/~jamesponddotco/imgdiet-go",
+          "id": "brew:imgdiet",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aimgdiet",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "FFmpeg automation layer",
+          "category": "media",
+          "displayName": "ffmate",
+          "homepage": "https://docs.ffmate.io",
+          "id": "brew:ffmate",
+          "installURL": "pkgmgrmgr://install?package=brew%3Affmate",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Toolkit expanding video processing capabilities",
+          "category": "media",
+          "displayName": "videoalchemy",
+          "homepage": "https://viddotech.github.io/videoalchemy/",
+          "id": "brew:videoalchemy",
+          "installURL": "pkgmgrmgr://install?package=brew%3Avideoalchemy",
           "manager": "homebrew"
         }
       ],
       "publishedAt": "2026-07-20T13:02:53Z",
-      "title": "New Packages in Cloud Infrastructure",
-      "type": "newPackages"
+      "title": "Recently Updated in Media",
+      "type": "recentlyUpdated"
     },
     {
       "batchID": "20260720T130253Z-661909b5",
-      "id": "for-you:ai:20260727T130116Z-f220bb45",
+      "deck": "10 agent CLIs and assistants",
+      "id": "install-pack:agent-pack:20260723T140545Z-b4efaed3",
       "packages": [
         {
-          "agentSummary": "MCP server for Chrome DevTools",
-          "category": "ai",
-          "displayName": "chrome-devtools-mcp",
-          "homepage": "https://github.com/ChromeDevTools/chrome-devtools-mcp#readme",
-          "id": "npm:chrome-devtools-mcp",
-          "installURL": "pkgmgrmgr://install?package=npm%3Achrome-devtools-mcp",
-          "manager": "npm"
+          "agentSummary": "OpenAI's coding agent that runs in your terminal",
+          "category": null,
+          "displayName": "codex",
+          "homepage": "https://github.com/openai/codex",
+          "id": "brew:cask:codex",
+          "installURL": "pkgmgrmgr://install?package=brew%3Acask%3Acodex",
+          "manager": "homebrew"
         },
         {
-          "agentSummary": "Multi-channel AI gateway with extensible messaging integrations",
-          "category": "ai",
-          "displayName": "openclaw",
-          "homepage": "https://github.com/openclaw/openclaw#readme",
-          "id": "npm:openclaw",
-          "installURL": "pkgmgrmgr://install?package=npm%3Aopenclaw",
-          "manager": "npm"
+          "agentSummary": "Terminal-based AI coding assistant",
+          "category": null,
+          "displayName": "claude-code",
+          "homepage": "https://claude.com/product/claude-code",
+          "id": "brew:cask:claude-code",
+          "installURL": "pkgmgrmgr://install?package=brew%3Acask%3Aclaude-code",
+          "manager": "homebrew"
         },
         {
-          "agentSummary": "Lean output compaction for terminal-heavy agent workflows.",
+          "agentSummary": "Open source, extensible AI agent that goes beyond code suggestions",
           "category": "ai",
-          "displayName": "tokenjuice",
-          "homepage": "https://github.com/vincentkoc/tokenjuice",
-          "id": "npm:tokenjuice",
-          "installURL": "pkgmgrmgr://install?package=npm%3Atokenjuice",
-          "manager": "npm"
+          "displayName": "block-goose-cli",
+          "homepage": "https://goose-docs.ai/",
+          "id": "brew:block-goose-cli",
+          "installURL": "pkgmgrmgr://install?package=brew%3Ablock-goose-cli",
+          "manager": "homebrew"
         },
         {
-          "agentSummary": "The open agent skills ecosystem",
+          "agentSummary": "AI pair programming in your terminal",
           "category": "ai",
-          "displayName": "skills",
-          "homepage": "https://github.com/vercel-labs/skills#readme",
-          "id": "npm:skills",
-          "installURL": "pkgmgrmgr://install?package=npm%3Askills",
-          "manager": "npm"
+          "displayName": "aider",
+          "homepage": "https://aider.chat/",
+          "id": "brew:aider",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aaider",
+          "manager": "homebrew"
         },
         {
-          "agentSummary": "opencode-ai is available through npm for installation and management in Package Manager Manager.",
+          "agentSummary": "AI coding agent, built for the terminal",
           "category": "ai",
-          "displayName": "opencode-ai",
-          "homepage": null,
-          "id": "npm:opencode-ai",
-          "installURL": "pkgmgrmgr://install?package=npm%3Aopencode-ai",
-          "manager": "npm"
+          "displayName": "opencode",
+          "homepage": "https://opencode.ai",
+          "id": "brew:opencode",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aopencode",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Interact with Google Gemini AI models from the command-line",
+          "category": "ai",
+          "displayName": "gemini-cli",
+          "homepage": "https://geminicli.com",
+          "id": "brew:gemini-cli",
+          "installURL": "pkgmgrmgr://install?package=brew%3Agemini-cli",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "AI-powered command-line workflow tool for developers",
+          "category": "ai",
+          "displayName": "qwen-code",
+          "homepage": "https://github.com/QwenLM/qwen-code",
+          "id": "brew:qwen-code",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aqwen-code",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "CLI tool for analyzing Claude Code usage from local JSONL files",
+          "category": "ai",
+          "displayName": "ccusage",
+          "homepage": "https://github.com/ccusage/ccusage",
+          "id": "brew:ccusage",
+          "installURL": "pkgmgrmgr://install?package=brew%3Accusage",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Access large language models from the command-line",
+          "category": "ai",
+          "displayName": "llm",
+          "homepage": "https://llm.datasette.io/",
+          "id": "brew:llm",
+          "installURL": "pkgmgrmgr://install?package=brew%3Allm",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "AI on the command-line",
+          "category": "ai",
+          "displayName": "mods",
+          "homepage": "https://github.com/charmbracelet/mods",
+          "id": "brew:mods",
+          "installURL": "pkgmgrmgr://install?package=brew%3Amods",
+          "manager": "homebrew"
         }
       ],
       "publishedAt": "2026-07-20T13:02:53Z",
-      "title": "For You in Ai",
-      "type": "personalizedRecommendations"
+      "title": "Agent Pack",
+      "type": "installPack"
+    },
+    {
+      "batchID": "20260720T130253Z-661909b5",
+      "id": "recently-updated:cloud-infrastructure:20260723T140545Z-f220bb45",
+      "packages": [
+        {
+          "agentSummary": "<img style=\"margin-bottom: 20px;\" src=\"https://myvaltech.s3.us-east-2.amazonaws.com/logo-terminal-rounded.png\" width=\"60px\" />",
+          "category": "cloud-infrastructure",
+          "displayName": "valtech-components",
+          "homepage": "https://github.com/solucionesvaltech/myvaltech#readme",
+          "id": "npm:valtech-components",
+          "installURL": "pkgmgrmgr://install?package=npm%3Avaltech-components",
+          "manager": "npm"
+        },
+        {
+          "agentSummary": "Official Go implementation of the Ethereum protocol",
+          "category": "cloud-infrastructure",
+          "displayName": "ethereum",
+          "homepage": "https://geth.ethereum.org/",
+          "id": "brew:ethereum",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aethereum",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "CLI for Epinio, the Application Development Engine for Kubernetes",
+          "category": "cloud-infrastructure",
+          "displayName": "epinio",
+          "homepage": "https://epinio.io/",
+          "id": "brew:epinio",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aepinio",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Command-line utility for operating Envoy Gateway",
+          "category": "cloud-infrastructure",
+          "displayName": "egctl",
+          "homepage": "https://gateway.envoyproxy.io/",
+          "id": "brew:egctl",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aegctl",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "DevOps management tool",
+          "category": "cloud-infrastructure",
+          "displayName": "juju",
+          "homepage": "https://canonical.com/juju",
+          "id": "brew:juju",
+          "installURL": "pkgmgrmgr://install?package=brew%3Ajuju",
+          "manager": "homebrew"
+        }
+      ],
+      "publishedAt": "2026-07-20T13:02:53Z",
+      "title": "Recently Updated in Cloud Infrastructure",
+      "type": "recentlyUpdated"
     },
     {
       "artwork": {
@@ -1737,61 +1454,160 @@
     },
     {
       "batchID": "20260716T225252Z-72f77757",
-      "id": "recently-updated:toys:20260727T130116Z-f220bb45",
+      "id": "new-packages:system:20260723T140545Z-f220bb45",
       "packages": [
         {
-          "agentSummary": "Creates ASCII Art from text. A full implementation of the FIGfont spec.",
-          "category": "toys",
-          "displayName": "figlet",
-          "homepage": "https://github.com/patorjk/figlet.js#readme",
-          "id": "npm:figlet",
-          "installURL": "pkgmgrmgr://install?package=npm%3Afiglet",
-          "manager": "npm"
-        },
-        {
-          "agentSummary": "Cowsay but with ponies",
-          "category": "toys",
-          "displayName": "ponysay",
-          "homepage": "https://github.com/erkin/ponysay/",
-          "id": "brew:ponysay",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aponysay",
+          "agentSummary": "Vhost-user virtio-fs device backend written in Rust",
+          "category": "system",
+          "displayName": "virtiofsd",
+          "homepage": "https://gitlab.com/virtio-fs/virtiofsd",
+          "id": "brew:virtiofsd",
+          "installURL": "pkgmgrmgr://install?package=brew%3Avirtiofsd",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Generates ASCII tractor art",
-          "category": "toys",
-          "displayName": "tractorgen",
-          "homepage": "https://vergenet.net/~conrad/software/tractorgen/",
-          "id": "brew:tractorgen",
-          "installURL": "pkgmgrmgr://install?package=brew%3Atractorgen",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Small, configurable CLI that displays Japanese quotes in the terminal",
-          "category": "toys",
-          "displayName": "kotofetch",
-          "homepage": "https://github.com/hxpe-dev/kotofetch",
-          "id": "brew:kotofetch",
-          "installURL": "pkgmgrmgr://install?package=brew%3Akotofetch",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Infamous electronic fortune-cookie generator",
-          "category": "toys",
-          "displayName": "fortune",
-          "homepage": "https://www.ibiblio.org/pub/linux/games/amusements/fortune/!INDEX.html",
-          "id": "brew:fortune",
-          "installURL": "pkgmgrmgr://install?package=brew%3Afortune",
+          "agentSummary": "Ultra-fast duplicate file finder TUI/GUI",
+          "category": "system",
+          "displayName": "dskditto",
+          "homepage": "https://github.com/jdefrancesco/dskDitto",
+          "id": "brew:dskditto",
+          "installURL": "pkgmgrmgr://install?package=brew%3Adskditto",
           "manager": "homebrew"
         }
       ],
       "publishedAt": "2026-07-16T22:52:52Z",
-      "title": "Recently Updated in Toys",
+      "title": "New Packages in System",
+      "type": "newPackages"
+    },
+    {
+      "batchID": "20260716T225252Z-72f77757",
+      "id": "recently-updated:productivity:20260723T140545Z-f220bb45",
+      "packages": [
+        {
+          "agentSummary": "CLI email client written in Rust",
+          "category": "productivity",
+          "displayName": "himalaya",
+          "homepage": "https://pimalaya.org",
+          "id": "brew:himalaya",
+          "installURL": "pkgmgrmgr://install?package=brew%3Ahimalaya",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Command-line tool for porting Excalidraw diagrams to Gliffy",
+          "category": "productivity",
+          "displayName": "excalidraw-converter",
+          "homepage": "https://github.com/sindrel/excalidraw-converter",
+          "id": "brew:excalidraw-converter",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aexcalidraw-converter",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Convert Evernote .enex file to Markdown",
+          "category": "productivity",
+          "displayName": "evernote2md",
+          "homepage": "https://github.com/wormi4ok/evernote2md",
+          "id": "brew:evernote2md",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aevernote2md",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Feature-rich interactive Jira CLI",
+          "category": "productivity",
+          "displayName": "jira-cli",
+          "homepage": "https://github.com/ankitpokhrel/jira-cli",
+          "id": "brew:jira-cli",
+          "installURL": "pkgmgrmgr://install?package=brew%3Ajira-cli",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Command-line invoice generator",
+          "category": "productivity",
+          "displayName": "invoice",
+          "homepage": "https://github.com/maaslalani/invoice",
+          "id": "brew:invoice",
+          "installURL": "pkgmgrmgr://install?package=brew%3Ainvoice",
+          "manager": "homebrew"
+        }
+      ],
+      "publishedAt": "2026-07-16T22:52:52Z",
+      "title": "Recently Updated in Productivity",
+      "type": "recentlyUpdated"
+    },
+    {
+      "batchID": "20260716T225252Z-72f77757",
+      "id": "new-packages:data:20260723T140545Z-f220bb45",
+      "packages": [
+        {
+          "agentSummary": "CLI for Deepline data enrichment and durable plays",
+          "category": "data",
+          "displayName": "deepline",
+          "homepage": "https://code.deepline.com",
+          "id": "brew:deepline",
+          "installURL": "pkgmgrmgr://install?package=brew%3Adeepline",
+          "manager": "homebrew"
+        }
+      ],
+      "publishedAt": "2026-07-16T22:52:52Z",
+      "title": "New Packages in Data",
+      "type": "newPackages"
+    },
+    {
+      "batchID": "20260716T225252Z-72f77757",
+      "id": "recently-updated:developer-tools:20260723T140545Z-f220bb45",
+      "packages": [
+        {
+          "agentSummary": "Nu Markup Checker: command-line and server HTML validator",
+          "category": "developer-tools",
+          "displayName": "vnu",
+          "homepage": "https://validator.github.io/validator/",
+          "id": "brew:vnu",
+          "installURL": "pkgmgrmgr://install?package=brew%3Avnu",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "JavaScript implementation of a Sass compiler",
+          "category": "developer-tools",
+          "displayName": "node-sass",
+          "homepage": "https://github.com/sass/dart-sass",
+          "id": "brew:node-sass",
+          "installURL": "pkgmgrmgr://install?package=brew%3Anode-sass",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Neon CLI tool",
+          "category": "developer-tools",
+          "displayName": "neonctl",
+          "homepage": "https://neon.tech/docs/reference/neon-cli",
+          "id": "brew:neonctl",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aneonctl",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "A full-stack TypeScript framework for shipping production web apps. Scaffold with `npx ugly-app init my-app` and get an opinionated Express + React + PostgreSQL stack with type-safe RPC over WebSocket and HTTP, real-time document tracking, built-in auth,",
+          "category": "developer-tools",
+          "displayName": "ugly-app",
+          "homepage": null,
+          "id": "npm:ugly-app",
+          "installURL": "pkgmgrmgr://install?package=npm%3Augly-app",
+          "manager": "npm"
+        },
+        {
+          "agentSummary": "Fast, lightweight CLI for App Store Connect",
+          "category": "developer-tools",
+          "displayName": "asc",
+          "homepage": "https://asccli.sh",
+          "id": "brew:asc",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aasc",
+          "manager": "homebrew"
+        }
+      ],
+      "publishedAt": "2026-07-16T22:52:52Z",
+      "title": "Recently Updated in Developer Tools",
       "type": "recentlyUpdated"
     }
   ],
-  "generatedAt": "2026-07-27T13:01:16Z",
-  "nextPageURL": "https://mxcl.dev/package-manager-manager/feed/v2/pages/20260727T130116Z-67ac8345.json",
-  "pageID": "20260727T130116Z-582c70ae",
+  "generatedAt": "2026-07-26T13:03:11Z",
+  "nextPageURL": "https://mxcl.dev/package-manager-manager/feed/v2/pages/20260726T130311Z-54e0a4d1.json",
+  "pageID": "20260726T130311Z-9a48cc65",
   "schemaVersion": 2
 }
