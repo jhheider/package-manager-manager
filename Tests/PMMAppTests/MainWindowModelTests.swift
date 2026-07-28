@@ -442,6 +442,27 @@ private func attributeRunCount(in string: NSAttributedString) -> Int {
 }
 
 @MainActor
+@Test func outdatedSelectionSupportsCommandToggleAndShiftRange() {
+    let model = MainWindowModel(userDefaults: UserDefaults(suiteName: UUID().uuidString)!)
+    let packages = ["eslint", "prettier", "typescript"].map {
+        ManagedPackage(manager: .npm, name: $0, installedVersion: "1", latestVersion: "2")
+    }
+    model.apply(
+        inventory: PackageInventory(packages: packages),
+        index: PackageIndex(packages: packages, catalogPackages: [], newUpdatedLastClickedAt: nil)
+    )
+    model.selectSection(.outdated)
+    let displayed = model.displayedPackages
+
+    model.select(displayed[0])
+    model.select(displayed[2], selectingRange: true)
+    #expect(model.selectedPackageIDs == Set(displayed.map(\.id)))
+
+    model.select(displayed[1], extendingSelection: true)
+    #expect(model.selectedPackageIDs == [displayed[0].id, displayed[2].id])
+}
+
+@MainActor
 @Test func homeSelectionClearsPackageSelection() {
     let model = MainWindowModel(userDefaults: UserDefaults(suiteName: UUID().uuidString)!)
     let package = ManagedPackage(manager: .homebrew, name: "pkg", installedVersion: "1", latestVersion: "2")

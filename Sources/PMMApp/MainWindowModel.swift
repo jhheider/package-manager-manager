@@ -524,6 +524,7 @@ final class MainWindowModel: NSObject, ObservableObject {
     private var hasInventory = false
     private var pendingPackageURLCommand: MainWindowPackageURLCommand?
     private var pendingDiscoverPackageScroll = false
+    private var packageSelectionAnchorID: String?
     private var newUpdatedLastClickedAt: Date?
     private var newUpdatedSelectionDisplayCount: Int?
     private let userDefaults: UserDefaults
@@ -813,6 +814,7 @@ final class MainWindowModel: NSObject, ObservableObject {
         selectedRemoteHostID = nil
         selectedRemoteSection = nil
         selectedSection = section
+        packageSelectionAnchorID = nil
         selectedPackageIDs = []
         selectedPackage = nil
         selectedLinkTab = nil
@@ -824,18 +826,33 @@ final class MainWindowModel: NSObject, ObservableObject {
         cancelDiscoverPackageScroll()
         selectedRemoteHostID = hostID
         selectedRemoteSection = section
+        packageSelectionAnchorID = nil
         selectedPackageIDs = []
         selectedPackage = nil
         selectedLinkTab = nil
         clearDossier()
     }
 
-    func select(_ package: ManagedPackage) {
+    func select(_ package: ManagedPackage, extendingSelection: Bool = false, selectingRange: Bool = false) {
         cancelDiscoverPackageScroll()
-        selectedPackageIDs = [package.id]
-        selectedPackage = package
-        selectedLinkTab = nil
-        loadDossier(for: package)
+        guard showsUpdateAllOutdatedPackages, extendingSelection || selectingRange else {
+            packageSelectionAnchorID = package.id
+            selectPackages([package.id])
+            return
+        }
+
+        if selectingRange,
+           let anchorID = packageSelectionAnchorID,
+           let anchorIndex = displayedPackages.firstIndex(where: { $0.id == anchorID }),
+           let packageIndex = displayedPackages.firstIndex(where: { $0.id == package.id }) {
+            let rangeIDs = Set(displayedPackages[min(anchorIndex, packageIndex)...max(anchorIndex, packageIndex)].map(\.id))
+            selectPackages(extendingSelection ? selectedPackageIDs.union(rangeIDs) : rangeIDs)
+        } else {
+            packageSelectionAnchorID = package.id
+            var ids = selectedPackageIDs
+            if !ids.insert(package.id).inserted { ids.remove(package.id) }
+            selectPackages(ids)
+        }
     }
 
     func selectPackages(_ ids: Set<String>) {
@@ -844,7 +861,6 @@ final class MainWindowModel: NSObject, ObservableObject {
         if !showsUpdateAllOutdatedPackages, ids.count > 1 {
             ids = [ids.subtracting(selectedPackageIDs).first ?? ids.first!]
         }
-        guard ids != selectedPackageIDs else { return }
         selectedPackageIDs = ids
         guard ids.count == 1, let package = displayedPackages.first(where: { ids.contains($0.id) }) else {
             selectedPackage = nil
