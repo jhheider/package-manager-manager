@@ -133,6 +133,15 @@ struct MainWindowRootView: View {
         .sheet(isPresented: $model.showsHostManagement) {
             RemoteHostsManagementView(model: model)
         }
+        .sheet(isPresented: packageActionModalBinding) {
+            PackageCommandProgressView(
+                command: model.packageActionCommand,
+                output: model.packageActionOutput,
+                error: model.packageActionError,
+                dismiss: model.dismissPackageAction
+            )
+            .interactiveDismissDisabled(true)
+        }
         .alert("Install \(model.pendingInstallPackConfirmation?.packageCount ?? 0) packages?", isPresented: installPackConfirmationBinding) {
             Button("Cancel", role: .cancel) {
                 model.cancelPendingInstallPack()
@@ -194,6 +203,18 @@ struct MainWindowRootView: View {
                     model.cancelPendingInstallPack()
                 }
             }
+        )
+    }
+
+    private var packageActionModalBinding: Binding<Bool> {
+        Binding(
+            get: {
+                model.installingPackageName != nil
+                    || model.uninstallingPackageName != nil
+                    || model.updatingPackageName != nil
+                    || model.packageActionError != nil
+            },
+            set: { _ in }
         )
     }
 

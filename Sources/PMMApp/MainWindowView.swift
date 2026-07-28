@@ -428,23 +428,10 @@ struct MainWindowDossierView: View {
         .ignoresSafeArea(.container, edges: .top)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background((colorScheme == .dark ? Color.black.opacity(0.08) : Color.white.opacity(0.1)))
-        .sheet(isPresented: packageActionModalBinding) {
-            PackageCommandProgressView(
-                command: model.packageActionCommand,
-                output: model.packageActionOutput,
-                error: model.packageActionError,
-                dismiss: model.dismissPackageAction
-            )
-                .interactiveDismissDisabled(true)
-        }
     }
 
     private var isPackageActionRunning: Bool {
         model.installingPackageName != nil || model.uninstallingPackageName != nil || model.updatingPackageName != nil
-    }
-
-    private var packageActionModalBinding: Binding<Bool> {
-        Binding(get: { isPackageActionRunning || model.packageActionError != nil }, set: { _ in })
     }
 
     private func updateButtonTitle(for package: ManagedPackage) -> String {
@@ -1259,7 +1246,7 @@ private struct InfoRow: View {
     }
 }
 
-private struct PackageCommandProgressView: View {
+struct PackageCommandProgressView: View {
     let command: String?
     let output: String
     let error: String?
