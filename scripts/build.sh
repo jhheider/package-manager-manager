@@ -1,7 +1,11 @@
-#!/usr/bin/env bash
+#!/usr/local/bin/av inject +APPLE_PASSWORD +APPLE_USERNAME -- /bin/bash
+# --- automic-vault
+# capabilities:
+#   gh: trusted
+# ---
 set -euo pipefail
 
-root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+root="$(cd "$(dirname "${AV_SCRIPT_PATH:-$0}")/.." && pwd)"
 configuration="${CONFIGURATION:-release}"
 app_name="Package Manager Manager"
 executable="PMMApp"
@@ -495,7 +499,12 @@ if $dmg; then
 fi
 
 if $notarize; then
-  "$root/scripts/build-notarize-dmg.sh" "$dmg_path"
+  xcrun notarytool submit \
+    --apple-id "${APPLE_USERNAME}" \
+    --team-id "${APPLE_TEAM_ID}" \
+    --password "${APPLE_PASSWORD}" \
+    --wait \
+    "$dmg_path"
   xcrun stapler staple "$dmg_path"
 fi
 
