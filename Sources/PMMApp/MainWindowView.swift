@@ -287,7 +287,7 @@ struct MainWindowPackageListView: View {
 
     var body: some View {
         ScrollViewReader { proxy in
-            ScrollView {
+            List(selection: packageSelection) {
                 let displayedPackages = model.displayedPackages
                 if model.displayedPackagesAreLoading && displayedPackages.isEmpty {
                     ProgressView()
@@ -305,24 +305,23 @@ struct MainWindowPackageListView: View {
                     }
                     .frame(maxWidth: .infinity, minHeight: 260)
                 } else {
-                    LazyVStack(spacing: 0) {
-                        ForEach(displayedPackages) { package in
-                            PackageRow(
-                                package: package,
-                                selected: model.selectedPackage?.id == package.id,
-                                showsManager: model.isRemoteSelection || model.activeSidebarSection == .outdated || (model.activeSidebarSection?.packageManagers.count ?? 0) > 1,
-                                versionText: mainWindowVersionText(
-                                    package,
-                                    section: model.selectedRemoteSection == .outdated ? .outdated : model.activeSidebarSection
-                                )
-                            ) {
-                                model.select(package)
-                            }
-                            .id(package.id)
-                        }
+                    ForEach(displayedPackages) { package in
+                        PackageRow(
+                            package: package,
+                            showsManager: model.isRemoteSelection || model.activeSidebarSection == .outdated || (model.activeSidebarSection?.packageManagers.count ?? 0) > 1,
+                            versionText: mainWindowVersionText(
+                                package,
+                                section: model.selectedRemoteSection == .outdated ? .outdated : model.activeSidebarSection
+                            )
+                        )
+                        .tag(package.id)
+                        .id(package.id)
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
                     }
                 }
             }
+            .listStyle(.plain)
             .task(id: model.discoverPackageIDToScrollIntoView) {
                 await scrollToDiscoverPackage(model.discoverPackageIDToScrollIntoView, proxy: proxy)
             }
@@ -340,6 +339,10 @@ struct MainWindowPackageListView: View {
         }
         .scrollEdgeEffectStyle(.soft, for: .top)
         .ignoresSafeArea(.container, edges: .top)
+    }
+
+    private var packageSelection: Binding<Set<String>> {
+        Binding(get: { model.selectedPackageIDs }, set: model.selectPackages)
     }
 
     @MainActor
@@ -953,56 +956,41 @@ private struct DossierExecutableStack: View {
 
 private struct PackageRow: View {
     let package: ManagedPackage
-    let selected: Bool
     let showsManager: Bool
     let versionText: String
-    let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(alignment: .firstTextBaseline, spacing: 3) {
-                    Text(package.displayName)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(SystemColor.primaryText)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .layoutPriority(1)
-                    PackageEcosystemMark(package: package)
-                    if package.manager == .mise { MiseMark() }
-                    if package.isOutdated && !showsManager { PackageBadgePill(text: "Outdated", color: SystemColor.orange) }
-                    Spacer(minLength: 8)
-                    Text(versionText)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(SystemColor.secondaryText)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                }
-                Text(subtitle)
-                    .font(.system(size: 12))
-                    .foregroundStyle(SystemColor.quietText)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(package.displayName)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(SystemColor.primaryText)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .layoutPriority(1)
+                PackageEcosystemMark(package: package)
+                if package.manager == .mise { MiseMark() }
+                if package.isOutdated && !showsManager { PackageBadgePill(text: "Outdated", color: SystemColor.orange) }
+                Spacer(minLength: 8)
+                Text(versionText)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(SystemColor.secondaryText)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 8)
-            .frame(height: 66, alignment: .topLeading)
-            .background {
-                if selected {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(.selection.opacity(0.22))
-                        .background {
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(.ultraThinMaterial)
-                        }
-                }
-            }
-            .padding(.horizontal, 3)
-            .padding(.vertical, 2)
-            .contentShape(Rectangle())
+            Text(subtitle)
+                .font(.system(size: 12))
+                .foregroundStyle(SystemColor.quietText)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 8)
+        .frame(height: 66, alignment: .topLeading)
+        .padding(.horizontal, 3)
+        .padding(.vertical, 2)
+        .contentShape(Rectangle())
     }
 
     private var subtitle: String {

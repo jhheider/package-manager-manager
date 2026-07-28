@@ -123,9 +123,12 @@ func menuBarCommandPackage(id: String, kind: PackageHostActionKind, snapshot: Pa
     }
 }
 
-func menuBarCommandUpdateAllPackages(snapshot: PackageHostSnapshot) -> [ManagedPackage] {
+func menuBarCommandUpdateAllPackages(snapshot: PackageHostSnapshot, packageIDs: [String] = []) -> [ManagedPackage] {
     guard snapshot.runningAction == nil else { return [] }
-    return (snapshot.inventory?.outdatedPackages ?? []).filter(PackageUpdater.supports)
+    let selectedIDs = Set(packageIDs)
+    return (snapshot.inventory?.outdatedPackages ?? []).filter {
+        PackageUpdater.supports($0) && (selectedIDs.isEmpty || selectedIDs.contains($0.id))
+    }
 }
 
 func menuBarCommandInstallPackages(ids: [String], snapshot: PackageHostSnapshot) -> [ManagedPackage] {

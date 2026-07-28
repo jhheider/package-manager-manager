@@ -104,11 +104,21 @@ struct MainWindowRootView: View {
                             updateAllToolbarItem
                         }
                 } detail: {
-                    HStack(spacing: 0) {
-                        MainWindowDossierView(model: model)
-                            .frame(width: 252)
-                        MainWindowLinksView(model: model)
-                            .frame(minWidth: 350, maxWidth: .infinity)
+                    Group {
+                        if model.hasMultipleSelectedPackages {
+                            ContentUnavailableView {
+                                Label("\(model.selectedPackageIDs.count) Packages Selected", systemImage: "shippingbox")
+                            } description: {
+                                Text("Use Update Selected to update these packages.")
+                            }
+                        } else {
+                            HStack(spacing: 0) {
+                                MainWindowDossierView(model: model)
+                                    .frame(width: 252)
+                                MainWindowLinksView(model: model)
+                                    .frame(minWidth: 350, maxWidth: .infinity)
+                            }
+                        }
                     }
                     .navigationSplitViewColumnWidth(min: 602, ideal: 876)
                     .toolbar {
@@ -151,7 +161,7 @@ struct MainWindowRootView: View {
                 Button {
                     model.updateAllOutdatedPackages()
                 } label: {
-                    Label("Update All", systemImage: "arrow.down.circle")
+                    Label(model.updateOutdatedPackagesButtonTitle, systemImage: "arrow.down.circle")
                 }
                 .disabled(!model.canUpdateAllOutdatedPackages)
                 .labelStyle(.titleAndIcon)

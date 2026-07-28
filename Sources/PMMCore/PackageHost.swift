@@ -190,8 +190,13 @@ public enum PackageHostNotifications {
         postPackageCommand(updateRequested, packageID: packageID)
     }
 
-    public static func postUpdateAllRequested() {
-        DistributedNotificationCenter.default().postNotificationName(updateAllRequested, object: nil, deliverImmediately: true)
+    public static func postUpdateAllRequested(packageIDs: [String] = []) {
+        DistributedNotificationCenter.default().postNotificationName(
+            updateAllRequested,
+            object: nil,
+            userInfo: packageIDs.isEmpty ? nil : [packageIDsKey: packageIDs],
+            deliverImmediately: true
+        )
     }
 
     public static func postUninstallRequested(packageID: String) {

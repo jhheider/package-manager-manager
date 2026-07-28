@@ -475,9 +475,9 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
         button.image = image
     }
 
-    private func runUpdateAll() {
+    private func runUpdateAll(packageIDs: [String] = []) {
         guard refreshTask == nil, actionTask == nil else { return }
-        let packages = menuBarCommandUpdateAllPackages(snapshot: snapshot)
+        let packages = menuBarCommandUpdateAllPackages(snapshot: snapshot, packageIDs: packageIDs)
         guard !packages.isEmpty else { return }
         cancelBackgroundRefresh()
         snapshot.errorMessage = nil
@@ -703,7 +703,7 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func updateAllRequested(_ notification: Notification) {
-        runUpdateAll()
+        runUpdateAll(packageIDs: PackageHostNotifications.packageIDs(from: notification))
     }
 
     @objc private func uninstallRequested(_ notification: Notification) {

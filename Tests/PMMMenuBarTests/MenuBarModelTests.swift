@@ -136,6 +136,8 @@ private final class LockedStrings: @unchecked Sendable {
 
     #expect(menuBarCommandUpdateAllPackages(snapshot: snapshot) == [supported])
     #expect(menuBarCommandUpdateAllPackages(snapshot: busy).isEmpty)
+    #expect(menuBarCommandUpdateAllPackages(snapshot: snapshot, packageIDs: [supported.id]) == [supported])
+    #expect(menuBarCommandUpdateAllPackages(snapshot: snapshot, packageIDs: [current.id]).isEmpty)
 }
 
 @Test func menuBarInstallManyOnlyIncludesSupportedCatalogPackagesWhenIdle() {

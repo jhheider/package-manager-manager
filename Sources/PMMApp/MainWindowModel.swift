@@ -450,6 +450,7 @@ private enum RemotePackageAction {
     case update
     case uninstall
     case updateAll
+    case updateSelected([ManagedPackage])
 }
 
 private struct PackageActionIdentity: Equatable {
@@ -493,6 +494,7 @@ final class MainWindowModel: NSObject, ObservableObject {
     @Published var showsHostManagement = false
     @Published private(set) var packages: [ManagedPackage] = []
     @Published private(set) var selectedPackage: ManagedPackage?
+    @Published private(set) var selectedPackageIDs: Set<String> = []
     @Published var selectedLinkTab: MainWindowLinkTab?
     @Published private(set) var isReloading = true
     @Published private(set) var loadingManagers = Set(PackageManagerKind.allCases)
@@ -720,8 +722,12 @@ final class MainWindowModel: NSObject, ObservableObject {
     }
 
     var canUpdateAllOutdatedPackages: Bool {
-        showsUpdateAllOutdatedPackages && !displayedPackagesAreLoading && !isPackageActionRunning && !updatableOutdatedPackages.isEmpty
+        guard showsUpdateAllOutdatedPackages, !displayedPackagesAreLoading, !isPackageActionRunning else { return false }
+        return !packagesToUpdate.isEmpty && (!hasMultipleSelectedPackages || packagesToUpdate.count == selectedPackageIDs.count)
     }
+
+    var hasMultipleSelectedPackages: Bool { selectedPackageIDs.count > 1 }
+    var updateOutdatedPackagesButtonTitle: String { hasMultipleSelectedPackages ? "Update Selected" : "Update All" }
 
     func reload() {
         PackageHostNotifications.postRefreshRequested()
@@ -807,6 +813,7 @@ final class MainWindowModel: NSObject, ObservableObject {
         selectedRemoteHostID = nil
         selectedRemoteSection = nil
         selectedSection = section
+        selectedPackageIDs = []
         selectedPackage = nil
         selectedLinkTab = nil
         clearDossier()
@@ -817,6 +824,7 @@ final class MainWindowModel: NSObject, ObservableObject {
         cancelDiscoverPackageScroll()
         selectedRemoteHostID = hostID
         selectedRemoteSection = section
+        selectedPackageIDs = []
         selectedPackage = nil
         selectedLinkTab = nil
         clearDossier()
@@ -824,6 +832,26 @@ final class MainWindowModel: NSObject, ObservableObject {
 
     func select(_ package: ManagedPackage) {
         cancelDiscoverPackageScroll()
+        selectedPackageIDs = [package.id]
+        selectedPackage = package
+        selectedLinkTab = nil
+        loadDossier(for: package)
+    }
+
+    func selectPackages(_ ids: Set<String>) {
+        let availableIDs = Set(displayedPackages.map(\.id))
+        var ids = ids.intersection(availableIDs)
+        if !showsUpdateAllOutdatedPackages, ids.count > 1 {
+            ids = [ids.subtracting(selectedPackageIDs).first ?? ids.first!]
+        }
+        guard ids != selectedPackageIDs else { return }
+        selectedPackageIDs = ids
+        guard ids.count == 1, let package = displayedPackages.first(where: { ids.contains($0.id) }) else {
+            selectedPackage = nil
+            selectedLinkTab = nil
+            clearDossier()
+            return
+        }
         selectedPackage = package
         selectedLinkTab = nil
         loadDossier(for: package)
@@ -949,10 +977,14 @@ final class MainWindowModel: NSObject, ObservableObject {
     func updateAllOutdatedPackages() {
         guard canUpdateAllOutdatedPackages else { return }
         if let host = selectedRemoteHost {
+            if hasMultipleSelectedPackages {
+                runRemoteAction(.updateSelected(packagesToUpdate), package: nil, host: host)
+                return
+            }
             runRemoteAction(.updateAll, package: nil, host: host)
             return
         }
-        PackageHostNotifications.postUpdateAllRequested()
+        PackageHostNotifications.postUpdateAllRequested(packageIDs: hasMultipleSelectedPackages ? packagesToUpdate.map(\.id) : [])
     }
 
     func confirmRemoteUninstall() {
@@ -969,7 +1001,7 @@ final class MainWindowModel: NSObject, ObservableObject {
         guard !isPackageActionRunning else { return }
         switch action {
         case .update, .uninstall: guard package != nil else { return }
-        case .updateAll: break
+        case .updateAll, .updateSelected: break
         }
         remoteTasks.removeValue(forKey: host.id)?.cancel()
         let actionID = UUID()
@@ -993,6 +1025,9 @@ final class MainWindowModel: NSObject, ObservableObject {
         case .updateAll:
             updatingPackageName = "All outdated packages on \(host.displayName)"
             packageActionCommand = "ssh \(host.destination) — pmmctl update-all"
+        case .updateSelected(let packages):
+            updatingPackageName = "\(packages.count) selected packages on \(host.displayName)"
+            packageActionCommand = "ssh \(host.destination) — update selected"
         }
 
         let remoteClient = remoteClient
@@ -1011,6 +1046,22 @@ final class MainWindowModel: NSObject, ObservableObject {
                     response = try await remoteClient.uninstall(package!, on: host, onProgress: progress)
                 case .updateAll:
                     response = try await remoteClient.updateAll(on: host, onProgress: progress)
+                case .updateSelected(let packages):
+                    var inventory = remoteHostStates[host.id]?.inventory ?? PackageInventory(packages: [])
+                    var failures: [RemoteControlFailure] = []
+                    for package in packages {
+                        try Task.checkCancellation()
+                        do {
+                            let result = try await remoteClient.update(package, on: host, onProgress: progress)
+                            inventory = result.inventory
+                            failures += result.failures
+                        } catch is CancellationError {
+                            throw CancellationError()
+                        } catch {
+                            failures.append(RemoteControlFailure(packageID: package.id, message: "\(package.displayName): \(error.localizedDescription)"))
+                        }
+                    }
+                    response = RemoteControlResponse(inventory: inventory, failures: failures)
                 }
                 remoteHostStates[host.id] = RemoteHostState(
                     inventory: response.inventory,
@@ -1019,9 +1070,7 @@ final class MainWindowModel: NSObject, ObservableObject {
                 if !response.failures.isEmpty {
                     packageActionError = response.failures.map(\.message).joined(separator: "\n")
                 }
-                selectedPackage = selectedPackage.flatMap { selected in
-                    self.displayedPackages.first { $0.id == selected.id }
-                }
+                reconcilePackageSelection()
             } catch is CancellationError {
             } catch {
                 var state = remoteHostStates[host.id] ?? RemoteHostState()
@@ -1112,6 +1161,28 @@ final class MainWindowModel: NSObject, ObservableObject {
     private var updatableOutdatedPackages: [ManagedPackage] {
         if isRemoteSelection { return displayedPackages.filter(PackageUpdater.supports) }
         return (packageIndex.packagesBySection[.outdated] ?? []).filter(PackageUpdater.supports)
+    }
+
+    private var packagesToUpdate: [ManagedPackage] {
+        guard hasMultipleSelectedPackages else { return updatableOutdatedPackages }
+        return displayedPackages.filter { selectedPackageIDs.contains($0.id) && PackageUpdater.supports($0) }
+    }
+
+    private func reconcilePackageSelection() {
+        selectedPackageIDs.formIntersection(displayedPackages.map(\.id))
+        guard selectedPackageIDs.count == 1,
+              let package = displayedPackages.first(where: { selectedPackageIDs.contains($0.id) }) else {
+            selectedPackage = nil
+            selectedLinkTab = nil
+            clearDossier()
+            return
+        }
+        let selectionChanged = selectedPackage?.id != package.id
+        selectedPackage = package
+        if selectionChanged {
+            selectedLinkTab = nil
+            loadDossier(for: package)
+        }
     }
 
     private var searchQuery: String {
@@ -1242,7 +1313,7 @@ final class MainWindowModel: NSObject, ObservableObject {
         hasInventory = true
         packages = next.packages
         errors = next.errors
-        selectedPackage = selectedPackage.flatMap { selected in displayedPackages.first { $0.id == selected.id } }
+        reconcilePackageSelection()
         if let pendingPackageURLCommand {
             let shouldScroll = pendingDiscoverPackageScroll
             if shouldScroll {

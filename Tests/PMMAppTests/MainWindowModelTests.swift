@@ -417,6 +417,31 @@ private func attributeRunCount(in string: NSAttributedString) -> Int {
 }
 
 @MainActor
+@Test func multipleOutdatedSelectionHidesPackageDetailAndTargetsSelectedPackages() {
+    let model = MainWindowModel(userDefaults: UserDefaults(suiteName: UUID().uuidString)!)
+    let git = ManagedPackage(manager: .homebrew, name: "git", installedVersion: "1", latestVersion: "2")
+    let eslint = ManagedPackage(manager: .npm, name: "eslint", installedVersion: "1", latestVersion: "2")
+
+    model.apply(
+        inventory: PackageInventory(packages: [git, eslint]),
+        index: PackageIndex(packages: [git, eslint], catalogPackages: [], newUpdatedLastClickedAt: nil)
+    )
+    model.selectSection(.outdated)
+    model.selectPackages([git.id, eslint.id])
+
+    #expect(model.selectedPackage == nil)
+    #expect(model.hasMultipleSelectedPackages)
+    #expect(model.updateOutdatedPackagesButtonTitle == "Update Selected")
+    #expect(model.canUpdateAllOutdatedPackages)
+
+    model.selectPackages([git.id])
+
+    #expect(model.selectedPackage == git)
+    #expect(!model.hasMultipleSelectedPackages)
+    #expect(model.updateOutdatedPackagesButtonTitle == "Update All")
+}
+
+@MainActor
 @Test func homeSelectionClearsPackageSelection() {
     let model = MainWindowModel(userDefaults: UserDefaults(suiteName: UUID().uuidString)!)
     let package = ManagedPackage(manager: .homebrew, name: "pkg", installedVersion: "1", latestVersion: "2")
@@ -1529,6 +1554,27 @@ private func package(
     model.updateAllOutdatedPackages()
     await waitForRemoteModel { runner.invocationCount == 2 }
     #expect(runner.lastArguments?.last?.contains("'remote' 'update-all'") == true)
+}
+
+@MainActor
+@Test func remoteMultipleSelectionUpdatesOnlySelectedPackages() async throws {
+    let eslint = package(.npm, "eslint", installedVersion: "1.0.0", latestVersion: "2.0.0")
+    let prettier = package(.npm, "prettier", installedVersion: "1.0.0", latestVersion: "2.0.0")
+    let runner = MainWindowRemoteRunner(response: RemoteControlResponse(inventory: PackageInventory(packages: [eslint, prettier])))
+    let model = MainWindowModel(
+        userDefaults: UserDefaults(suiteName: UUID().uuidString)!,
+        remoteClient: RemoteSSHClient(runner: runner)
+    )
+    let host = try model.saveRemoteHost(name: "Server", destination: "server")
+    await waitForRemoteModel { model.remoteHostStates[host.id]?.inventory != nil }
+
+    model.selectRemoteHost(host.id, section: .outdated)
+    model.selectPackages([eslint.id, prettier.id])
+    model.updateAllOutdatedPackages()
+
+    await waitForRemoteModel { runner.invocationCount == 3 }
+    #expect(runner.lastArguments?.last?.contains("'remote' 'update'") == true)
+    #expect(runner.lastArguments?.last?.contains("'remote' 'update-all'") == false)
 }
 
 @MainActor
