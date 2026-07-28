@@ -19,6 +19,16 @@ import Testing
     #expect(published.values == ["first\n"])
 }
 
+@Test func batchProgressRelayRetainsEveryUpgradeCommand() {
+    let relay = MenuBarActionProgressRelay(interval: 60, recordsCommandsInOutput: true) { _ in }
+
+    relay.recordStarted(command: "brew upgrade git")
+    relay.append("Updated git\n")
+    relay.recordStarted(command: "npm install -g eslint@latest")
+
+    #expect(relay.finish().output == "$ brew upgrade git\nUpdated git\n$ npm install -g eslint@latest\n")
+}
+
 @Test func lateStartedCommandPreservesAlreadyPublishedOutput() {
     let runID = UUID()
     let action = PackageHostRunningAction(

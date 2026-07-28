@@ -17,6 +17,7 @@ final class MenuBarActionProgressRelay: @unchecked Sendable {
     private static let queue = DispatchQueue(label: "dev.mxcl.pmm.action-output", qos: .utility)
     private let limit: Int
     private let intervalNanoseconds: UInt64
+    private let recordsCommandsInOutput: Bool
     private let publish: @Sendable (String) -> Void
     private let lock = NSLock()
     private var command: String?
@@ -25,14 +26,21 @@ final class MenuBarActionProgressRelay: @unchecked Sendable {
     private var pendingPublish: DispatchWorkItem?
     private var isDirty = false
 
-    init(limit: Int = 100_000, interval: TimeInterval = 0.1, publish: @escaping @Sendable (String) -> Void) {
+    init(
+        limit: Int = 100_000,
+        interval: TimeInterval = 0.1,
+        recordsCommandsInOutput: Bool = false,
+        publish: @escaping @Sendable (String) -> Void
+    ) {
         self.limit = limit
         intervalNanoseconds = UInt64(interval * 1_000_000_000)
+        self.recordsCommandsInOutput = recordsCommandsInOutput
         self.publish = publish
     }
 
     func recordStarted(command: String) {
         lock.withLock { self.command = command }
+        if recordsCommandsInOutput { append("$ \(command)\n") }
     }
 
     func append(_ chunk: String) {
@@ -480,24 +488,27 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
         let packages = menuBarCommandUpdateAllPackages(snapshot: snapshot, packageIDs: packageIDs)
         guard !packages.isEmpty else { return }
         cancelBackgroundRefresh()
+        let runID = UUID()
+        let batchID = packageIDs.isEmpty ? "update-all" : "update-selected"
+        snapshot.runningAction = PackageHostRunningAction(
+            runID: runID,
+            kind: .update,
+            packageID: batchID,
+            displayName: packageIDs.isEmpty ? "All outdated packages" : "\(packages.count) selected packages"
+        )
         snapshot.errorMessage = nil
         publishSnapshot()
+        let relay = actionProgressRelay(runID: runID, kind: .update, packageID: batchID, recordsCommandsInOutput: true)
+        let progressHandler = actionProgressHandler(runID: runID, kind: .update, packageID: batchID, relay: relay)
         actionTask = Task { [weak self] in
             var errors: [String] = []
             for package in packages {
                 guard let self, !Task.isCancelled else { return }
-                let runID = UUID()
-                self.snapshot.runningAction = PackageHostRunningAction(runID: runID, kind: .update, packageID: package.id, displayName: package.displayName)
-                self.publishSnapshot()
-                let relay = self.actionProgressRelay(runID: runID, kind: .update, packageID: package.id)
-                let progressHandler = self.actionProgressHandler(runID: runID, kind: .update, packageID: package.id, relay: relay)
-
                 let result = await Task.detached(priority: .background) {
                     Result {
                         try PackageUpdater().update(package, onProgress: progressHandler)
                     }
                 }.value
-                self.finishActionProgress(relay, runID: runID, kind: .update, packageID: package.id)
                 if case .success = result {
                     self.snapshot = menuBarSnapshot(self.snapshot, applyingSuccessfulAction: .update, package: package)
                 } else if case .failure(let error) = result {
@@ -506,6 +517,7 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
             }
 
             guard let self, !Task.isCancelled else { return }
+            self.finishActionProgress(relay, runID: runID, kind: .update, packageID: batchID)
             let errorMessage = errors.isEmpty ? nil : errors.joined(separator: "\n")
             self.actionTask = nil
             self.snapshot.runningAction = nil
@@ -515,8 +527,13 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func actionProgressRelay(runID: UUID, kind: PackageHostActionKind, packageID: String) -> MenuBarActionProgressRelay {
-        MenuBarActionProgressRelay { [weak self] output in
+    private func actionProgressRelay(
+        runID: UUID,
+        kind: PackageHostActionKind,
+        packageID: String,
+        recordsCommandsInOutput: Bool = false
+    ) -> MenuBarActionProgressRelay {
+        MenuBarActionProgressRelay(recordsCommandsInOutput: recordsCommandsInOutput) { [weak self] output in
             Task { @MainActor in self?.publishActionOutput(output, runID: runID, kind: kind, packageID: packageID) }
         }
     }
