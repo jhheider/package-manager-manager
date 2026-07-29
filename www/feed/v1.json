@@ -112,14 +112,14 @@
     {
       "id": "new-packages",
       "packageIDs": [
+        "brew:mcpsnoop",
         "brew:apm",
         "brew:droast",
         "brew:rapid-mlx",
         "brew:dskditto",
         "brew:advai-cli",
         "brew:zsh-patina",
-        "brew:woxi",
-        "brew:faker"
+        "brew:woxi"
       ],
       "title": "New Packages",
       "type": "newPackages"
@@ -127,6 +127,7 @@
     {
       "id": "recently-updated",
       "packageIDs": [
+        "brew:mcpsnoop",
         "brew:rulesync",
         "brew:vfox",
         "brew:yutu",
@@ -137,8 +138,7 @@
         "brew:droast",
         "brew:rapid-mlx",
         "brew:dskditto",
-        "brew:advai-cli",
-        "brew:zsh-patina"
+        "brew:advai-cli"
       ],
       "title": "Recently Updated",
       "type": "recentlyUpdated"
@@ -435,7 +435,7 @@
       "type": "editorial"
     }
   ],
-  "generatedAt": "2026-07-27T13:01:16Z",
+  "generatedAt": "2026-07-29T13:01:23Z",
   "packages": {
     "brew:advai-cli": {
       "agentSummary": "advai-cli is a local-first command line tool that combines skill management, external CLI workflows, browser-bridge automation, and a terminal AI chat interface.",
@@ -831,53 +831,6 @@
       "upstreamSummary": "Ultra-fast duplicate file finder TUI/GUI",
       "version": null
     },
-    "brew:faker": {
-      "agentSummary": "Faker generates realistic sample data for Python applications, supporting tests, prototypes, database fixtures, and demonstrations without exposing real customer information.",
-      "assessment": {
-        "alternatives": [
-          "Built-in platform tools or another package in the same category"
-        ],
-        "audiences": [
-          "Developers and teams whose workflow matches the documented scope"
-        ],
-        "caveats": [
-          "Confirm compatibility, update policy, and operational impact before production use"
-        ],
-        "complements": [
-          "Version control, CI, and project-specific documentation"
-        ],
-        "prerequisites": [
-          "A compatible runtime, operating system, or project configuration"
-        ],
-        "useCases": [
-          "Automating the task described by the upstream project"
-        ]
-      },
-      "category": "data",
-      "displayName": "faker",
-      "docs": "https://faker.readthedocs.io/en/master",
-      "homepage": "https://faker.readthedocs.io",
-      "id": "brew:faker",
-      "installURL": "pkgmgrmgr://install?package=brew%3Afaker",
-      "lastUpdatedAt": "2026-07-14T18:46:47Z",
-      "manager": "homebrew",
-      "repository": "https://github.com/joke2k/faker",
-      "researchedAt": "2026-07-16T17:09:55Z",
-      "sources": [
-        {
-          "kind": "primary",
-          "title": "faker documentation",
-          "url": "https://faker.readthedocs.io/en/master"
-        },
-        {
-          "kind": "primary",
-          "title": "faker project and release information",
-          "url": "https://github.com/joke2k/faker"
-        }
-      ],
-      "upstreamSummary": "Python-based fake data generator",
-      "version": null
-    },
     "brew:ggshield": {
       "agentSummary": "ggshield scans repositories, commits, files, and CI changes for exposed secrets using GitGuardian, helping teams catch credentials before they reach production.",
       "assessment": {
@@ -978,6 +931,53 @@
         }
       ],
       "upstreamSummary": "Command-line music player",
+      "version": null
+    },
+    "brew:mcpsnoop": {
+      "agentSummary": "A transparent MCP proxy and terminal interface that captures JSON-RPC exchanges, replays calls, and helps developers inspect negotiation, failures, latency, and sensitive trace data.",
+      "assessment": {
+        "alternatives": [
+          "Application logs and generic HTTP debugging proxies"
+        ],
+        "audiences": [
+          "Developers building or integrating MCP clients and servers"
+        ],
+        "caveats": [
+          "Captured protocol traffic can contain sensitive arguments or results; review redaction and storage practices before use"
+        ],
+        "complements": [
+          "MCP server logs and reproducible integration tests"
+        ],
+        "prerequisites": [
+          "An MCP client-server workflow to proxy, plus permission to inspect its traffic"
+        ],
+        "useCases": [
+          "Tracing JSON-RPC requests, responses, errors, and slow MCP calls during integration debugging"
+        ]
+      },
+      "category": null,
+      "displayName": "mcpsnoop",
+      "docs": null,
+      "homepage": "https://github.com/kerlenton/mcpsnoop",
+      "id": "brew:mcpsnoop",
+      "installURL": "pkgmgrmgr://install?package=brew%3Amcpsnoop",
+      "lastUpdatedAt": "2026-07-27T14:30:15Z",
+      "manager": "homebrew",
+      "repository": "https://github.com/kerlenton/mcpsnoop",
+      "researchedAt": "2026-07-29T13:01:23Z",
+      "sources": [
+        {
+          "kind": "primary",
+          "title": "mcpsnoop repository and usage documentation",
+          "url": "https://github.com/kerlenton/mcpsnoop"
+        },
+        {
+          "kind": "independent",
+          "title": "LinuxLinks overview of mcpsnoop",
+          "url": "https://www.linuxlinks.com/mcpsnoop-transparent-proxy-terminal-interface/"
+        }
+      ],
+      "upstreamSummary": "Transparent proxy and TUI for debugging MCP traffic",
       "version": null
     },
     "brew:oxfmt": {
@@ -2396,7 +2396,7 @@
   },
   "schemaVersion": 1,
   "source": {
-    "generatedAt": "2026-07-26T04:54:11Z",
+    "generatedAt": "2026-07-28T01:29:59Z",
     "url": "https://www.automicvault.com/db.json"
   }
 }

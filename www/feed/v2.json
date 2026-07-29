@@ -268,56 +268,110 @@
     },
     {
       "batchID": "20260727T130116Z-edd93d29",
-      "id": "recently-updated:other:20260727T130116Z-f220bb45",
+      "id": "for-you:other:20260727T130116Z-f220bb45",
       "packages": [
         {
-          "agentSummary": "F1 Live Timing TUI for all F1 sessions with variable delay to sync to your TV",
+          "agentSummary": "opencontrol is available through npm for installation and management in Package Manager Manager.",
           "category": "other",
-          "displayName": "undercutf1",
-          "homepage": "https://amandhoot.com",
-          "id": "brew:undercutf1",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aundercutf1",
+          "displayName": "opencontrol",
+          "homepage": null,
+          "id": "npm:opencontrol",
+          "installURL": "pkgmgrmgr://install?package=npm%3Aopencontrol",
+          "manager": "npm"
+        },
+        {
+          "agentSummary": "dooboolab welcome console message.",
+          "category": "other",
+          "displayName": "dooboolab-welcome",
+          "homepage": null,
+          "id": "npm:dooboolab-welcome",
+          "installURL": "pkgmgrmgr://install?package=npm%3Adooboolab-welcome",
+          "manager": "npm"
+        },
+        {
+          "agentSummary": "conjure-lite is available through npm for installation and management in Package Manager Manager.",
+          "category": "other",
+          "displayName": "conjure-lite",
+          "homepage": null,
+          "id": "npm:conjure-lite",
+          "installURL": "pkgmgrmgr://install?package=npm%3Aconjure-lite",
+          "manager": "npm"
+        },
+        {
+          "agentSummary": "xnft is available through npm for installation and management in Package Manager Manager.",
+          "category": "other",
+          "displayName": "xnft",
+          "homepage": null,
+          "id": "npm:xnft",
+          "installURL": "pkgmgrmgr://install?package=npm%3Axnft",
+          "manager": "npm"
+        },
+        {
+          "agentSummary": "bluefairy is available through npm for installation and management in Package Manager Manager.",
+          "category": "other",
+          "displayName": "bluefairy",
+          "homepage": null,
+          "id": "npm:bluefairy",
+          "installURL": "pkgmgrmgr://install?package=npm%3Abluefairy",
+          "manager": "npm"
+        }
+      ],
+      "publishedAt": "2026-07-27T13:01:16Z",
+      "title": "For You in Other",
+      "type": "personalizedRecommendations"
+    },
+    {
+      "batchID": "20260727T130116Z-edd93d29",
+      "id": "recently-updated:data:20260727T130116Z-f220bb45",
+      "packages": [
+        {
+          "agentSummary": "Apache ActiveMQ: powerful open source messaging server",
+          "category": "data",
+          "displayName": "activemq",
+          "homepage": "https://activemq.apache.org/",
+          "id": "brew:activemq",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aactivemq",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "TIFF library and utilities",
-          "category": "other",
-          "displayName": "libtiff",
-          "homepage": "https://libtiff.gitlab.io/libtiff/",
-          "id": "brew:libtiff",
-          "installURL": "pkgmgrmgr://install?package=brew%3Alibtiff",
+          "agentSummary": "Lightweight, distributed relational database built on SQLite",
+          "category": "data",
+          "displayName": "rqlite",
+          "homepage": "https://www.rqlite.io/",
+          "id": "brew:rqlite",
+          "installURL": "pkgmgrmgr://install?package=brew%3Arqlite",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Generic library support script",
-          "category": "other",
-          "displayName": "libtool",
-          "homepage": "https://www.gnu.org/software/libtool/",
-          "id": "brew:libtool",
-          "installURL": "pkgmgrmgr://install?package=brew%3Alibtool",
+          "agentSummary": "Humane alternative to redis-cli with TLS support",
+          "category": "data",
+          "displayName": "redli",
+          "homepage": "https://github.com/IBM-Cloud/redli",
+          "id": "brew:redli",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aredli",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Provides cross-platform access to statistics about the system",
-          "category": "other",
-          "displayName": "libstatgrab",
-          "homepage": "https://libstatgrab.org/",
-          "id": "brew:libstatgrab",
-          "installURL": "pkgmgrmgr://install?package=brew%3Alibstatgrab",
+          "agentSummary": "Redis re-implemented with SQLite",
+          "category": "data",
+          "displayName": "redka",
+          "homepage": "https://github.com/nalgeon/redka",
+          "id": "brew:redka",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aredka",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Command-line editing facilities similar to the tcsh shell",
-          "category": "other",
-          "displayName": "libtecla",
-          "homepage": "https://sites.astro.caltech.edu/~mcs/tecla/",
-          "id": "brew:libtecla",
-          "installURL": "pkgmgrmgr://install?package=brew%3Alibtecla",
+          "agentSummary": "Redis RDB parser",
+          "category": "data",
+          "displayName": "rdb",
+          "homepage": "https://github.com/HDT3213/rdb/",
+          "id": "brew:rdb",
+          "installURL": "pkgmgrmgr://install?package=brew%3Ardb",
           "manager": "homebrew"
         }
       ],
       "publishedAt": "2026-07-27T13:01:16Z",
-      "title": "Recently Updated in Other",
+      "title": "Recently Updated in Data",
       "type": "recentlyUpdated"
     },
     {
@@ -359,15 +413,6 @@
           "id": "brew:wild",
           "installURL": "pkgmgrmgr://install?package=brew%3Awild",
           "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Human-friendly console utility for interacting with NEAR Protocol",
-          "category": "developer-tools",
-          "displayName": "near",
-          "homepage": "https://near.cli.rs",
-          "id": "brew:near",
-          "installURL": "pkgmgrmgr://install?package=brew%3Anear",
-          "manager": "homebrew"
         }
       ],
       "publishedAt": "2026-07-27T13:01:16Z",
@@ -376,57 +421,156 @@
     },
     {
       "batchID": "20260727T130116Z-edd93d29",
-      "id": "recently-updated:data:20260727T130116Z-f220bb45",
+      "id": "for-you:language-runtime:20260727T130116Z-f220bb45",
       "packages": [
         {
-          "agentSummary": "Lightweight scripting language for querying databases",
-          "category": "data",
-          "displayName": "flux",
-          "homepage": "https://www.influxdata.com/products/flux/",
-          "id": "brew:flux",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aflux",
-          "manager": "homebrew"
+          "agentSummary": "Runtime typescript and ESM support for Node.js",
+          "category": "language-runtime",
+          "displayName": "jiti",
+          "homepage": "https://github.com/unjs/jiti#readme",
+          "id": "npm:jiti",
+          "installURL": "pkgmgrmgr://install?package=npm%3Ajiti",
+          "manager": "npm"
         },
         {
-          "agentSummary": "Interactive minimalist TUI to query JSON, CSV, and TSV using SQL",
-          "category": "data",
-          "displayName": "qo",
-          "homepage": "https://github.com/kiki-ki/go-qo",
-          "id": "brew:qo",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aqo",
-          "manager": "homebrew"
+          "agentSummary": "Vite as Node.js runtime",
+          "category": "language-runtime",
+          "displayName": "vite-node",
+          "homepage": "https://github.com/antfu-collective/vite-node#readme",
+          "id": "npm:vite-node",
+          "installURL": "pkgmgrmgr://install?package=npm%3Avite-node",
+          "manager": "npm"
         },
         {
-          "agentSummary": "Database clustering system for horizontal scaling of MySQL",
-          "category": "data",
-          "displayName": "vitess",
-          "homepage": "https://vitess.io",
-          "id": "brew:vitess",
-          "installURL": "pkgmgrmgr://install?package=brew%3Avitess",
-          "manager": "homebrew"
+          "agentSummary": "👷 workerd, Cloudflare's JavaScript/Wasm Runtime",
+          "category": "language-runtime",
+          "displayName": "workerd",
+          "homepage": "https://github.com/cloudflare/workerd#readme",
+          "id": "npm:workerd",
+          "installURL": "pkgmgrmgr://install?package=npm%3Aworkerd",
+          "manager": "npm"
         },
         {
-          "agentSummary": "Cost-effective and scalable monitoring solution and time series database",
-          "category": "data",
-          "displayName": "victoriametrics",
-          "homepage": "https://victoriametrics.com/",
-          "id": "brew:victoriametrics",
-          "installURL": "pkgmgrmgr://install?package=brew%3Avictoriametrics",
-          "manager": "homebrew"
+          "agentSummary": "Run any Edge Function from CLI or Node.js module.",
+          "category": "language-runtime",
+          "displayName": "edge-runtime",
+          "homepage": "https://edge-runtime.vercel.app/packages/runtime",
+          "id": "npm:edge-runtime",
+          "installURL": "pkgmgrmgr://install?package=npm%3Aedge-runtime",
+          "manager": "npm"
         },
         {
-          "agentSummary": "Open source user-friendly database for logs from VictoriaMetrics",
-          "category": "data",
-          "displayName": "victorialogs",
-          "homepage": "https://docs.victoriametrics.com/victorialogs/",
-          "id": "brew:victorialogs",
-          "installURL": "pkgmgrmgr://install?package=brew%3Avictorialogs",
+          "agentSummary": "node",
+          "category": "language-runtime",
+          "displayName": "node",
+          "homepage": "https://github.com/aredridel/node-bin-gen#readme",
+          "id": "npm:node",
+          "installURL": "pkgmgrmgr://install?package=npm%3Anode",
+          "manager": "npm"
+        }
+      ],
+      "publishedAt": "2026-07-27T13:01:16Z",
+      "title": "For You in Language Runtime",
+      "type": "personalizedRecommendations"
+    },
+    {
+      "batchID": "20260727T130116Z-edd93d29",
+      "id": "new-packages:media:20260727T130116Z-f220bb45",
+      "packages": [
+        {
+          "agentSummary": "Self-hosted media streaming server and Plex alternative for movies and TV",
+          "category": "media",
+          "displayName": "lunarr",
+          "homepage": "https://github.com/lunarr-app/lunarr-go",
+          "id": "brew:lunarr",
+          "installURL": "pkgmgrmgr://install?package=brew%3Alunarr",
           "manager": "homebrew"
         }
       ],
       "publishedAt": "2026-07-27T13:01:16Z",
-      "title": "Recently Updated in Data",
+      "title": "New Packages in Media",
+      "type": "newPackages"
+    },
+    {
+      "batchID": "20260727T130116Z-edd93d29",
+      "id": "recently-updated:cloud-infrastructure:20260727T130116Z-f220bb45",
+      "packages": [
+        {
+          "agentSummary": "Command-line tool for interacting with the balenaCloud and balena API",
+          "category": "cloud-infrastructure",
+          "displayName": "balena-cli",
+          "homepage": "https://docs.balena.io/reference/balena-cli/latest/",
+          "id": "brew:balena-cli",
+          "installURL": "pkgmgrmgr://install?package=brew%3Abalena-cli",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "CLI tool for managed OpenShift clusters",
+          "category": "cloud-infrastructure",
+          "displayName": "osdctl",
+          "homepage": "https://github.com/openshift/osdctl",
+          "id": "brew:osdctl",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aosdctl",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Terminal dashboard for Docker monitoring across multiple hosts",
+          "category": "cloud-infrastructure",
+          "displayName": "dtop",
+          "homepage": "https://dtop.dev/",
+          "id": "brew:dtop",
+          "installURL": "pkgmgrmgr://install?package=brew%3Adtop",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "RedHat OpenShift Service on AWS (ROSA) command-line interface",
+          "category": "cloud-infrastructure",
+          "displayName": "rosa-cli",
+          "homepage": "https://www.openshift.com/products/amazon-openshift",
+          "id": "brew:rosa-cli",
+          "installURL": "pkgmgrmgr://install?package=brew%3Arosa-cli",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Linux-native \"fake root\" for implementing rootless containers",
+          "category": "cloud-infrastructure",
+          "displayName": "rootlesskit",
+          "homepage": "https://github.com/rootless-containers/rootlesskit",
+          "id": "brew:rootlesskit",
+          "installURL": "pkgmgrmgr://install?package=brew%3Arootlesskit",
+          "manager": "homebrew"
+        }
+      ],
+      "publishedAt": "2026-07-27T13:01:16Z",
+      "title": "Recently Updated in Cloud Infrastructure",
       "type": "recentlyUpdated"
+    },
+    {
+      "batchID": "20260727T130116Z-edd93d29",
+      "id": "new-packages:ai:20260727T130116Z-f220bb45",
+      "packages": [
+        {
+          "agentSummary": "Fast local AI engine for Apple Silicon with an OpenAI-compatible API",
+          "category": "ai",
+          "displayName": "rapid-mlx",
+          "homepage": "https://github.com/raullenchai/Rapid-MLX",
+          "id": "brew:rapid-mlx",
+          "installURL": "pkgmgrmgr://install?package=brew%3Arapid-mlx",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Dependency manager for AI agent configuration",
+          "category": "ai",
+          "displayName": "apm",
+          "homepage": "https://microsoft.github.io/apm/",
+          "id": "brew:apm",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aapm",
+          "manager": "homebrew"
+        }
+      ],
+      "publishedAt": "2026-07-27T13:01:16Z",
+      "title": "New Packages in Ai",
+      "type": "newPackages"
     },
     {
       "artwork": {
@@ -698,177 +842,6 @@
     },
     {
       "batchID": "20260723T140545Z-264ab575",
-      "id": "for-you:language-runtime:20260727T130116Z-f220bb45",
-      "packages": [
-        {
-          "agentSummary": "Runtime typescript and ESM support for Node.js",
-          "category": "language-runtime",
-          "displayName": "jiti",
-          "homepage": "https://github.com/unjs/jiti#readme",
-          "id": "npm:jiti",
-          "installURL": "pkgmgrmgr://install?package=npm%3Ajiti",
-          "manager": "npm"
-        },
-        {
-          "agentSummary": "Vite as Node.js runtime",
-          "category": "language-runtime",
-          "displayName": "vite-node",
-          "homepage": "https://github.com/antfu-collective/vite-node#readme",
-          "id": "npm:vite-node",
-          "installURL": "pkgmgrmgr://install?package=npm%3Avite-node",
-          "manager": "npm"
-        },
-        {
-          "agentSummary": "👷 workerd, Cloudflare's JavaScript/Wasm Runtime",
-          "category": "language-runtime",
-          "displayName": "workerd",
-          "homepage": "https://github.com/cloudflare/workerd#readme",
-          "id": "npm:workerd",
-          "installURL": "pkgmgrmgr://install?package=npm%3Aworkerd",
-          "manager": "npm"
-        },
-        {
-          "agentSummary": "Run any Edge Function from CLI or Node.js module.",
-          "category": "language-runtime",
-          "displayName": "edge-runtime",
-          "homepage": "https://edge-runtime.vercel.app/packages/runtime",
-          "id": "npm:edge-runtime",
-          "installURL": "pkgmgrmgr://install?package=npm%3Aedge-runtime",
-          "manager": "npm"
-        },
-        {
-          "agentSummary": "node",
-          "category": "language-runtime",
-          "displayName": "node",
-          "homepage": "https://github.com/aredridel/node-bin-gen#readme",
-          "id": "npm:node",
-          "installURL": "pkgmgrmgr://install?package=npm%3Anode",
-          "manager": "npm"
-        }
-      ],
-      "publishedAt": "2026-07-23T14:05:45Z",
-      "title": "For You in Language Runtime",
-      "type": "personalizedRecommendations"
-    },
-    {
-      "batchID": "20260723T140545Z-264ab575",
-      "id": "new-packages:media:20260727T130116Z-f220bb45",
-      "packages": [
-        {
-          "agentSummary": "Self-hosted media streaming server and Plex alternative for movies and TV",
-          "category": "media",
-          "displayName": "lunarr",
-          "homepage": "https://github.com/lunarr-app/lunarr-go",
-          "id": "brew:lunarr",
-          "installURL": "pkgmgrmgr://install?package=brew%3Alunarr",
-          "manager": "homebrew"
-        }
-      ],
-      "publishedAt": "2026-07-23T14:05:45Z",
-      "title": "New Packages in Media",
-      "type": "newPackages"
-    },
-    {
-      "batchID": "20260723T140545Z-264ab575",
-      "id": "recently-updated:cloud-infrastructure:20260727T130116Z-f220bb45",
-      "packages": [
-        {
-          "agentSummary": "<img style=\"margin-bottom: 20px;\" src=\"https://myvaltech.s3.us-east-2.amazonaws.com/logo-terminal-rounded.png\" width=\"60px\" />",
-          "category": "cloud-infrastructure",
-          "displayName": "valtech-components",
-          "homepage": "https://github.com/solucionesvaltech/myvaltech#readme",
-          "id": "npm:valtech-components",
-          "installURL": "pkgmgrmgr://install?package=npm%3Avaltech-components",
-          "manager": "npm"
-        },
-        {
-          "agentSummary": "Official Go implementation of the Ethereum protocol",
-          "category": "cloud-infrastructure",
-          "displayName": "ethereum",
-          "homepage": "https://geth.ethereum.org/",
-          "id": "brew:ethereum",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aethereum",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "CLI for Epinio, the Application Development Engine for Kubernetes",
-          "category": "cloud-infrastructure",
-          "displayName": "epinio",
-          "homepage": "https://epinio.io/",
-          "id": "brew:epinio",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aepinio",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Command-line utility for operating Envoy Gateway",
-          "category": "cloud-infrastructure",
-          "displayName": "egctl",
-          "homepage": "https://gateway.envoyproxy.io/",
-          "id": "brew:egctl",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aegctl",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "DevOps management tool",
-          "category": "cloud-infrastructure",
-          "displayName": "juju",
-          "homepage": "https://canonical.com/juju",
-          "id": "brew:juju",
-          "installURL": "pkgmgrmgr://install?package=brew%3Ajuju",
-          "manager": "homebrew"
-        }
-      ],
-      "publishedAt": "2026-07-23T14:05:45Z",
-      "title": "Recently Updated in Cloud Infrastructure",
-      "type": "recentlyUpdated"
-    },
-    {
-      "batchID": "20260723T140545Z-264ab575",
-      "id": "new-packages:ai:20260727T130116Z-f220bb45",
-      "packages": [
-        {
-          "agentSummary": "Fast local AI engine for Apple Silicon with an OpenAI-compatible API",
-          "category": "ai",
-          "displayName": "rapid-mlx",
-          "homepage": "https://github.com/raullenchai/Rapid-MLX",
-          "id": "brew:rapid-mlx",
-          "installURL": "pkgmgrmgr://install?package=brew%3Arapid-mlx",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Dependency manager for AI agent configuration",
-          "category": "ai",
-          "displayName": "apm",
-          "homepage": "https://microsoft.github.io/apm/",
-          "id": "brew:apm",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aapm",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "CLI for managing skills and external CLIs",
-          "category": "ai",
-          "displayName": "advai-cli",
-          "homepage": "https://github.com/Advai-X/advai-cli",
-          "id": "brew:advai-cli",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aadvai-cli",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Terminal pixel-art office for AI coding agents",
-          "category": "ai",
-          "displayName": "pixtuoid",
-          "homepage": "https://github.com/IvanWng97/pixtuoid",
-          "id": "brew:pixtuoid",
-          "installURL": "pkgmgrmgr://install?package=brew%3Apixtuoid",
-          "manager": "homebrew"
-        }
-      ],
-      "publishedAt": "2026-07-23T14:05:45Z",
-      "title": "New Packages in Ai",
-      "type": "newPackages"
-    },
-    {
-      "batchID": "20260723T140545Z-264ab575",
       "id": "for-you:games:20260727T130116Z-f220bb45",
       "packages": [
         {
@@ -920,6 +893,213 @@
       "publishedAt": "2026-07-23T14:05:45Z",
       "title": "For You in Games",
       "type": "personalizedRecommendations"
+    },
+    {
+      "batchID": "20260723T140545Z-264ab575",
+      "id": "new-packages:security:20260727T130116Z-f220bb45",
+      "packages": [
+        {
+          "agentSummary": "Adversarial security testing engine, SDK, and CLI for AI agents",
+          "category": "security",
+          "displayName": "humanbound",
+          "homepage": "https://docs.humanbound.ai/",
+          "id": "brew:humanbound",
+          "installURL": "pkgmgrmgr://install?package=brew%3Ahumanbound",
+          "manager": "homebrew"
+        }
+      ],
+      "publishedAt": "2026-07-23T14:05:45Z",
+      "title": "New Packages in Security",
+      "type": "newPackages"
+    },
+    {
+      "batchID": "20260723T140545Z-264ab575",
+      "id": "recently-updated:language-runtime:20260727T130116Z-f220bb45",
+      "packages": [
+        {
+          "agentSummary": "Dynamic, general-purpose programming language",
+          "category": "language-runtime",
+          "displayName": "clojure",
+          "homepage": "https://clojure.org",
+          "id": "brew:clojure",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aclojure",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Rye is a homoiconic programming language focused on fluid expressions",
+          "category": "language-runtime",
+          "displayName": "ryelang",
+          "homepage": "https://ryelang.org/",
+          "id": "brew:ryelang",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aryelang",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Fast and flexible scripting for Go developers and DevOps",
+          "category": "language-runtime",
+          "displayName": "risor",
+          "homepage": "https://risor.io/",
+          "id": "brew:risor",
+          "installURL": "pkgmgrmgr://install?package=brew%3Arisor",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Modern CLI scripts made easy",
+          "category": "language-runtime",
+          "displayName": "rad",
+          "homepage": "https://amterp.dev/rad/",
+          "id": "brew:rad",
+          "installURL": "pkgmgrmgr://install?package=brew%3Arad",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Programming language for highly scalable real-time systems",
+          "category": "language-runtime",
+          "displayName": "erlang@28",
+          "homepage": "https://www.erlang.org/",
+          "id": "brew:erlang@28",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aerlang%4028",
+          "manager": "homebrew"
+        }
+      ],
+      "publishedAt": "2026-07-23T14:05:45Z",
+      "title": "Recently Updated in Language Runtime",
+      "type": "recentlyUpdated"
+    },
+    {
+      "batchID": "20260723T140545Z-264ab575",
+      "id": "new-packages:system:20260727T130116Z-f220bb45",
+      "packages": [
+        {
+          "agentSummary": "Vhost-user virtio-fs device backend written in Rust",
+          "category": "system",
+          "displayName": "virtiofsd",
+          "homepage": "https://gitlab.com/virtio-fs/virtiofsd",
+          "id": "brew:virtiofsd",
+          "installURL": "pkgmgrmgr://install?package=brew%3Avirtiofsd",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Ultra-fast duplicate file finder TUI/GUI",
+          "category": "system",
+          "displayName": "dskditto",
+          "homepage": "https://github.com/jdefrancesco/dskDitto",
+          "id": "brew:dskditto",
+          "installURL": "pkgmgrmgr://install?package=brew%3Adskditto",
+          "manager": "homebrew"
+        }
+      ],
+      "publishedAt": "2026-07-23T14:05:45Z",
+      "title": "New Packages in System",
+      "type": "newPackages"
+    },
+    {
+      "batchID": "20260723T140545Z-264ab575",
+      "id": "for-you:networking:20260727T130116Z-f220bb45",
+      "packages": [
+        {
+          "agentSummary": "ECMAScript parser",
+          "category": "networking",
+          "displayName": "acorn",
+          "homepage": "https://github.com/acornjs/acorn",
+          "id": "npm:acorn",
+          "installURL": "pkgmgrmgr://install?package=npm%3Aacorn",
+          "manager": "npm"
+        },
+        {
+          "agentSummary": "Share target browsers between different front-end tools, like Autoprefixer, Stylelint and babel-env-preset",
+          "category": "networking",
+          "displayName": "browserslist",
+          "homepage": "https://github.com/browserslist/browserslist#readme",
+          "id": "npm:browserslist",
+          "installURL": "pkgmgrmgr://install?package=npm%3Abrowserslist",
+          "manager": "npm"
+        },
+        {
+          "agentSummary": "A library for obtaining browser versions with their maximum supported Baseline feature set and Widely Available status.",
+          "category": "networking",
+          "displayName": "baseline-browser-mapping",
+          "homepage": "https://github.com/web-platform-dx/baseline-browser-mapping#readme",
+          "id": "npm:baseline-browser-mapping",
+          "installURL": "pkgmgrmgr://install?package=npm%3Abaseline-browser-mapping",
+          "manager": "npm"
+        },
+        {
+          "agentSummary": "Parse CSS and add vendor prefixes to CSS rules using values from the Can I Use website",
+          "category": "networking",
+          "displayName": "autoprefixer",
+          "homepage": "https://github.com/postcss/autoprefixer#readme",
+          "id": "npm:autoprefixer",
+          "installURL": "pkgmgrmgr://install?package=npm%3Aautoprefixer",
+          "manager": "npm"
+        },
+        {
+          "agentSummary": "Minimal H(TTP) framework built for high performance and portability.",
+          "category": "networking",
+          "displayName": "h3",
+          "homepage": "https://h3.dev",
+          "id": "npm:h3",
+          "installURL": "pkgmgrmgr://install?package=npm%3Ah3",
+          "manager": "npm"
+        }
+      ],
+      "publishedAt": "2026-07-23T14:05:45Z",
+      "title": "For You in Networking",
+      "type": "personalizedRecommendations"
+    },
+    {
+      "batchID": "20260723T140545Z-264ab575",
+      "id": "recently-updated:science:20260727T130116Z-f220bb45",
+      "packages": [
+        {
+          "agentSummary": "Experimental Physics and Industrial Control System",
+          "category": "science",
+          "displayName": "epics-base",
+          "homepage": "https://epics-controls.org/",
+          "id": "brew:epics-base",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aepics-base",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Long read RNA-seq quantification",
+          "category": "science",
+          "displayName": "oarfish",
+          "homepage": "https://github.com/COMBINE-lab/oarfish",
+          "id": "brew:oarfish",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aoarfish",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Successor of BWA-MEM for short-read alignment",
+          "category": "science",
+          "displayName": "minibwa",
+          "homepage": "https://github.com/lh3/minibwa",
+          "id": "brew:minibwa",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aminibwa",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Cross-platform and ultrafast toolkit for FASTA/Q file manipulation in Golang",
+          "category": "science",
+          "displayName": "seqkit",
+          "homepage": "https://bioinf.shenwei.me/seqkit",
+          "id": "brew:seqkit",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aseqkit",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Make electronics using Typescript, React, and AI tools.",
+          "category": "science",
+          "displayName": "tscircuit",
+          "homepage": "https://github.com/tscircuit/tscircuit#readme",
+          "id": "npm:tscircuit",
+          "installURL": "pkgmgrmgr://install?package=npm%3Atscircuit",
+          "manager": "npm"
+        }
+      ],
+      "publishedAt": "2026-07-23T14:05:45Z",
+      "title": "Recently Updated in Science",
+      "type": "recentlyUpdated"
     },
     {
       "artwork": {
@@ -1156,276 +1336,6 @@
     },
     {
       "batchID": "20260720T130253Z-661909b5",
-      "id": "recently-updated:security:20260727T130116Z-f220bb45",
-      "packages": [
-        {
-          "agentSummary": "Enpass command-line client",
-          "category": "security",
-          "displayName": "enpass-cli",
-          "homepage": "https://github.com/hazcod/enpass-cli",
-          "id": "brew:enpass-cli",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aenpass-cli",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Static Application Security Testing (SAST) tool",
-          "category": "security",
-          "displayName": "intercept",
-          "homepage": "https://intercept.cc",
-          "id": "brew:intercept",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aintercept",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Fast and multi-purpose HTTP toolkit",
-          "category": "security",
-          "displayName": "httpx",
-          "homepage": "https://github.com/projectdiscovery/httpx",
-          "id": "brew:httpx",
-          "installURL": "pkgmgrmgr://install?package=brew%3Ahttpx",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Fast web fuzzer written in Go",
-          "category": "security",
-          "displayName": "ffuf",
-          "homepage": "https://github.com/ffuf/ffuf",
-          "id": "brew:ffuf",
-          "installURL": "pkgmgrmgr://install?package=brew%3Affuf",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Uses favicon.ico to improve the target recon phase",
-          "category": "security",
-          "displayName": "favirecon",
-          "homepage": "https://edoardottt.com/",
-          "id": "brew:favirecon",
-          "installURL": "pkgmgrmgr://install?package=brew%3Afavirecon",
-          "manager": "homebrew"
-        }
-      ],
-      "publishedAt": "2026-07-20T13:02:53Z",
-      "title": "Recently Updated in Security",
-      "type": "recentlyUpdated"
-    },
-    {
-      "batchID": "20260720T130253Z-661909b5",
-      "id": "for-you:networking:20260727T130116Z-f220bb45",
-      "packages": [
-        {
-          "agentSummary": "ECMAScript parser",
-          "category": "networking",
-          "displayName": "acorn",
-          "homepage": "https://github.com/acornjs/acorn",
-          "id": "npm:acorn",
-          "installURL": "pkgmgrmgr://install?package=npm%3Aacorn",
-          "manager": "npm"
-        },
-        {
-          "agentSummary": "Share target browsers between different front-end tools, like Autoprefixer, Stylelint and babel-env-preset",
-          "category": "networking",
-          "displayName": "browserslist",
-          "homepage": "https://github.com/browserslist/browserslist#readme",
-          "id": "npm:browserslist",
-          "installURL": "pkgmgrmgr://install?package=npm%3Abrowserslist",
-          "manager": "npm"
-        },
-        {
-          "agentSummary": "A library for obtaining browser versions with their maximum supported Baseline feature set and Widely Available status.",
-          "category": "networking",
-          "displayName": "baseline-browser-mapping",
-          "homepage": "https://github.com/web-platform-dx/baseline-browser-mapping#readme",
-          "id": "npm:baseline-browser-mapping",
-          "installURL": "pkgmgrmgr://install?package=npm%3Abaseline-browser-mapping",
-          "manager": "npm"
-        },
-        {
-          "agentSummary": "Parse CSS and add vendor prefixes to CSS rules using values from the Can I Use website",
-          "category": "networking",
-          "displayName": "autoprefixer",
-          "homepage": "https://github.com/postcss/autoprefixer#readme",
-          "id": "npm:autoprefixer",
-          "installURL": "pkgmgrmgr://install?package=npm%3Aautoprefixer",
-          "manager": "npm"
-        },
-        {
-          "agentSummary": "Minimal H(TTP) framework built for high performance and portability.",
-          "category": "networking",
-          "displayName": "h3",
-          "homepage": "https://h3.dev",
-          "id": "npm:h3",
-          "installURL": "pkgmgrmgr://install?package=npm%3Ah3",
-          "manager": "npm"
-        }
-      ],
-      "publishedAt": "2026-07-20T13:02:53Z",
-      "title": "For You in Networking",
-      "type": "personalizedRecommendations"
-    },
-    {
-      "batchID": "20260720T130253Z-661909b5",
-      "id": "recently-updated:system:20260727T130116Z-f220bb45",
-      "packages": [
-        {
-          "agentSummary": "Cross-platform system diagnostics TUI",
-          "category": "system",
-          "displayName": "syswatch",
-          "homepage": "https://www.netwatchlabs.com/labs/syswatch",
-          "id": "brew:syswatch",
-          "installURL": "pkgmgrmgr://install?package=brew%3Asyswatch",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Cross-platform disk diagnostics TUI",
-          "category": "system",
-          "displayName": "diskwatch",
-          "homepage": "https://www.netwatchlabs.com/labs/diskwatch",
-          "id": "brew:diskwatch",
-          "installURL": "pkgmgrmgr://install?package=brew%3Adiskwatch",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Friendly and expressive shell",
-          "category": "system",
-          "displayName": "elvish",
-          "homepage": "https://elv.sh/",
-          "id": "brew:elvish",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aelvish",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Why is this running?",
-          "category": "system",
-          "displayName": "witr",
-          "homepage": "https://github.com/pranshuparmar/witr",
-          "id": "brew:witr",
-          "installURL": "pkgmgrmgr://install?package=brew%3Awitr",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "One-stop ZFS backup & replication solution",
-          "category": "system",
-          "displayName": "zrepl",
-          "homepage": "https://zrepl.github.io",
-          "id": "brew:zrepl",
-          "installURL": "pkgmgrmgr://install?package=brew%3Azrepl",
-          "manager": "homebrew"
-        }
-      ],
-      "publishedAt": "2026-07-20T13:02:53Z",
-      "title": "Recently Updated in System",
-      "type": "recentlyUpdated"
-    },
-    {
-      "batchID": "20260720T130253Z-661909b5",
-      "id": "for-you:security:20260727T130116Z-f220bb45",
-      "packages": [
-        {
-          "agentSummary": "A tiny (118 bytes), secure URL-friendly unique string ID generator",
-          "category": "security",
-          "displayName": "nanoid",
-          "homepage": "https://github.com/ai/nanoid#readme",
-          "id": "npm:nanoid",
-          "installURL": "pkgmgrmgr://install?package=npm%3Ananoid",
-          "manager": "npm"
-        },
-        {
-          "agentSummary": "Streamable SHA hashes in pure javascript",
-          "category": "security",
-          "displayName": "sha.js",
-          "homepage": "https://github.com/crypto-browserify/sha.js",
-          "id": "npm:sha.js",
-          "installURL": "pkgmgrmgr://install?package=npm%3Asha.js",
-          "manager": "npm"
-        },
-        {
-          "agentSummary": "Optimized bcrypt in plain JavaScript with zero dependencies, with TypeScript support. Compatible to 'bcrypt'.",
-          "category": "security",
-          "displayName": "bcryptjs",
-          "homepage": "https://github.com/dcodeIO/bcrypt.js#readme",
-          "id": "npm:bcryptjs",
-          "installURL": "pkgmgrmgr://install?package=npm%3Abcryptjs",
-          "manager": "npm"
-        },
-        {
-          "agentSummary": "detect possibly catastrophic, exponential-time regular expressions",
-          "category": "security",
-          "displayName": "safe-regex2",
-          "homepage": "https://github.com/fastify/safe-regex2",
-          "id": "npm:safe-regex2",
-          "installURL": "pkgmgrmgr://install?package=npm%3Asafe-regex2",
-          "manager": "npm"
-        },
-        {
-          "agentSummary": "Sanitize untrusted HTML (to prevent XSS) with a configuration specified by a Whitelist",
-          "category": "security",
-          "displayName": "xss",
-          "homepage": "https://github.com/leizongmin/js-xss",
-          "id": "npm:xss",
-          "installURL": "pkgmgrmgr://install?package=npm%3Axss",
-          "manager": "npm"
-        }
-      ],
-      "publishedAt": "2026-07-20T13:02:53Z",
-      "title": "For You in Security",
-      "type": "personalizedRecommendations"
-    },
-    {
-      "batchID": "20260720T130253Z-661909b5",
-      "id": "recently-updated:language-runtime:20260727T130116Z-f220bb45",
-      "packages": [
-        {
-          "agentSummary": "👷 workerd, Cloudflare's JavaScript/Wasm Runtime",
-          "category": "language-runtime",
-          "displayName": "workerd",
-          "homepage": "https://github.com/cloudflare/workerd#readme",
-          "id": "npm:workerd",
-          "installURL": "pkgmgrmgr://install?package=npm%3Aworkerd",
-          "manager": "npm"
-        },
-        {
-          "agentSummary": "Small Clojure interpreter, linter and formatter",
-          "category": "language-runtime",
-          "displayName": "joker",
-          "homepage": "https://joker-lang.org/",
-          "id": "brew:joker",
-          "installURL": "pkgmgrmgr://install?package=brew%3Ajoker",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Asynchronous I/O for Lua",
-          "category": "language-runtime",
-          "displayName": "luvit",
-          "homepage": "https://luvit.io",
-          "id": "brew:luvit",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aluvit",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Just-In-Time Compiler (JIT) for the Lua programming language",
-          "category": "language-runtime",
-          "displayName": "luajit",
-          "homepage": "https://luajit.org/luajit.html",
-          "id": "brew:luajit",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aluajit",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Mature, production-ready implementation of the Raku language",
-          "category": "language-runtime",
-          "displayName": "rakudo",
-          "homepage": "https://rakudo.org",
-          "id": "brew:rakudo",
-          "installURL": "pkgmgrmgr://install?package=brew%3Arakudo",
-          "manager": "homebrew"
-        }
-      ],
-      "publishedAt": "2026-07-20T13:02:53Z",
-      "title": "Recently Updated in Language Runtime",
-      "type": "recentlyUpdated"
-    },
-    {
-      "batchID": "20260720T130253Z-661909b5",
       "id": "new-packages:cloud-infrastructure:20260727T130116Z-f220bb45",
       "packages": [
         {
@@ -1495,6 +1405,60 @@
       "publishedAt": "2026-07-20T13:02:53Z",
       "title": "For You in Ai",
       "type": "personalizedRecommendations"
+    },
+    {
+      "batchID": "20260720T130253Z-661909b5",
+      "id": "recently-updated:security:20260727T130116Z-f220bb45",
+      "packages": [
+        {
+          "agentSummary": "Secrets scanner built for configurability and speed",
+          "category": "security",
+          "displayName": "betterleaks",
+          "homepage": "https://betterleaks.com",
+          "id": "brew:betterleaks",
+          "installURL": "pkgmgrmgr://install?package=brew%3Abetterleaks",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Two-factor authentication on the command-line",
+          "category": "security",
+          "displayName": "rsc_2fa",
+          "homepage": "https://pkg.go.dev/rsc.io/2fa",
+          "id": "brew:rsc_2fa",
+          "installURL": "pkgmgrmgr://install?package=brew%3Arsc_2fa",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "CLI for Stackrox",
+          "category": "security",
+          "displayName": "roxctl",
+          "homepage": "https://www.stackrox.io/",
+          "id": "brew:roxctl",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aroxctl",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Manages getting temporary security credentials from IAM Roles Anywhere",
+          "category": "security",
+          "displayName": "rolesanywhere-credential-helper",
+          "homepage": "https://github.com/aws/rolesanywhere-credential-helper",
+          "id": "brew:rolesanywhere-credential-helper",
+          "installURL": "pkgmgrmgr://install?package=brew%3Arolesanywhere-credential-helper",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "CLI for interacting with Rekor",
+          "category": "security",
+          "displayName": "rekor-cli",
+          "homepage": "https://docs.sigstore.dev/logging/overview/",
+          "id": "brew:rekor-cli",
+          "installURL": "pkgmgrmgr://install?package=brew%3Arekor-cli",
+          "manager": "homebrew"
+        }
+      ],
+      "publishedAt": "2026-07-20T13:02:53Z",
+      "title": "Recently Updated in Security",
+      "type": "recentlyUpdated"
     },
     {
       "artwork": {
@@ -1734,64 +1698,10 @@
       ],
       "title": "Playwright Puts Browsers Under Test",
       "type": "editorial"
-    },
-    {
-      "batchID": "20260716T225252Z-72f77757",
-      "id": "recently-updated:toys:20260727T130116Z-f220bb45",
-      "packages": [
-        {
-          "agentSummary": "Creates ASCII Art from text. A full implementation of the FIGfont spec.",
-          "category": "toys",
-          "displayName": "figlet",
-          "homepage": "https://github.com/patorjk/figlet.js#readme",
-          "id": "npm:figlet",
-          "installURL": "pkgmgrmgr://install?package=npm%3Afiglet",
-          "manager": "npm"
-        },
-        {
-          "agentSummary": "Cowsay but with ponies",
-          "category": "toys",
-          "displayName": "ponysay",
-          "homepage": "https://github.com/erkin/ponysay/",
-          "id": "brew:ponysay",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aponysay",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Generates ASCII tractor art",
-          "category": "toys",
-          "displayName": "tractorgen",
-          "homepage": "https://vergenet.net/~conrad/software/tractorgen/",
-          "id": "brew:tractorgen",
-          "installURL": "pkgmgrmgr://install?package=brew%3Atractorgen",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Small, configurable CLI that displays Japanese quotes in the terminal",
-          "category": "toys",
-          "displayName": "kotofetch",
-          "homepage": "https://github.com/hxpe-dev/kotofetch",
-          "id": "brew:kotofetch",
-          "installURL": "pkgmgrmgr://install?package=brew%3Akotofetch",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Infamous electronic fortune-cookie generator",
-          "category": "toys",
-          "displayName": "fortune",
-          "homepage": "https://www.ibiblio.org/pub/linux/games/amusements/fortune/!INDEX.html",
-          "id": "brew:fortune",
-          "installURL": "pkgmgrmgr://install?package=brew%3Afortune",
-          "manager": "homebrew"
-        }
-      ],
-      "publishedAt": "2026-07-16T22:52:52Z",
-      "title": "Recently Updated in Toys",
-      "type": "recentlyUpdated"
     }
   ],
-  "generatedAt": "2026-07-27T13:01:16Z",
-  "nextPageURL": "https://mxcl.dev/package-manager-manager/feed/v2/pages/20260727T130116Z-67ac8345.json",
-  "pageID": "20260727T130116Z-582c70ae",
+  "generatedAt": "2026-07-29T13:01:23Z",
+  "nextPageURL": "https://mxcl.dev/package-manager-manager/feed/v2/pages/20260729T130123Z-8f61794b.json",
+  "pageID": "20260729T130123Z-0a69ad0a",
   "schemaVersion": 2
 }
