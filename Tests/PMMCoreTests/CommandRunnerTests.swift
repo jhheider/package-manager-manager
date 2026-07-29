@@ -3,11 +3,38 @@ import Testing
 @testable import PMMCore
 
 @Test func commandPathPreservesPathOrderAndAppendsFallbacks() {
-    #expect(commandPath("/custom/bin:/usr/bin") == "/custom/bin:/usr/bin:/usr/local/bin:/opt/homebrew/bin")
+    #expect(commandPath("/custom/bin:/usr/bin", additional: []) == "/custom/bin:/usr/bin:/usr/local/bin:/opt/homebrew/bin")
 }
 
 @Test func commandPathUsesFallbacksWhenPathIsMissing() {
-    #expect(commandPath(nil) == "/usr/local/bin:/opt/homebrew/bin")
+    #expect(commandPath(nil, additional: []) == "/usr/local/bin:/opt/homebrew/bin")
+}
+
+@Test func commandPathInsertsAdditionalPathsAfterTheInheritedPath() {
+    #expect(
+        commandPath("/custom/bin", additional: ["/extra/bin"])
+            == "/custom/bin:/extra/bin:/usr/local/bin:/opt/homebrew/bin"
+    )
+}
+
+@Test func commandPathDropsDuplicatesKeepingTheEarliestOccurrence() {
+    #expect(
+        commandPath("/custom/bin:/usr/local/bin", additional: ["/custom/bin", "/extra/bin"])
+            == "/custom/bin:/usr/local/bin:/extra/bin:/opt/homebrew/bin"
+    )
+}
+
+@Test func homeCommandPathsCoverCargoAndLocalBin() {
+    let paths = homeCommandPaths(environment: [:], home: URL(fileURLWithPath: "/Users/example"))
+    #expect(paths == ["/Users/example/.cargo/bin", "/Users/example/.local/bin"])
+}
+
+@Test func homeCommandPathsHonorCargoHome() {
+    let paths = homeCommandPaths(
+        environment: ["CARGO_HOME": "/opt/cargo"],
+        home: URL(fileURLWithPath: "/Users/example")
+    )
+    #expect(paths.first == "/opt/cargo/bin")
 }
 
 @Test func systemCommandRunnerAppendsFallbacksToChildPath() throws {
@@ -16,8 +43,12 @@ import Testing
         ["-c", "printf %s \"$PATH\""],
         options: CommandRunOptions(environment: ["PATH": "/custom/bin"])
     )
+    let parts = result.stdout.split(separator: ":").map(String.init)
 
-    #expect(result.stdout == "/custom/bin:/usr/local/bin:/opt/homebrew/bin")
+    #expect(parts.first == "/custom/bin")
+    #expect(parts.contains("/usr/local/bin"))
+    #expect(parts.contains("/opt/homebrew/bin"))
+    #expect(parts.count == Set(parts).count)
 }
 
 private final class StringRecorder: @unchecked Sendable {

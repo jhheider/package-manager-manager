@@ -108,6 +108,7 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
     private var pendingHelperInstall: CargoHelper?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        ShellEnvironment.shared.prime()
         loadSnapshot()
         observeCommands()
         configureStatusButton()

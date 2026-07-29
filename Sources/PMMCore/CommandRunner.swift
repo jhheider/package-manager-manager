@@ -230,7 +230,7 @@ public struct SystemCommandRunner: CommandRunning {
     }
 }
 
-private /// Last-touched timestamp, shared between the two readers and the watchdog.
+/// Last-touched timestamp, shared between the two readers and the watchdog.
 final class ActivityClock: @unchecked Sendable {
     private let lock = NSLock()
     private var last = Date()
@@ -377,8 +377,33 @@ struct IncrementalUTF8Decoder {
 
 private let fallbackCommandPaths = ["/usr/local/bin", "/opt/homebrew/bin"]
 
-func commandPath(_ path: String?) -> String {
-    ([path].compactMap { $0?.isEmpty == false ? $0 : nil } + fallbackCommandPaths).joined(separator: ":")
+/// Directories worth searching even when the login shell could not be probed. `~/.cargo/bin` is the
+/// one that matters in practice: cargo puts every `cargo install` binary there and nothing else on
+/// the system adds it to a Finder-launched app's PATH.
+func homeCommandPaths(
+    environment: [String: String] = ProcessInfo.processInfo.environment,
+    home: URL = FileManager.default.homeDirectoryForCurrentUser
+) -> [String] {
+    let cargoHome = environment["CARGO_HOME"].flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0) }
+        ?? home.appendingPathComponent(".cargo", isDirectory: true)
+    return [
+        cargoHome.appendingPathComponent("bin", isDirectory: true).path,
+        home.appendingPathComponent(".local/bin", isDirectory: true).path,
+    ]
+}
+
+func defaultAdditionalCommandPaths() -> [String] {
+    ShellEnvironment.shared.cachedSearchPaths() + homeCommandPaths()
+}
+
+/// Builds a search PATH: the caller's own PATH first, then anything discovered from the login shell,
+/// then the hardcoded fallbacks. Duplicates are dropped, keeping the earliest occurrence.
+func commandPath(_ path: String?, additional: [String] = defaultAdditionalCommandPaths()) -> String {
+    let inherited = (path?.isEmpty == false ? path! : "").split(separator: ":").map(String.init)
+    var seen = Set<String>()
+    return (inherited + additional + fallbackCommandPaths)
+        .filter { !$0.isEmpty && seen.insert($0).inserted }
+        .joined(separator: ":")
 }
 
 private func commandEnvironment(_ overrides: [String: String]) -> [String: String] {
