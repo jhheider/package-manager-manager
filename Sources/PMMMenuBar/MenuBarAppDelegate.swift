@@ -421,6 +421,48 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
         notificationCenter.addObserver(self, selector: #selector(updateAllRequested(_:)), name: PackageHostNotifications.updateAllRequested, object: nil)
         notificationCenter.addObserver(self, selector: #selector(uninstallRequested(_:)), name: PackageHostNotifications.uninstallRequested, object: nil)
         notificationCenter.addObserver(self, selector: #selector(appUpdateQuitRequested(_:)), name: PackageHostNotifications.appUpdateQuitRequested, object: nil)
+        notificationCenter.addObserver(self, selector: #selector(helperInstallRequested(_:)), name: PackageHostNotifications.helperInstallRequested, object: nil)
+    }
+
+    @objc private func helperInstallRequested(_ notification: Notification) {
+        guard let helperID = PackageHostNotifications.helperID(from: notification) else { return }
+        installHelper(helperID)
+    }
+
+    private func installHelper(_ helperID: String) {
+        guard refreshTask == nil, actionTask == nil else { return }
+        cancelBackgroundRefresh()
+        // Installing a helper reports progress exactly like any other install: bootstrapping
+        // binstall has to compile from source, which takes minutes and looks hung without output.
+        let runID = UUID()
+        let packageID = helperID
+        snapshot.runningAction = PackageHostRunningAction(
+            runID: runID,
+            kind: .install,
+            packageID: packageID,
+            displayName: ManagerSetupState.helperDisplayName(id: helperID)
+        )
+        snapshot.errorMessage = nil
+        publishSnapshot()
+        let relay = actionProgressRelay(runID: runID, kind: .install, packageID: packageID)
+        let progressHandler = actionProgressHandler(runID: runID, kind: .install, packageID: packageID, relay: relay)
+
+        actionTask = Task { [weak self] in
+            let result = await Task.detached(priority: .background) {
+                Result { try ManagerSetupState.installHelper(id: helperID, onProgress: progressHandler) }
+            }.value
+
+            guard let self, !Task.isCancelled else { return }
+            self.finishActionProgress(relay, runID: runID, kind: .install, packageID: packageID)
+            self.actionTask = nil
+            self.snapshot.runningAction = nil
+            if case .failure(let error) = result {
+                self.snapshot.errorMessage = error.localizedDescription
+            }
+            self.publishSnapshot()
+            // A rescan is what surfaces the newly available versions cargo-update can now report.
+            self.refresh()
+        }
     }
 
     private func rebuildMenu() {

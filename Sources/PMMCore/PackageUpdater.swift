@@ -16,7 +16,11 @@ public struct PackageUpdater: Sendable {
         guard package.isOutdated else { return }
         switch package.manager {
         case .cargoInstall:
-            try run("cargo", ["install", package.packageToken, "--force", "--color", "always"], onProgress: onProgress)
+            try run(
+                firstOf: CargoToolchain(runner: runner, toolPaths: toolPaths)
+                    .updateCommands(for: package.packageToken),
+                onProgress: onProgress
+            )
         case .macApp, .rustup, .mise, .skills:
             throw PackageUpdateError.unsupportedManager(package.manager)
         case .homebrew:
@@ -44,6 +48,23 @@ public struct PackageUpdater: Sendable {
         }
     }
 
+    /// Runs commands in order until one succeeds, reporting each fallback as it happens. Managers
+    /// whose preferred tool only covers some packages supply more than one command.
+    private func run(
+        firstOf commands: [PackageCommand],
+        onProgress: (@Sendable (PackageCommandProgress) -> Void)?
+    ) throws {
+        guard let last = commands.last else { throw PackageUpdateError.missingExecutable("cargo") }
+        for command in commands.dropLast() {
+            do {
+                return try run(command.executable, command.arguments, onProgress: onProgress)
+            } catch {
+                onProgress?(.output("\n\(command.displayName) failed; trying \(last.displayName).\n"))
+            }
+        }
+        try run(last.executable, last.arguments, onProgress: onProgress)
+    }
+
     private func run(
         _ executableName: String,
         _ arguments: [String],
@@ -60,6 +81,26 @@ public struct PackageUpdater: Sendable {
         guard result.status == 0 else {
             throw PackageUpdateError.failed(command, result.stderr.isEmpty ? result.stdout : result.stderr)
         }
+    }
+}
+
+/// A single command invocation, so a manager can express an ordered set of things to try.
+public struct PackageCommand: Sendable, Equatable {
+    public let executable: String
+    public let arguments: [String]
+
+    public init(executable: String, arguments: [String]) {
+        self.executable = executable
+        self.arguments = arguments
+    }
+
+    /// Short label for progress messages, e.g. "cargo binstall".
+    public var displayName: String {
+        ([executable] + arguments.prefix(1)).joined(separator: " ")
+    }
+
+    public var displayCommand: String {
+        ([executable] + arguments).joined(separator: " ")
     }
 }
 

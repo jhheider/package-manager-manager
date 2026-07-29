@@ -104,7 +104,11 @@ public struct PackageScanner: @unchecked Sendable {
         guard let cargo = executable(named: "cargo") else { return [] }
         let result = try runner.run(cargo, ["install", "--list", "--color", "never"])
         guard result.status == 0 else { return [] }
-        return parseCargoInstallList(result.stdout)
+        // cargo itself cannot report what is out of date, so this is only populated when the user
+        // has opted into cargo-update. Crates it cannot resolve (git and path installs) are absent,
+        // and fall back to the curated catalog's version.
+        let latest = (try? CargoToolchain(runner: runner, toolPaths: toolPaths).latestVersions()) ?? [:]
+        return parseCargoInstallList(result.stdout, latestVersions: latest)
     }
 
     public func scanRustup(database: PackageDatabase) throws -> [ManagedPackage] {
@@ -353,7 +357,10 @@ public struct PackageScanner: @unchecked Sendable {
         }
     }
 
-    private func parseCargoInstallList(_ output: String) -> [ManagedPackage] {
+    private func parseCargoInstallList(
+        _ output: String,
+        latestVersions: [String: String] = [:]
+    ) -> [ManagedPackage] {
         var packages: [ManagedPackage] = []
         var current: (name: String, version: String, bins: [String])?
 
@@ -364,7 +371,7 @@ public struct PackageScanner: @unchecked Sendable {
                 identifier: "cargo:\(crate.name)",
                 displayName: crate.name,
                 installedVersion: crate.version,
-                latestVersion: nil,
+                latestVersion: latestVersions[crate.name],
                 summary: "cargo-installed Rust binary",
                 category: "developer-tools",
                 installLocation: cargoHome.path,

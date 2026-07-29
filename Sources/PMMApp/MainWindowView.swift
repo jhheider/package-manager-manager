@@ -306,6 +306,15 @@ struct MainWindowPackageListView: View {
                     .frame(maxWidth: .infinity, minHeight: 260)
                 } else {
                     LazyVStack(spacing: 0) {
+                        if let section = model.activeSidebarSection,
+                           let offer = model.setupOffer(for: section) {
+                            ManagerSetupCard(
+                                offer: offer,
+                                isInstalling: model.isInstallingHelper,
+                                install: { model.installHelper(offer.id) },
+                                dismiss: { model.dismissHelper(offer.id) }
+                            )
+                        }
                         ForEach(displayedPackages) { package in
                             PackageRow(
                                 package: package,
@@ -331,6 +340,7 @@ struct MainWindowPackageListView: View {
             .task(id: model.discoverPackageIDToScrollIntoView) {
                 await scrollToDiscoverPackage(model.discoverPackageIDToScrollIntoView, proxy: proxy)
             }
+            .task(id: model.selectedSection) { model.refreshSetupOffers() }
         }
         .safeAreaBar(edge: .top, alignment: .leading, spacing: 0) {
             HStack {
@@ -357,6 +367,49 @@ struct MainWindowPackageListView: View {
         }
         model.consumeDiscoverPackageScrollRequest()
     }
+}
+
+/// A one-time offer to install an optional helper tool. Dismissing it is remembered.
+private struct ManagerSetupCard: View {
+    let offer: ManagerSetupOffer
+    let isInstalling: Bool
+    let install: () -> Void
+    let dismiss: () -> Void
+
+    var body: some View {
+        // Text spans the full width and the buttons get their own row: this column is narrow and
+        // resizable, and a side-by-side layout wraps the copy into a few words per line.
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: offer.symbolName)
+                    .font(.system(size: 12))
+                    .foregroundStyle(.tint)
+                Text(offer.title)
+                    .font(.system(size: 13, weight: .semibold))
+            }
+
+            Text(offer.explanation)
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: 12) {
+                Spacer(minLength: 0)
+                Button("Not Now") { dismiss() }
+                    .buttonStyle(.link)
+                    .disabled(isInstalling)
+                Button(isInstalling ? "Installing…" : "Install") { install() }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isInstalling)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+    }
+
 }
 
 struct MainWindowDossierView: View {

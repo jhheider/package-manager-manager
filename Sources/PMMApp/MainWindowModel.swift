@@ -514,6 +514,8 @@ final class MainWindowModel: NSObject, ObservableObject {
     @Published private(set) var dashboardBlogEntriesAreLoading = false
     @Published private(set) var pendingInstallPackConfirmation: MainWindowInstallPackConfirmation?
     @Published var searchText = ""
+    @Published private(set) var setupOffer: ManagerSetupOffer?
+    private var managerSetup = ManagerSetupState()
 
     nonisolated private static let newUpdatedLastClickedAtDefaultsKey = "MainWindowModel.newUpdatedLastClickedAt"
     nonisolated private static let remoteHostsDefaultsKey = "MainWindowModel.remoteHosts"
@@ -528,6 +530,7 @@ final class MainWindowModel: NSObject, ObservableObject {
     private var newUpdatedLastClickedAt: Date?
     private var newUpdatedSelectionDisplayCount: Int?
     private let userDefaults: UserDefaults
+    private let preferencesStore: PackagePreferencesStore
     private let store: PackageHostStore
     private let bundledCatalog: [ManagedPackage]
     private let dossierClient: PackageDossierClient?
@@ -553,8 +556,10 @@ final class MainWindowModel: NSObject, ObservableObject {
         bundledCatalog: [ManagedPackage] = PackageHostStore.bundledCatalog(),
         dossierClient: PackageDossierClient? = nil,
         dashboardBlogURL: URL? = nil,
-        remoteClient: RemoteSSHClient = RemoteSSHClient()
+        remoteClient: RemoteSSHClient = RemoteSSHClient(),
+        preferencesStore: PackagePreferencesStore = PackagePreferencesStore()
     ) {
+        self.preferencesStore = preferencesStore
         self.userDefaults = userDefaults
         newUpdatedLastClickedAt = userDefaults.object(forKey: Self.newUpdatedLastClickedAtDefaultsKey) as? Date
         remoteHosts = userDefaults.data(forKey: Self.remoteHostsDefaultsKey)
@@ -979,6 +984,48 @@ final class MainWindowModel: NSObject, ObservableObject {
             return
         }
         PackageHostNotifications.postUninstallRequested(packageID: package.id)
+    }
+
+    /// The setup offer to show above the current section, if any.
+    ///
+    /// Gated on activeSidebarSection, not selectedSection: the latter keeps its value while a
+    /// remote host is selected, and helpers install on this Mac, not the one being viewed.
+    func setupOffer(for section: MainWindowSection) -> ManagerSetupOffer? {
+        guard activeSidebarSection == section, let setupOffer, mainWindowSetupSection(setupOffer.manager) == section else {
+            return nil
+        }
+        return setupOffer
+    }
+
+    /// Detecting tools shells out, so it never runs on the main thread.
+    func refreshSetupOffers() {
+        Task { [preferencesStore] in
+            let detected = await Task.detached(priority: .utility) {
+                ManagerSetupState.detect(preferences: preferencesStore.load())
+            }.value
+            managerSetup = managerSetup.merging(detected)
+            refreshSetupOffer()
+        }
+    }
+
+    private func refreshSetupOffer() {
+        setupOffer = managerSetup.offer(installedManagers: Set(inventory.packages.map(\.manager)))
+    }
+
+    var isInstallingHelper: Bool { managerSetup.installingHelperID != nil }
+
+    func installHelper(_ id: String) {
+        guard !isInstallingHelper else { return }
+        managerSetup.installingHelperID = id
+        PackageHostNotifications.postHelperInstallRequested(id)
+    }
+
+    func dismissHelper(_ id: String) {
+        managerSetup.dismiss(id)
+        refreshSetupOffer()
+        let preferences = managerSetup.preferences
+        let store = preferencesStore
+        Task.detached(priority: .utility) { store.save(preferences) }
     }
 
     func update(_ package: ManagedPackage) {
@@ -1430,6 +1477,9 @@ final class MainWindowModel: NSObject, ObservableObject {
             installedPackageFirstSeenAtByID: snapshot.installedPackageFirstSeenAtByID
         )
         guard remoteActionHostID == nil else { return }
+        // The helper clearing its running action is the only reliable completion signal. Waiting
+        // for the tool to appear leaves the card spinning forever whenever the install failed.
+        if snapshot.runningAction == nil { managerSetup.installingHelperID = nil }
         installingPackageName = snapshot.runningAction?.kind == .install ? snapshot.runningAction?.displayName : nil
         uninstallingPackageName = snapshot.runningAction?.kind == .uninstall ? snapshot.runningAction?.displayName : nil
         updatingPackageName = snapshot.runningAction?.kind == .update ? snapshot.runningAction?.displayName : nil
@@ -1450,6 +1500,7 @@ final class MainWindowModel: NSObject, ObservableObject {
 
     @objc private func hostSnapshotChanged(_ notification: Notification) {
         syncFromHost()
+        refreshSetupOffers()
     }
 
     @objc private func hostActionOutputChanged(_ notification: Notification) {
@@ -1614,6 +1665,19 @@ struct PackageIndex: Sendable {
     private static func versionParts(_ version: String?) -> [Int] {
         let parts = version?.split(separator: ".").prefix(3).map { Int($0) ?? 0 } ?? []
         return parts + Array(repeating: 0, count: 3 - parts.count)
+    }
+}
+
+/// The section a manager's setup offer belongs above. Managers whose packages span sections have
+/// no single home, so they cannot make offers.
+func mainWindowSetupSection(_ manager: PackageManagerKind) -> MainWindowSection? {
+    switch manager {
+    case .cargoInstall, .rustup: .rust
+    case .homebrew: .homebrew
+    case .npm, .npx: .javascript
+    case .skills: .skills
+    case .uv, .uvx: .python
+    case .macApp, .mise: nil
     }
 }
 
