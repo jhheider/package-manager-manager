@@ -430,6 +430,10 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func installHelper(_ helperID: String) {
+        // Refusing while a refresh or another action runs is safe to do silently: the app enters
+        // its installing state from this snapshot's running action rather than at click time, and
+        // disables the button whenever this guard would reject, so a dropped request neither
+        // strands the card nor is reachable from a click in the first place.
         guard refreshTask == nil, actionTask == nil else { return }
         cancelBackgroundRefresh()
         // Installing a helper reports progress exactly like any other install: bootstrapping

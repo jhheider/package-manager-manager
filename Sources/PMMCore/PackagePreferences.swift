@@ -19,8 +19,20 @@ public struct PackagePreferences: Sendable, Equatable, Codable {
         dismissedPrompts.insert(prompt)
     }
 
+    /// Undoes a dismissal. Persist before anything reloads from disk: ``merging(_:)`` treats
+    /// dismissals as accumulating, so a restore that races a reload is undone by it.
     public mutating func restore(_ prompt: String) {
         dismissedPrompts.remove(prompt)
+    }
+
+    /// Folds a second set of dismissals into this one.
+    ///
+    /// A union rather than a replacement, because the two sides are not ordered: preferences are
+    /// reloaded from disk on a background task, and a dismissal made while that read was in flight
+    /// exists only in memory. Taking the loaded set wholesale would resurrect the prompt the user
+    /// just dismissed.
+    public func merging(_ other: PackagePreferences) -> PackagePreferences {
+        PackagePreferences(dismissedPrompts: dismissedPrompts.union(other.dismissedPrompts))
     }
 }
 

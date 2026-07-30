@@ -217,17 +217,23 @@ public struct CargoSetupState: Sendable, Equatable {
     /// `nil` until detection has run, which is not the same as "nothing installed".
     public var status: CargoToolchainStatus?
     public var preferences: PackagePreferences
-    /// The helper whose install is currently in flight, if any.
-    public var installing: CargoHelper?
+
+    /// The managers whose presence means Rust is actually in use here.
+    static let rustManagers: Set<PackageManagerKind> = [.cargoInstall, .rustup]
 
     public init(
         status: CargoToolchainStatus? = nil,
-        preferences: PackagePreferences = PackagePreferences(),
-        installing: CargoHelper? = nil
+        preferences: PackagePreferences = PackagePreferences()
     ) {
         self.status = status
         self.preferences = preferences
-        self.installing = installing
+    }
+
+    /// True while detection has not run for someone who does have Rust packages — the only case
+    /// where an offer might still appear. "Not detected yet" is not "nothing to offer", and the
+    /// card slot has to tell them apart to know whether to show a spinner.
+    public func isAwaitingDetection(installedManagers: Set<PackageManagerKind>) -> Bool {
+        status == nil && !installedManagers.isDisjoint(with: Self.rustManagers)
     }
 
     /// The one helper worth offering right now, or nil when there is nothing to ask.
@@ -237,7 +243,7 @@ public struct CargoSetupState: Sendable, Equatable {
     /// learn that a crate outside the curated catalog is out of date.
     /// Cargo's helpers are only worth suggesting when Rust is actually in use here.
     public func offer(installedManagers: Set<PackageManagerKind>) -> CargoHelper? {
-        offer(hasRustPackages: !installedManagers.isDisjoint(with: [.cargoInstall, .rustup]))
+        offer(hasRustPackages: !installedManagers.isDisjoint(with: Self.rustManagers))
     }
 
     public func offer(hasRustPackages: Bool) -> CargoHelper? {

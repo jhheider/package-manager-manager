@@ -515,7 +515,10 @@ final class MainWindowModel: NSObject, ObservableObject {
     @Published private(set) var pendingInstallPackConfirmation: MainWindowInstallPackConfirmation?
     @Published var searchText = ""
     @Published private(set) var setupOffer: ManagerSetupOffer?
+    /// The manager whose detection is still running, if it could yet produce an offer.
+    @Published private(set) var setupDetectingManager: PackageManagerKind?
     private var managerSetup = ManagerSetupState()
+    private var setupDetectionTask: Task<Void, Never>?
 
     nonisolated private static let newUpdatedLastClickedAtDefaultsKey = "MainWindowModel.newUpdatedLastClickedAt"
     nonisolated private static let remoteHostsDefaultsKey = "MainWindowModel.remoteHosts"
@@ -997,26 +1000,48 @@ final class MainWindowModel: NSObject, ObservableObject {
         return setupOffer
     }
 
+    /// True while a section that could still produce an offer is waiting on detection, so the card
+    /// slot can hold a spinner rather than render "not detected yet" as "nothing to offer".
+    func isDetectingSetupOffer(for section: MainWindowSection) -> Bool {
+        guard activeSidebarSection == section, setupOffer == nil, let manager = setupDetectingManager else {
+            return false
+        }
+        return mainWindowSetupSection(manager) == section
+    }
+
     /// Detecting tools shells out, so it never runs on the main thread.
+    ///
+    /// One detection at a time: this is kicked on every section change, and an older run landing
+    /// after a newer one would put back the tool status from before a helper was installed.
     func refreshSetupOffers() {
-        Task { [preferencesStore] in
+        setupDetectionTask?.cancel()
+        setupDetectionTask = Task { [preferencesStore] in
             let detected = await Task.detached(priority: .utility) {
                 ManagerSetupState.detect(preferences: preferencesStore.load())
             }.value
+            guard !Task.isCancelled else { return }
             managerSetup = managerSetup.merging(detected)
             refreshSetupOffer()
         }
     }
 
     private func refreshSetupOffer() {
-        setupOffer = managerSetup.offer(installedManagers: Set(inventory.packages.map(\.manager)))
+        // Recomputed on every snapshot, so no intermediate array.
+        let installedManagers = Set(inventory.packages.lazy.map(\.manager))
+        setupOffer = managerSetup.offer(installedManagers: installedManagers)
+        setupDetectingManager = managerSetup.managerAwaitingDetection(installedManagers: installedManagers)
     }
 
     var isInstallingHelper: Bool { managerSetup.installingHelperID != nil }
 
+    /// The host refuses a helper install that arrives while a refresh or another action is running,
+    /// so the card disables its button rather than offering a click that goes nowhere.
+    var canInstallHelper: Bool { !isReloading && !isPackageActionRunning }
+
     func installHelper(_ id: String) {
-        guard !isInstallingHelper else { return }
-        managerSetup.installingHelperID = id
+        guard canInstallHelper, !isInstallingHelper else { return }
+        // Deliberately no optimistic state: the host is the authority on whether the install
+        // actually started, and claiming it here would show "Installing…" over a dropped request.
         PackageHostNotifications.postHelperInstallRequested(id)
     }
 
@@ -1476,10 +1501,20 @@ final class MainWindowModel: NSObject, ObservableObject {
             ),
             installedPackageFirstSeenAtByID: snapshot.installedPackageFirstSeenAtByID
         )
+        // The offer depends on which managers have packages, so it is only answerable once an
+        // inventory has landed — detection alone runs before the first scan finishes.
+        refreshSetupOffer()
         guard remoteActionHostID == nil else { return }
-        // The helper clearing its running action is the only reliable completion signal. Waiting
-        // for the tool to appear leaves the card spinning forever whenever the install failed.
-        if snapshot.runningAction == nil { managerSetup.installingHelperID = nil }
+        // The host is the authority on whether a helper install is running: it refuses a request
+        // that arrives during a refresh or another action, so anything set at click time could
+        // claim an install that never started. Its running action is also the only reliable
+        // completion signal — waiting for the tool to appear leaves the card spinning forever
+        // whenever the install failed.
+        managerSetup.installingHelperID = snapshot.runningAction.flatMap { action in
+            action.kind == .install && ManagerSetupState.claimsHelper(id: action.packageID)
+                ? action.packageID
+                : nil
+        }
         installingPackageName = snapshot.runningAction?.kind == .install ? snapshot.runningAction?.displayName : nil
         uninstallingPackageName = snapshot.runningAction?.kind == .uninstall ? snapshot.runningAction?.displayName : nil
         updatingPackageName = snapshot.runningAction?.kind == .update ? snapshot.runningAction?.displayName : nil

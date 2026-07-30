@@ -1647,6 +1647,85 @@ private func package(
 }
 
 @MainActor
+@Test func helperInstallStateComesFromTheHostNotTheClick() {
+    let model = MainWindowModel(userDefaults: UserDefaults(suiteName: UUID().uuidString)!)
+    let crate = ManagedPackage(manager: .cargoInstall, name: "just", installedVersion: "1", latestVersion: nil)
+    let idle = PackageHostSnapshot(inventory: PackageInventory(packages: [crate]))
+    let helperID = CargoHelper.binstall.promptKey
+    model.apply(snapshot: idle)
+
+    // The host refuses a request that arrives while it is busy, so clicking must not claim an
+    // install that may never start.
+    model.installHelper(helperID)
+    #expect(!model.isInstallingHelper)
+
+    model.apply(snapshot: PackageHostSnapshot(
+        inventory: PackageInventory(packages: [crate]),
+        runningAction: PackageHostRunningAction(kind: .install, packageID: helperID, displayName: "cargo-binstall")
+    ))
+    #expect(model.isInstallingHelper)
+
+    model.apply(snapshot: idle)
+    #expect(!model.isInstallingHelper)
+}
+
+@MainActor
+@Test func anOrdinaryPackageInstallIsNotAHelperInstall() {
+    let model = MainWindowModel(userDefaults: UserDefaults(suiteName: UUID().uuidString)!)
+    let package = ManagedPackage(manager: .homebrew, name: "curl", installedVersion: nil, latestVersion: "8")
+
+    model.apply(snapshot: PackageHostSnapshot(
+        inventory: PackageInventory(packages: []),
+        runningAction: PackageHostRunningAction(kind: .install, packageID: package.id, displayName: "curl")
+    ))
+
+    #expect(model.installingPackageName == "curl")
+    #expect(!model.isInstallingHelper)
+}
+
+@MainActor
+@Test func helperInstallIsOfferedOnlyWhenTheHostWouldAcceptIt() {
+    let model = MainWindowModel(userDefaults: UserDefaults(suiteName: UUID().uuidString)!)
+    let crate = ManagedPackage(manager: .cargoInstall, name: "just", installedVersion: "1", latestVersion: nil)
+
+    // The host rejects while it is refreshing or running an action, so the button goes with it
+    // rather than offering a click that lands nowhere.
+    model.apply(snapshot: PackageHostSnapshot(inventory: PackageInventory(packages: [crate]), isRefreshing: true))
+    #expect(!model.canInstallHelper)
+
+    model.apply(snapshot: PackageHostSnapshot(
+        inventory: PackageInventory(packages: [crate]),
+        runningAction: PackageHostRunningAction(kind: .update, packageID: crate.id, displayName: "just")
+    ))
+    #expect(!model.canInstallHelper)
+
+    model.apply(snapshot: PackageHostSnapshot(inventory: PackageInventory(packages: [crate])))
+    #expect(model.canInstallHelper)
+}
+
+@MainActor
+@Test func setupCardSlotReportsDetectionSeparatelyFromHavingNothingToOffer() {
+    let model = MainWindowModel(userDefaults: UserDefaults(suiteName: UUID().uuidString)!)
+    let crate = ManagedPackage(manager: .cargoInstall, name: "just", installedVersion: "1", latestVersion: nil)
+    model.apply(snapshot: PackageHostSnapshot(inventory: PackageInventory(packages: [crate])))
+    model.selectedSection = .rust
+
+    // Detection shells out, so before it lands the slot has to say "still looking" rather than
+    // render identically to "nothing to offer".
+    #expect(model.isDetectingSetupOffer(for: .rust))
+    // Only in the section the offer would appear in.
+    #expect(!model.isDetectingSetupOffer(for: .homebrew))
+
+    // A user with no Rust packages is never going to be offered a cargo helper.
+    let other = MainWindowModel(userDefaults: UserDefaults(suiteName: UUID().uuidString)!)
+    other.apply(snapshot: PackageHostSnapshot(
+        inventory: PackageInventory(packages: [ManagedPackage(manager: .homebrew, name: "curl", installedVersion: "8", latestVersion: nil)])
+    ))
+    other.selectedSection = .rust
+    #expect(!other.isDetectingSetupOffer(for: .rust))
+}
+
+@MainActor
 private func waitForRemoteModel(_ predicate: @MainActor () -> Bool) async {
     for _ in 0..<1_000 {
         if predicate() { return }

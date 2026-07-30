@@ -306,14 +306,18 @@ struct MainWindowPackageListView: View {
                     .frame(maxWidth: .infinity, minHeight: 260)
                 } else {
                     LazyVStack(spacing: 0) {
-                        if let section = model.activeSidebarSection,
-                           let offer = model.setupOffer(for: section) {
-                            ManagerSetupCard(
-                                offer: offer,
-                                isInstalling: model.isInstallingHelper,
-                                install: { model.installHelper(offer.id) },
-                                dismiss: { model.dismissHelper(offer.id) }
-                            )
+                        if let section = model.activeSidebarSection {
+                            if let offer = model.setupOffer(for: section) {
+                                ManagerSetupCard(
+                                    offer: offer,
+                                    isInstalling: model.isInstallingHelper,
+                                    canInstall: model.canInstallHelper,
+                                    install: { model.installHelper(offer.id) },
+                                    dismiss: { model.dismissHelper(offer.id) }
+                                )
+                            } else if model.isDetectingSetupOffer(for: section) {
+                                ManagerSetupDetectionCard()
+                            }
                         }
                         ForEach(displayedPackages) { package in
                             PackageRow(
@@ -369,10 +373,31 @@ struct MainWindowPackageListView: View {
     }
 }
 
+/// Holds the setup card's slot while detection is still running.
+///
+/// Detecting the helper tools shells out, and without this "not detected yet" would render exactly
+/// like "nothing to offer" — the card would simply pop in once the answer arrived.
+private struct ManagerSetupDetectionCard: View {
+    var body: some View {
+        HStack(spacing: 8) {
+            ProgressView().controlSize(.small)
+            Text("Checking for optional tools…")
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+    }
+}
+
 /// A one-time offer to install an optional helper tool. Dismissing it is remembered.
 private struct ManagerSetupCard: View {
     let offer: ManagerSetupOffer
     let isInstalling: Bool
+    let canInstall: Bool
     let install: () -> Void
     let dismiss: () -> Void
 
@@ -400,7 +425,7 @@ private struct ManagerSetupCard: View {
                     .disabled(isInstalling)
                 Button(isInstalling ? "Installing…" : "Install") { install() }
                     .buttonStyle(.borderedProminent)
-                    .disabled(isInstalling)
+                    .disabled(isInstalling || !canInstall)
             }
         }
         .padding(12)

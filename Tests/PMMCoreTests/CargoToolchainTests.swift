@@ -383,3 +383,61 @@ private final class StubRunner: CommandRunning, @unchecked Sendable {
     #expect(state.offer(installedManagers: [.cargoInstall])?.id != offer.id)
     #expect(state.preferences.hasDismissed(offer.id))
 }
+
+@Test func managerSetupKeepsADismissalMadeWhileDetectionWasInFlight() {
+    // Detection reads preferences from disk on a background task. Dismissing while that read is in
+    // flight leaves the dismissal in memory only, and taking the loaded snapshot wholesale would
+    // put the card the user just dismissed straight back.
+    let stale = ManagerSetupState.detect(preferences: PackagePreferences())
+    var state = stale
+    guard let offer = state.offer(installedManagers: [.cargoInstall]) else { return }
+    state.dismiss(offer.id)
+
+    let merged = state.merging(stale)
+
+    #expect(merged.preferences.hasDismissed(offer.id))
+    #expect(merged.offer(installedManagers: [.cargoInstall])?.id != offer.id)
+}
+
+@Test func managerSetupPicksUpDismissalsRecordedElsewhere() {
+    // The other direction: the menu bar helper and previous launches write to the same file, so a
+    // dismissal arriving from disk still has to take effect.
+    var stored = PackagePreferences()
+    stored.dismiss(CargoHelper.binstall.promptKey)
+
+    let merged = ManagerSetupState().merging(.detect(preferences: stored))
+
+    #expect(merged.preferences.hasDismissed(CargoHelper.binstall.promptKey))
+}
+
+@Test func managerSetupDistinguishesUndetectedFromNothingToOffer() {
+    let undetected = ManagerSetupState()
+    #expect(undetected.managerAwaitingDetection(installedManagers: [.cargoInstall]) == .cargoInstall)
+    // Nothing to wait for when the manager is not even in use.
+    #expect(undetected.managerAwaitingDetection(installedManagers: [.homebrew]) == nil)
+    #expect(undetected.managerAwaitingDetection(installedManagers: []) == nil)
+
+    let detected = undetected.merging(.detect(preferences: PackagePreferences()))
+    #expect(detected.managerAwaitingDetection(installedManagers: [.cargoInstall]) == nil)
+}
+
+@Test func managerSetupClaimsOnlyItsOwnHelperIdentifiers() {
+    for helper in CargoHelper.allCases {
+        #expect(ManagerSetupState.claimsHelper(id: helper.promptKey))
+    }
+    #expect(!ManagerSetupState.claimsHelper(id: "brew:curl"))
+    #expect(!ManagerSetupState.claimsHelper(id: "homebrew.nonexistent"))
+}
+
+@Test func packagePreferencesMergeUnionsDismissals() {
+    var mine = PackagePreferences()
+    mine.dismiss(CargoHelper.binstall.promptKey)
+    var theirs = PackagePreferences()
+    theirs.dismiss(CargoHelper.installUpdate.promptKey)
+
+    let merged = mine.merging(theirs)
+
+    #expect(merged.hasDismissed(CargoHelper.binstall.promptKey))
+    #expect(merged.hasDismissed(CargoHelper.installUpdate.promptKey))
+    #expect(merged == theirs.merging(mine))
+}

@@ -56,14 +56,33 @@ public struct ManagerSetupState: Sendable, Equatable {
         )
     }
 
-    /// Carries an in-flight install and any newly detected state forward together.
+    /// Carries an in-flight install and locally recorded dismissals forward across a detection.
+    ///
+    /// Only the detected tool status is taken wholesale. Detection also reads preferences from
+    /// disk on a background task, so a dismissal made while that read was in flight exists only in
+    /// memory — replacing preferences with the loaded snapshot would restore the pre-dismissal
+    /// state and bring the card the user just dismissed straight back.
     public func merging(_ detected: ManagerSetupState) -> ManagerSetupState {
-        ManagerSetupState(cargo: detected.cargo, installingHelperID: installingHelperID)
+        var cargo = detected.cargo
+        cargo.preferences = self.cargo.preferences.merging(detected.cargo.preferences)
+        return ManagerSetupState(cargo: cargo, installingHelperID: installingHelperID)
     }
 
     /// The one offer worth showing, given which managers actually have packages installed.
     public func offer(installedManagers: Set<PackageManagerKind>) -> ManagerSetupOffer? {
         cargo.offer(installedManagers: installedManagers)?.setupOffer
+    }
+
+    /// The manager still waiting on detection, when it has packages installed and could therefore
+    /// yet produce an offer. Lets a card slot show a spinner instead of rendering "not detected
+    /// yet" identically to "nothing to offer".
+    public func managerAwaitingDetection(installedManagers: Set<PackageManagerKind>) -> PackageManagerKind? {
+        cargo.isAwaitingDetection(installedManagers: installedManagers) ? .cargoInstall : nil
+    }
+
+    /// Whether an identifier names a helper this type installs, as opposed to an ordinary package.
+    public static func claimsHelper(id: String) -> Bool {
+        CargoHelper(promptKey: id) != nil
     }
 
     public mutating func dismiss(_ helperID: String) {
