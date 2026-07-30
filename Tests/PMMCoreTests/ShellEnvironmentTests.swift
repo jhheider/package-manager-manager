@@ -55,6 +55,39 @@ import Testing
     #expect(ShellEnvironment.probeInvocations(for: .bourne).first?.prefix(2) == ["-i", "-l"])
 }
 
+@Test func probeInvocationsBuildTheFenceForShellsWithoutStringInterpolation() {
+    #expect(ShellEnvironment.probeDialect(forShell: "/opt/homebrew/bin/nu") == .nushell)
+    #expect(ShellEnvironment.probeDialect(forShell: "/usr/local/bin/elvish") == .elvish)
+    // Neither expands `$PATH` inside a string literal, so the Bourne script comes back holding the
+    // two literal characters and both keep PATH as a list that has to be joined.
+    #expect(ShellEnvironment.probeInvocations(for: .nushell).allSatisfy { $0.last?.contains("str join") == true })
+    #expect(ShellEnvironment.probeInvocations(for: .elvish).allSatisfy { $0.last?.contains("$E:PATH") == true })
+}
+
+@Test func searchPathsKeepOnlyAbsoluteDirectories() {
+    // The exact output nushell and elvish produce for the Bourne script: non-empty, parseable, and
+    // nonsense. Accepting it would stop the fallback invocations from ever running.
+    #expect(ShellEnvironment.searchPaths(fromProbeValue: "$PATH").isEmpty)
+    #expect(ShellEnvironment.searchPaths(fromProbeValue: ".:..:relative/bin").isEmpty)
+    #expect(
+        ShellEnvironment.searchPaths(fromProbeValue: "/usr/bin::.:/opt/homebrew/bin")
+            == ["/usr/bin", "/opt/homebrew/bin"]
+    )
+}
+
+// Every other dialect test is pure string work, so it runs anywhere. This one spawns a real shell,
+// and `#require` would fail rather than skip where that shell is absent — hence the trait.
+@Test(.enabled(if: FileManager.default.isExecutableFile(atPath: "/bin/tcsh")))
+func searchPathsResolveThroughARealCShell() {
+    // macOS ships tcsh as a registered login shell, so the csh dialect can be exercised for real
+    // rather than only asserted about.
+    let paths = ShellEnvironment.searchPaths(forShell: "/bin/tcsh")
+
+    #expect(!paths.isEmpty)
+    #expect(paths.allSatisfy { $0.hasPrefix("/") })
+    #expect(paths.contains("/usr/bin"))
+}
+
 @Test func probeInvocationsJoinTheFishPathList() {
     #expect(ShellEnvironment.probeDialect(forShell: "/opt/homebrew/bin/fish") == .fish)
     // `"$PATH"` is space-separated in fish, so the script has to join the list itself.
