@@ -13,11 +13,40 @@ import Testing
     #expect(commandPath(inherited: nil, shell: [], home: []) == "/usr/local/bin:/opt/homebrew/bin")
 }
 
-@Test func commandPathPutsTheShellPathAheadOfTheInheritedOne() {
-    // A Finder launch inherits launchd's PATH, which must not outrank the user's own shims.
+@Test func commandPathPutsTheShellPathAheadOfALaunchdInheritedOne() {
+    // A Finder or login-item launch inherits launchd's stock PATH, which nobody chose, so it must
+    // not outrank the shims the user's own shell resolves.
     #expect(
-        commandPath(inherited: "/usr/bin", shell: ["/shim/bin"], home: ["/home/bin"])
-            == "/shim/bin:/usr/bin:/home/bin:/usr/local/bin:/opt/homebrew/bin"
+        commandPath(inherited: "/usr/bin:/bin:/usr/sbin:/sbin", shell: ["/shim/bin"], home: [])
+            == "/shim/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin"
+    )
+    #expect(isLaunchdDefaultPath("/usr/bin:/bin:/usr/sbin:/sbin"))
+    #expect(isLaunchdDefaultPath("/usr/bin:/bin"), "a subset is still nobody's choice")
+    #expect(isLaunchdDefaultPath(nil))
+}
+
+@Test func commandPathKeepsATerminalsOwnEnvironmentInFront() {
+    // pmmctl is always run from a shell, and the window app can be too. There the inherited PATH is
+    // the user's *active* environment — an activated virtualenv, a project toolchain — which is
+    // more specific than what their login shell produces. Demoting it resolves the wrong binary,
+    // and then updates or uninstalls from the wrong prefix.
+    #expect(!isLaunchdDefaultPath("/Users/x/.venv/bin:/usr/bin:/bin"))
+    #expect(
+        commandPath(inherited: "/Users/x/.venv/bin:/usr/bin", shell: ["/shim/bin"], home: [])
+            == "/Users/x/.venv/bin:/usr/bin:/shim/bin:/usr/local/bin:/opt/homebrew/bin"
+    )
+}
+
+@Test func commandPathUsesHomeDirectoriesOnlyWhenTheProbeFoundNothing() {
+    // ~/.cargo/bin and ~/.local/bin stand in for a PATH that could not be read. Adding them to a
+    // PATH the shell did resolve would rediscover a tool the user deliberately left out of it.
+    #expect(
+        commandPath(inherited: "/usr/bin", shell: ["/shim/bin"], home: ["/home/.cargo/bin"])
+            == "/shim/bin:/usr/bin:/usr/local/bin:/opt/homebrew/bin"
+    )
+    #expect(
+        commandPath(inherited: "/usr/bin", shell: [], home: ["/home/.cargo/bin"])
+            == "/usr/bin:/home/.cargo/bin:/usr/local/bin:/opt/homebrew/bin"
     )
 }
 
@@ -29,9 +58,18 @@ import Testing
 }
 
 @Test func commandPathDropsDuplicatesKeepingTheEarliestOccurrence() {
+    // A directory repeated across every group — explicit, shell, inherited, fallback — keeps only
+    // its earliest slot.
+    // A non-launchd inherited PATH, so `inherited` leads `shell`; the point here is that a
+    // directory repeated across every group — explicit, inherited, shell, fallback — keeps only
+    // its earliest slot.
     #expect(
-        commandPath(inherited: "/custom/bin:/usr/local/bin", shell: ["/custom/bin"], home: ["/extra/bin"])
-            == "/custom/bin:/usr/local/bin:/extra/bin:/opt/homebrew/bin"
+        commandPath(
+            leading: "/custom/bin",
+            inherited: "/custom/bin:/usr/local/bin",
+            shell: ["/custom/bin", "/shim/bin"],
+            home: []
+        ) == "/custom/bin:/usr/local/bin:/shim/bin:/opt/homebrew/bin"
     )
 }
 

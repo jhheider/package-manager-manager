@@ -12,33 +12,67 @@ import Foundation
 public final class ShellEnvironment: @unchecked Sendable {
     public static let shared = ShellEnvironment()
 
+    /// The resolver runs here rather than on `DispatchQueue.global`.
+    ///
+    /// A blocked worker on a global queue is not replaced past the pool's limit, and the callers of
+    /// ``searchPaths()`` block. Running the resolver on the same pool it can fill therefore risks
+    /// the one arrangement this type must never reach: every waiter parked, and no thread left for
+    /// the work they are waiting on. A private queue always gets its own thread, so the resolver
+    /// cannot be starved by its own waiters.
+    private static let queue = DispatchQueue(label: "dev.mxcl.pmm.shell-environment")
+
+    /// How long a failed probe is allowed to stand before another attempt is worth making.
+    ///
+    /// Not zero: a probe runs the user's rc files, and retrying on every lookup would re-run their
+    /// side effects. Not forever either — see ``prime()``.
+    public static let retryInterval: TimeInterval = 60
+
     private let condition = NSCondition()
     private let resolver: @Sendable () -> [String]
     private var resolved: [String]?
     private var isResolving = false
+    private var failedAt: Date?
+    private var waiters: [CheckedContinuation<[String], Never>] = []
 
     init(resolver: @escaping @Sendable () -> [String] = { ShellEnvironment.loginShellSearchPaths() }) {
         self.resolver = resolver
     }
 
     /// Kicks off resolution on a background queue. Cheap, idempotent, safe from the main thread.
-    public func prime() {
+    ///
+    /// A probe that came back with nothing is retried later. Caching that answer for the life of
+    /// the process is how one bad moment — a network home not mounted yet at login, an rc file that
+    /// overran its timeout once, rustup installed while the app was already open — turns into an
+    /// inventory that stays wrong until the user thinks to quit and relaunch. A success is final;
+    /// only failure is reconsidered, and no more often than ``retryInterval``.
+    public func prime(retryAfter: TimeInterval = ShellEnvironment.retryInterval) {
         condition.lock()
-        guard resolved == nil, !isResolving else {
+        guard !isResolving, shouldAttemptLocked(retryAfter: retryAfter) else {
             condition.unlock()
             return
         }
         isResolving = true
         condition.unlock()
 
-        DispatchQueue.global(qos: .userInitiated).async {
+        Self.queue.async {
             let paths = self.resolver()
             self.condition.lock()
             self.resolved = paths
+            self.failedAt = paths.isEmpty ? Date() : nil
             self.isResolving = false
+            let waiters = self.waiters
+            self.waiters = []
             self.condition.broadcast()
             self.condition.unlock()
+            for waiter in waiters { waiter.resume(returning: paths) }
         }
+    }
+
+    /// Caller must hold the lock.
+    private func shouldAttemptLocked(retryAfter: TimeInterval) -> Bool {
+        guard let resolved else { return true }
+        guard resolved.isEmpty, let failedAt else { return false }
+        return Date().timeIntervalSince(failedAt) >= retryAfter
     }
 
     /// Whatever has been resolved so far, without waiting. Empty until resolution finishes.
@@ -50,11 +84,23 @@ public final class ShellEnvironment: @unchecked Sendable {
 
     /// Awaits resolution without blocking the calling thread, so callers do not have to know that
     /// probing the shell blocks. Returns straight away once resolution has happened.
+    ///
+    /// Parks a continuation rather than a thread: the obvious version dispatches ``searchPaths()``
+    /// onto a queue and blocks there, which costs one worker per concurrent caller for the whole
+    /// probe. Every scan calls this, so those add up against exactly the pool the resolver needs.
     public func resolvedSearchPaths() async -> [String] {
-        await withCheckedContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
-                continuation.resume(returning: self.searchPaths())
+        prime()
+        return await withCheckedContinuation { continuation in
+            condition.lock()
+            // A retry in flight is worth waiting for: taking the cached failure would hand this
+            // scan the same empty PATH that the retry exists to replace.
+            if let resolved, !isResolving {
+                condition.unlock()
+                continuation.resume(returning: resolved)
+                return
             }
+            waiters.append(continuation)
+            condition.unlock()
         }
     }
 
@@ -64,11 +110,11 @@ public final class ShellEnvironment: @unchecked Sendable {
     /// resolver always publishes a result, so a second deadline here could only abandon a probe
     /// that was about to succeed and hand back a truncated PATH — which is exactly the bug this
     /// type exists to fix.
-    public func searchPaths() -> [String] {
-        prime()
+    public func searchPaths(retryAfter: TimeInterval = ShellEnvironment.retryInterval) -> [String] {
+        prime(retryAfter: retryAfter)
         condition.lock()
         defer { condition.unlock() }
-        while resolved == nil { condition.wait() }
+        while resolved == nil || isResolving { condition.wait() }
         return resolved ?? []
     }
 }
@@ -110,26 +156,52 @@ extension ShellEnvironment {
         }
     }
 
-    /// The argument lists to try for a dialect, most complete first.
-    static func probeInvocations(for dialect: ProbeDialect) -> [[String]] {
+    /// A single way to ask a shell for its PATH.
+    struct ProbeInvocation: Equatable {
+        let arguments: [String]
+        /// The script, when it has to be fed on stdin because the shell cannot take one as a flag.
+        let input: String?
+
+        init(_ arguments: [String], input: String? = nil) {
+            self.arguments = arguments
+            self.input = input
+        }
+    }
+
+    /// The invocations to try for a dialect, most complete first.
+    static func probeInvocations(for dialect: ProbeDialect) -> [ProbeInvocation] {
         switch dialect {
         case .bourne:
             // `-i -l` sources the full chain (.zshenv, /etc/zprofile's path_helper, .zshrc), which
             // is the only way to see entries added by an interactive rc. Fall back to `-l` alone if
             // the interactive pass fails or hangs — some rc files misbehave without a tty.
-            [["-i", "-l", "-c", pathProbeScript], ["-l", "-c", pathProbeScript]]
+            [ProbeInvocation(["-i", "-l", "-c", pathProbeScript]), ProbeInvocation(["-l", "-c", pathProbeScript])]
         case .csh:
-            // csh and tcsh accept `-l` only as the sole flag, so a login shell cannot also run a
-            // command. `-c` still sources `~/.cshrc`/`~/.tcshrc`, which is where csh users set
-            // `path` precisely so non-login shells inherit it. `$PATH` is the colon-joined
-            // environment variable in csh too, so the Bourne script works verbatim.
-            [["-c", pathProbeScript]]
+            // csh and tcsh accept `-l` only as the sole flag, so the script cannot ride along as
+            // `-c` and goes on stdin instead. That is not only about flag syntax: `-c` reads
+            // `.cshrc`/`.tcshrc` but never `/etc/csh.login` or `~/.login`, so a PATH entry added
+            // only at login would be invisible. `$PATH` is the colon-joined environment variable in
+            // csh too, so the Bourne script works verbatim. `-c` stays as the fallback, since an
+            // rc-file PATH beats no PATH if the login shell itself fails.
+            [
+                ProbeInvocation(["-l"], input: pathProbeScript + "\n"),
+                ProbeInvocation(["-c", pathProbeScript]),
+            ]
         case .fish:
-            [["-i", "-l", "-c", fishPathProbeScript], ["-l", "-c", fishPathProbeScript]]
+            [
+                ProbeInvocation(["-i", "-l", "-c", fishPathProbeScript]),
+                ProbeInvocation(["-l", "-c", fishPathProbeScript]),
+            ]
         case .nushell:
-            [["-i", "-l", "-c", nushellPathProbeScript], ["-l", "-c", nushellPathProbeScript]]
+            [
+                ProbeInvocation(["-i", "-l", "-c", nushellPathProbeScript]),
+                ProbeInvocation(["-l", "-c", nushellPathProbeScript]),
+            ]
         case .elvish:
-            [["-l", "-c", elvishPathProbeScript], ["-c", elvishPathProbeScript]]
+            [
+                ProbeInvocation(["-l", "-c", elvishPathProbeScript]),
+                ProbeInvocation(["-c", elvishPathProbeScript]),
+            ]
         }
     }
 
@@ -137,9 +209,12 @@ extension ShellEnvironment {
         searchPaths(forShell: userLoginShell())
     }
 
-    static func searchPaths(forShell shell: String) -> [String] {
-        for arguments in probeInvocations(for: probeDialect(forShell: shell)) {
-            if let output = runProbe(shell, arguments),
+    static func searchPaths(
+        forShell shell: String,
+        environment: [String: String] = ProcessInfo.processInfo.environment
+    ) -> [String] {
+        for invocation in probeInvocations(for: probeDialect(forShell: shell)) {
+            if let output = runProbe(shell, invocation, environment: environment),
                let path = parseProbeOutput(output) {
                 let paths = searchPaths(fromProbeValue: path)
                 if !paths.isEmpty { return paths }
@@ -171,57 +246,113 @@ extension ShellEnvironment {
         return value.isEmpty ? nil : value
     }
 
-    static func runProbe(_ shell: String, _ arguments: [String], timeout: TimeInterval = 5) -> String? {
+    static func runProbe(
+        _ shell: String,
+        _ invocation: ProbeInvocation,
+        timeout: TimeInterval = 5,
+        terminationGrace: TimeInterval = 2,
+        environment: [String: String] = ProcessInfo.processInfo.environment
+    ) -> String? {
         // The probe collects output in a temporary file rather than a pipe. An rc file can start a
         // background process that inherits stdout; the shell then exits while that grandchild keeps
         // the write end open, and a pipe read would block forever on an EOF that never comes. A
         // regular file is readable the moment we stop waiting, no matter who else still holds it.
         let outputURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("pmm-path-probe-\(UUID().uuidString)")
-        guard FileManager.default.createFile(atPath: outputURL.path, contents: nil),
-              let sink = try? FileHandle(forWritingTo: outputURL)
-        else { return nil }
+        guard FileManager.default.createFile(atPath: outputURL.path, contents: nil) else { return nil }
+        // Registered before the handle is opened: opening can fail on a file that was just created,
+        // and a `defer` set up after that point would never run to clean the file up.
+        defer { try? FileManager.default.removeItem(at: outputURL) }
+        guard let sink = try? FileHandle(forWritingTo: outputURL) else { return nil }
+        defer { try? sink.close() }
+
+        // stdin gets the same treatment for the same reason: a file cannot deadlock against a shell
+        // that never reads, the way writing a script into a pipe can. `/dev/null` is opened rather
+        // than taken from `FileHandle.nullDevice`, whose `fileDescriptor` is -1 — spawning with
+        // that as a dup2 source fails the whole spawn.
+        let nullDescriptor = open("/dev/null", O_RDONLY)
+        defer { if nullDescriptor >= 0 { close(nullDescriptor) } }
+        guard nullDescriptor >= 0 else { return nil }
+        // Kept separate from the handle's descriptor rather than overwritten: reassigning leaked
+        // this one and left both `defer`s closing the same number, which is EBADF at best and a
+        // close of somebody else's reopened descriptor at worst.
+        var inputHandle: FileHandle?
+        let inputURL = invocation.input.map { _ in
+            FileManager.default.temporaryDirectory
+                .appendingPathComponent("pmm-path-probe-in-\(UUID().uuidString)")
+        }
+        // Again registered up front, so the script file cannot outlive a failed open.
         defer {
-            try? sink.close()
-            try? FileManager.default.removeItem(at: outputURL)
+            if let inputURL { try? FileManager.default.removeItem(at: inputURL) }
+            try? inputHandle?.close()
         }
-
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: shell)
-        process.arguments = arguments
-        // TERM=dumb keeps rc files from emitting escape sequences; the rest of the environment is
-        // left intact so ZDOTDIR and friends still apply.
-        process.environment = ProcessInfo.processInfo.environment.merging(["TERM": "dumb"]) { _, new in new }
-        process.standardInput = FileHandle.nullDevice
-        process.standardOutput = sink
-        process.standardError = FileHandle.nullDevice
-
-        let finished = DispatchSemaphore(value: 0)
-        process.terminationHandler = { _ in finished.signal() }
-
-        do {
-            try process.run()
-        } catch {
-            return nil
+        if let input = invocation.input, let inputURL {
+            guard FileManager.default.createFile(atPath: inputURL.path, contents: Data(input.utf8)),
+                  let handle = try? FileHandle(forReadingFrom: inputURL)
+            else { return nil }
+            inputHandle = handle
         }
+        let inputDescriptor = inputHandle?.fileDescriptor ?? nullDescriptor
 
-        guard finished.wait(timeout: .now() + timeout) == .success else {
-            process.terminate()
-            if finished.wait(timeout: .now() + terminationGrace) != .success {
-                kill(process.processIdentifier, SIGKILL)
-            }
-            return nil
-        }
+        // A real TERM, emphatically not `dumb`. `[[ "$TERM" == "dumb" ]] && return` is the standard
+        // Emacs TRAMP guard and sits near the top of a great many real `.zshrc` files, above the
+        // nvm/pyenv/asdf/mise block. Forcing `dumb` tripped it: the shell returned early, exited 0,
+        // and handed back a PATH that was absolute, non-empty, and missing precisely the entries
+        // this type exists to find — which the chain then accepted and cached. Escape sequences in
+        // the output were the reason for `dumb`, and they cost nothing here: the value is fenced by
+        // markers, so chatter around it is already ignored.
+        let probeEnvironment = environment.merging(["TERM": "xterm-256color"]) { _, new in new }
 
-        guard process.terminationStatus == 0,
-              let data = try? Data(contentsOf: outputURL)
+        // Spawned into a process group of its own so the timeout can take the whole tree. Signalling
+        // the shell alone leaves whatever its rc files started still running — and still holding the
+        // descriptor it inherited, writing into a file we have already unlinked.
+        let devNull = open("/dev/null", O_WRONLY)
+        defer { if devNull >= 0 { close(devNull) } }
+        guard devNull >= 0,
+              let child = ProcessGroupChild.spawn(
+                  executable: shell,
+                  arguments: invocation.arguments,
+                  environment: probeEnvironment,
+                  standardInput: inputDescriptor,
+                  standardOutput: sink.fileDescriptor,
+                  standardError: devNull
+              )
         else { return nil }
+
+        guard let status = child.wait(timeout: timeout) else {
+            child.terminateGroup(grace: terminationGrace)
+            return nil
+        }
+        guard status == 0 else { return nil }
+        // Read a bounded window, and read it from the end. A descendant that outlived the kill can
+        // still be writing to the descriptor it inherited, so the file has no size this code gets
+        // to assume; and the fence is printed after all the rc chatter, so the tail is the part
+        // worth having.
+        guard let reader = try? FileHandle(forReadingFrom: outputURL) else { return nil }
+        defer { try? reader.close() }
+        // A descendant that outlived the shell keeps appending, and it only takes one noisy binary
+        // on stdout to push the fence out of the window between the shell's exit and this read. So
+        // widen once when the marker is missing rather than reporting a successful probe as failed.
+        guard var data = readTail(reader, bytes: maxProbeOutputBytes) else { return nil }
+        if !String(decoding: data, as: UTF8.self).contains(probeBeginMarker),
+           let wider = readTail(reader, bytes: maxProbeOutputBytes * 16) {
+            data = wider
+        }
         // Lenient decoding: an rc file that emits a stray non-UTF-8 byte must not cost us the PATH.
         return String(decoding: data, as: UTF8.self)
     }
 }
 
-private let terminationGrace: TimeInterval = 2
+/// Enough for any plausible rc chatter, small enough that a runaway writer cannot be read into
+/// memory wholesale.
+private let maxProbeOutputBytes: UInt64 = 1 << 20
+
+/// The last `bytes` of a file, or all of it when it is smaller.
+private func readTail(_ handle: FileHandle, bytes: UInt64) -> Data? {
+    let size = (try? handle.seekToEnd()) ?? 0
+    try? handle.seek(toOffset: size > bytes ? size - bytes : 0)
+    return try? handle.readToEnd()
+}
 private let probeBeginMarker = "__PMM_PATH_BEGIN__"
 private let probeEndMarker = "__PMM_PATH_END__"
 private let pathProbeScript = #"printf '\n__PMM_PATH_BEGIN__%s__PMM_PATH_END__\n' "$PATH""#
