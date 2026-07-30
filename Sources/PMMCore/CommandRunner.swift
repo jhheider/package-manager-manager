@@ -392,28 +392,50 @@ func homeCommandPaths(
     ]
 }
 
-func defaultAdditionalCommandPaths() -> [String] {
-    ShellEnvironment.shared.cachedSearchPaths() + homeCommandPaths()
+/// The login shell's PATH, waiting for it to be resolved if it has not been already. Blocking here
+/// is what keeps an install/update/uninstall fired from a cached snapshot from racing the probe and
+/// running with launchd's truncated PATH. Never call this from the main thread.
+func defaultShellCommandPaths() -> [String] {
+    ShellEnvironment.shared.searchPaths()
 }
 
-/// Builds a search PATH: the caller's own PATH first, then anything discovered from the login shell,
-/// then the hardcoded fallbacks. Duplicates are dropped, keeping the earliest occurrence.
-func commandPath(_ path: String?, additional: [String] = defaultAdditionalCommandPaths()) -> String {
-    let inherited = (path?.isEmpty == false ? path! : "").split(separator: ":").map(String.init)
+/// Builds a search PATH for a child process.
+///
+/// `leading` is a PATH the caller asked for explicitly, so it keeps top precedence. The login
+/// shell's PATH comes next — ahead of `inherited`, because for a Finder launch the inherited PATH
+/// is launchd's `/usr/bin:/bin:/usr/sbin:/sbin`, and letting that lead would pick `/usr/bin` tools
+/// over the mise/nvm/asdf shims the user's own shell resolves. Home and hardcoded directories bring
+/// up the rear as fallbacks for a failed probe. Duplicates keep their earliest slot.
+func commandPath(
+    leading: String? = nil,
+    inherited: String?,
+    shell: [String] = defaultShellCommandPaths(),
+    home: [String] = homeCommandPaths()
+) -> String {
     var seen = Set<String>()
-    return (inherited + additional + fallbackCommandPaths)
+    return (pathEntries(leading) + shell + pathEntries(inherited) + home + fallbackCommandPaths)
         .filter { !$0.isEmpty && seen.insert($0).inserted }
         .joined(separator: ":")
 }
 
+private func pathEntries(_ path: String?) -> [String] {
+    guard let path, !path.isEmpty else { return [] }
+    return path.split(separator: ":").map(String.init)
+}
+
 private func commandEnvironment(_ overrides: [String: String]) -> [String: String] {
     var environment = ProcessInfo.processInfo.environment.merging(overrides) { _, new in new }
-    environment["PATH"] = commandPath(environment["PATH"])
+    environment["PATH"] = commandPath(
+        leading: overrides["PATH"],
+        inherited: ProcessInfo.processInfo.environment["PATH"]
+    )
     return environment
 }
 
+/// Resolves a tool by name. Blocks until the login shell's PATH is known, so callers must be off
+/// the main thread — every caller is already about to spawn a subprocess and wait on it.
 public func firstExecutable(named name: String) -> String? {
-    let pathParts = commandPath(ProcessInfo.processInfo.environment["PATH"])
+    let pathParts = commandPath(inherited: ProcessInfo.processInfo.environment["PATH"])
         .split(separator: ":")
         .map(String.init)
     let candidates = pathParts.map { "\($0)/\(name)" }

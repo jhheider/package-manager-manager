@@ -8,7 +8,7 @@ import Foundation
 /// directories — `~/.cargo/bin` most notably — so package scans silently come back empty.
 ///
 /// Resolution runs the login shell once and caches the result. Call ``prime()`` at launch, then
-/// ``searchPaths(timeout:)`` from a background thread or ``cachedSearchPaths()`` from the main one.
+/// ``searchPaths()`` from a background thread or ``cachedSearchPaths()`` from the main one.
 public final class ShellEnvironment: @unchecked Sendable {
     public static let shared = ShellEnvironment()
 
@@ -59,12 +59,16 @@ public final class ShellEnvironment: @unchecked Sendable {
     }
 
     /// Blocks until the shell PATH is resolved. Never call this from the main thread.
-    public func searchPaths(timeout: TimeInterval = 10) -> [String] {
+    ///
+    /// Deliberately carries no deadline of its own. Every probe is individually bounded and the
+    /// resolver always publishes a result, so a second deadline here could only abandon a probe
+    /// that was about to succeed and hand back a truncated PATH — which is exactly the bug this
+    /// type exists to fix.
+    public func searchPaths() -> [String] {
         prime()
-        let deadline = Date(timeIntervalSinceNow: timeout)
         condition.lock()
         defer { condition.unlock() }
-        while resolved == nil, condition.wait(until: deadline) {}
+        while resolved == nil { condition.wait() }
         return resolved ?? []
     }
 }
@@ -81,12 +85,45 @@ extension ShellEnvironment {
         return "/bin/zsh"
     }
 
+    /// How a shell wants to be asked for its PATH. Bourne flags are not universal: macOS ships
+    /// `/bin/csh` and `/bin/tcsh` as valid login shells and both exit 1 on `-l -c`, while fish
+    /// takes the flags but keeps `PATH` as a list that has to be joined before printing.
+    enum ProbeDialect {
+        case bourne
+        case csh
+        case fish
+    }
+
+    static func probeDialect(forShell shell: String) -> ProbeDialect {
+        switch URL(fileURLWithPath: shell).lastPathComponent {
+        case "csh", "tcsh": .csh
+        case "fish": .fish
+        default: .bourne
+        }
+    }
+
+    /// The argument lists to try for a dialect, most complete first.
+    static func probeInvocations(for dialect: ProbeDialect) -> [[String]] {
+        switch dialect {
+        case .bourne:
+            // `-i -l` sources the full chain (.zshenv, /etc/zprofile's path_helper, .zshrc), which
+            // is the only way to see entries added by an interactive rc. Fall back to `-l` alone if
+            // the interactive pass fails or hangs — some rc files misbehave without a tty.
+            [["-i", "-l", "-c", pathProbeScript], ["-l", "-c", pathProbeScript]]
+        case .csh:
+            // csh and tcsh accept `-l` only as the sole flag, so a login shell cannot also run a
+            // command. `-c` still sources `~/.cshrc`/`~/.tcshrc`, which is where csh users set
+            // `path` precisely so non-login shells inherit it. `$PATH` is the colon-joined
+            // environment variable in csh too, so the Bourne script works verbatim.
+            [["-c", pathProbeScript]]
+        case .fish:
+            [["-i", "-l", "-c", fishPathProbeScript], ["-l", "-c", fishPathProbeScript]]
+        }
+    }
+
     static func loginShellSearchPaths() -> [String] {
         let shell = userLoginShell()
-        // `-i -l` sources the full chain (.zshenv, /etc/zprofile's path_helper, .zshrc), which is
-        // the only way to see entries added by an interactive rc. Fall back to `-l` alone if the
-        // interactive pass fails or hangs — some rc files misbehave without a tty.
-        for arguments in [["-i", "-l", "-c", pathProbeScript], ["-l", "-c", pathProbeScript]] {
+        for arguments in probeInvocations(for: probeDialect(forShell: shell)) {
             if let output = runProbe(shell, arguments),
                let path = parseProbeOutput(output) {
                 let paths = path.split(separator: ":").map(String.init).filter { !$0.isEmpty }
@@ -106,17 +143,29 @@ extension ShellEnvironment {
         return value.isEmpty ? nil : value
     }
 
-    private static func runProbe(_ shell: String, _ arguments: [String], timeout: TimeInterval = 5) -> String? {
+    static func runProbe(_ shell: String, _ arguments: [String], timeout: TimeInterval = 5) -> String? {
+        // The probe collects output in a temporary file rather than a pipe. An rc file can start a
+        // background process that inherits stdout; the shell then exits while that grandchild keeps
+        // the write end open, and a pipe read would block forever on an EOF that never comes. A
+        // regular file is readable the moment we stop waiting, no matter who else still holds it.
+        let outputURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pmm-path-probe-\(UUID().uuidString)")
+        guard FileManager.default.createFile(atPath: outputURL.path, contents: nil),
+              let sink = try? FileHandle(forWritingTo: outputURL)
+        else { return nil }
+        defer {
+            try? sink.close()
+            try? FileManager.default.removeItem(at: outputURL)
+        }
+
         let process = Process()
         process.executableURL = URL(fileURLWithPath: shell)
         process.arguments = arguments
         // TERM=dumb keeps rc files from emitting escape sequences; the rest of the environment is
         // left intact so ZDOTDIR and friends still apply.
         process.environment = ProcessInfo.processInfo.environment.merging(["TERM": "dumb"]) { _, new in new }
-
-        let output = Pipe()
         process.standardInput = FileHandle.nullDevice
-        process.standardOutput = output
+        process.standardOutput = sink
         process.standardError = FileHandle.nullDevice
 
         let finished = DispatchSemaphore(value: 0)
@@ -128,22 +177,26 @@ extension ShellEnvironment {
             return nil
         }
 
-        let reader = AsyncPipeReader(output)
-        reader.start()
-
         guard finished.wait(timeout: .now() + timeout) == .success else {
             process.terminate()
-            if finished.wait(timeout: .now() + 2) != .success {
+            if finished.wait(timeout: .now() + terminationGrace) != .success {
                 kill(process.processIdentifier, SIGKILL)
             }
             return nil
         }
 
-        guard process.terminationStatus == 0 else { return nil }
-        return String(data: reader.data(), encoding: .utf8)
+        guard process.terminationStatus == 0,
+              let data = try? Data(contentsOf: outputURL)
+        else { return nil }
+        // Lenient decoding: an rc file that emits a stray non-UTF-8 byte must not cost us the PATH.
+        return String(decoding: data, as: UTF8.self)
     }
 }
 
+private let terminationGrace: TimeInterval = 2
 private let probeBeginMarker = "__PMM_PATH_BEGIN__"
 private let probeEndMarker = "__PMM_PATH_END__"
 private let pathProbeScript = #"printf '\n__PMM_PATH_BEGIN__%s__PMM_PATH_END__\n' "$PATH""#
+/// fish keeps `PATH` as a list, so `"$PATH"` would come back space-separated.
+private let fishPathProbeScript =
+    #"printf '\n__PMM_PATH_BEGIN__%s__PMM_PATH_END__\n' (string join : $PATH)"#

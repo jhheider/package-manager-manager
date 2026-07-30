@@ -38,6 +38,48 @@ import Testing
     #expect(environment.cachedSearchPaths().isEmpty)
 }
 
+@Test func probeInvocationsAvoidBourneFlagsForCShells() {
+    #expect(ShellEnvironment.probeDialect(forShell: "/bin/tcsh") == .csh)
+    #expect(ShellEnvironment.probeDialect(forShell: "/bin/csh") == .csh)
+
+    let invocations = ShellEnvironment.probeInvocations(for: .csh)
+    #expect(!invocations.isEmpty)
+    // csh and tcsh exit 1 on any `-l` that is not the only flag, so the PATH would never resolve.
+    #expect(invocations.allSatisfy { !$0.contains("-l") && !$0.contains("-i") })
+    #expect(invocations.allSatisfy { $0.contains("-c") })
+}
+
+@Test func probeInvocationsUseLoginFlagsForBourneShells() {
+    #expect(ShellEnvironment.probeDialect(forShell: "/bin/zsh") == .bourne)
+    #expect(ShellEnvironment.probeDialect(forShell: "/opt/homebrew/bin/bash") == .bourne)
+    #expect(ShellEnvironment.probeInvocations(for: .bourne).first?.prefix(2) == ["-i", "-l"])
+}
+
+@Test func probeInvocationsJoinTheFishPathList() {
+    #expect(ShellEnvironment.probeDialect(forShell: "/opt/homebrew/bin/fish") == .fish)
+    // `"$PATH"` is space-separated in fish, so the script has to join the list itself.
+    #expect(ShellEnvironment.probeInvocations(for: .fish).allSatisfy { $0.last?.contains("string join") == true })
+}
+
+@Test func runProbeReturnsWhenABackgroundProcessInheritsStdout() {
+    // An rc file can leave a grandchild holding stdout open. Reading a pipe would block on an EOF
+    // that only arrives when that grandchild exits; the probe must not wait for it.
+    let started = Date()
+    let output = ShellEnvironment.runProbe(
+        "/bin/sh",
+        ["-c", "sleep 20 & printf '\\n__PMM_PATH_BEGIN__/a/bin__PMM_PATH_END__\\n'"]
+    )
+
+    #expect(Date().timeIntervalSince(started) < 10)
+    #expect(output.flatMap(ShellEnvironment.parseProbeOutput) == "/a/bin")
+}
+
+@Test func runProbeGivesUpOnAShellThatNeverExits() {
+    let started = Date()
+    #expect(ShellEnvironment.runProbe("/bin/sh", ["-c", "sleep 30"], timeout: 1) == nil)
+    #expect(Date().timeIntervalSince(started) < 10)
+}
+
 @Test func loginShellSearchPathsFindsRealToolDirectories() {
     // The probe has to survive whatever is in the user's rc files, so assert on the shape of the
     // result rather than on specific entries.

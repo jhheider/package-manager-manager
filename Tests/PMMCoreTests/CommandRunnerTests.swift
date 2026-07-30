@@ -3,23 +3,34 @@ import Testing
 @testable import PMMCore
 
 @Test func commandPathPreservesPathOrderAndAppendsFallbacks() {
-    #expect(commandPath("/custom/bin:/usr/bin", additional: []) == "/custom/bin:/usr/bin:/usr/local/bin:/opt/homebrew/bin")
+    #expect(
+        commandPath(inherited: "/custom/bin:/usr/bin", shell: [], home: [])
+            == "/custom/bin:/usr/bin:/usr/local/bin:/opt/homebrew/bin"
+    )
 }
 
 @Test func commandPathUsesFallbacksWhenPathIsMissing() {
-    #expect(commandPath(nil, additional: []) == "/usr/local/bin:/opt/homebrew/bin")
+    #expect(commandPath(inherited: nil, shell: [], home: []) == "/usr/local/bin:/opt/homebrew/bin")
 }
 
-@Test func commandPathInsertsAdditionalPathsAfterTheInheritedPath() {
+@Test func commandPathPutsTheShellPathAheadOfTheInheritedOne() {
+    // A Finder launch inherits launchd's PATH, which must not outrank the user's own shims.
     #expect(
-        commandPath("/custom/bin", additional: ["/extra/bin"])
-            == "/custom/bin:/extra/bin:/usr/local/bin:/opt/homebrew/bin"
+        commandPath(inherited: "/usr/bin", shell: ["/shim/bin"], home: ["/home/bin"])
+            == "/shim/bin:/usr/bin:/home/bin:/usr/local/bin:/opt/homebrew/bin"
+    )
+}
+
+@Test func commandPathKeepsAnExplicitlyRequestedPathFirst() {
+    #expect(
+        commandPath(leading: "/custom/bin", inherited: "/usr/bin", shell: ["/shim/bin"], home: [])
+            == "/custom/bin:/shim/bin:/usr/bin:/usr/local/bin:/opt/homebrew/bin"
     )
 }
 
 @Test func commandPathDropsDuplicatesKeepingTheEarliestOccurrence() {
     #expect(
-        commandPath("/custom/bin:/usr/local/bin", additional: ["/custom/bin", "/extra/bin"])
+        commandPath(inherited: "/custom/bin:/usr/local/bin", shell: ["/custom/bin"], home: ["/extra/bin"])
             == "/custom/bin:/usr/local/bin:/extra/bin:/opt/homebrew/bin"
     )
 }
