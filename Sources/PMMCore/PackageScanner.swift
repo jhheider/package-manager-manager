@@ -100,11 +100,33 @@ public struct PackageScanner: @unchecked Sendable {
         }
     }
 
-    public func scanCargoInstall(database: PackageDatabase) throws -> [ManagedPackage] {
+    /// `cargoStatus` is for tests: `toolPaths` can force a tool present but has no way to say one
+    /// is absent, so without it a test asserting the missing-helper path silently depends on
+    /// whether the machine running the suite happens to have cargo-update installed.
+    public func scanCargoInstall(
+        database: PackageDatabase,
+        cargoStatus: CargoToolchainStatus? = nil,
+        onWarning: ((String) -> Void)? = nil
+    ) throws -> [ManagedPackage] {
         guard let cargo = executable(named: "cargo") else { return [] }
         let result = try runner.run(cargo, ["install", "--list", "--color", "never"])
         guard result.status == 0 else { return [] }
-        return parseCargoInstallList(result.stdout)
+        // cargo itself cannot report what is out of date, so this is only populated when the user
+        // has opted into cargo-update. Crates it cannot resolve (git and path installs) are absent,
+        // and fall back to the curated catalog's version.
+        var latest: [String: String] = [:]
+        do {
+            latest = try CargoToolchain(runner: runner, toolPaths: toolPaths).latestVersions(status: cargoStatus)
+        } catch CargoToolchainError.helperUnavailable {
+            // Not installed is the ordinary case, and the offer card is how we ask about it.
+        } catch {
+            // Anything else means cargo-update ran and failed — an offline or slow registry, a
+            // broken config, a held package-cache lock. Swallowing it empties Outdated for every
+            // crate outside the curated catalog, which reads to the user as "all up to date"
+            // rather than "the check did not happen".
+            onWarning?("cargo-update could not check for updates: \(error.localizedDescription)")
+        }
+        return parseCargoInstallList(result.stdout, latestVersions: latest)
     }
 
     public func scanRustup(database: PackageDatabase) throws -> [ManagedPackage] {
@@ -353,7 +375,10 @@ public struct PackageScanner: @unchecked Sendable {
         }
     }
 
-    private func parseCargoInstallList(_ output: String) -> [ManagedPackage] {
+    private func parseCargoInstallList(
+        _ output: String,
+        latestVersions: [String: String] = [:]
+    ) -> [ManagedPackage] {
         var packages: [ManagedPackage] = []
         var current: (name: String, version: String, bins: [String])?
 
@@ -364,7 +389,7 @@ public struct PackageScanner: @unchecked Sendable {
                 identifier: "cargo:\(crate.name)",
                 displayName: crate.name,
                 installedVersion: crate.version,
-                latestVersion: nil,
+                latestVersion: latestVersions[crate.name],
                 summary: "cargo-installed Rust binary",
                 category: "developer-tools",
                 installLocation: cargoHome.path,
@@ -944,9 +969,12 @@ public struct PackageScanner: @unchecked Sendable {
         return await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .utility).async {
                 do {
+                    // A scan can succeed and still have something the user needs told about.
+                    var warnings: [String] = []
                     let packages: [ManagedPackage]
                     switch manager {
-                    case .cargoInstall: packages = try scanCargoInstall(database: database)
+                    case .cargoInstall:
+                        packages = try scanCargoInstall(database: database) { warnings.append($0) }
                     case .macApp: packages = []
                     case .rustup: packages = try scanRustup(database: database)
                     case .homebrew: packages = try scanHomebrew(database: database, mode: mode)
@@ -966,7 +994,7 @@ public struct PackageScanner: @unchecked Sendable {
                     case .uv: packages = try scanUV(database: database, mode: mode)
                     case .uvx: packages = try scanUVX(database: database)
                     }
-                    continuation.resume(returning: PackageManagerScanResult(manager: manager, packages: packages))
+                    continuation.resume(returning: PackageManagerScanResult(manager: manager, packages: packages, errors: warnings))
                 } catch {
                     continuation.resume(returning: PackageManagerScanResult(
                         manager: manager,

@@ -7,6 +7,8 @@ private final class RecordingRunner: CommandRunning, @unchecked Sendable {
     var options: [CommandRunOptions] = []
     var streamedOutput = ""
     var result = CommandResult(stdout: "", stderr: "", status: 0)
+    /// Commands containing this substring exit non-zero, so fallback chains can be exercised.
+    var failingCommandSubstring: String?
 
     func run(_ executable: String, _ arguments: [String]) throws -> CommandResult {
         try run(executable, arguments, options: CommandRunOptions(), onOutput: nil)
@@ -18,10 +20,14 @@ private final class RecordingRunner: CommandRunning, @unchecked Sendable {
         options: CommandRunOptions,
         onOutput: (@Sendable (String) -> Void)? = nil
     ) throws -> CommandResult {
-        commands.append(([executable] + arguments).joined(separator: " "))
+        let command = ([executable] + arguments).joined(separator: " ")
+        commands.append(command)
         self.options.append(options)
         if !streamedOutput.isEmpty {
             onOutput?(streamedOutput)
+        }
+        if let failingCommandSubstring, command.contains(failingCommandSubstring) {
+            return CommandResult(stdout: "", stderr: "no prebuilt artifact", status: 1)
         }
         return result
     }
@@ -46,12 +52,13 @@ private final class ProgressRecorder: @unchecked Sendable {
 
 @Test func packageUpdaterRunsManagerCommands() throws {
     let runner = RecordingRunner()
+    // Cargo is covered separately: which command it picks depends on whether cargo-binstall is
+    // installed, which must not be read off whatever machine runs the suite.
     let updater = PackageUpdater(
         runner: runner,
-        toolPaths: ["cargo": "/fake/cargo", "brew": "/fake/brew", "npm": "/fake/npm", "uv": "/fake/uv"]
+        toolPaths: ["brew": "/fake/brew", "npm": "/fake/npm", "uv": "/fake/uv"]
     )
 
-    try updater.update(package(.cargoInstall, "cargo:ripgrep", displayName: "Ripgrep"))
     try updater.update(package(.homebrew, "brew:git", displayName: "Git"))
     try updater.update(package(.npm, "npm:@scope/tool", displayName: "Scoped Tool"))
     try updater.update(package(.npx, "npx:acorn", displayName: "Acorn"))
@@ -59,14 +66,42 @@ private final class ProgressRecorder: @unchecked Sendable {
     try updater.update(package(.uv, "uv:cpython:3.13", displayName: "uv Managed Python 3.13", latestVersion: "3.13.14", summary: "uv-managed Python", category: "language-runtime"))
 
     #expect(runner.commands == [
-        "/fake/cargo install ripgrep --force --color always",
         "/fake/brew upgrade git",
         "/fake/npm install -g @scope/tool@latest",
         "/fake/npm exec --yes --package acorn@2.0.0 -- true",
         "/fake/uv tool upgrade ruff --color always",
         "/fake/uv python install 3.13.14 --color always",
     ])
-    #expect(runner.options.map(\.terminal) == Array(repeating: true, count: 6))
+    #expect(runner.options.map(\.terminal) == Array(repeating: true, count: 5))
+}
+
+@Test func packageUpdaterPrefersBinstallWhenItIsInstalled() throws {
+    let runner = RecordingRunner()
+    let updater = PackageUpdater(
+        runner: runner,
+        toolPaths: ["cargo": "/fake/cargo", "cargo-binstall": "/fake/cargo-binstall"]
+    )
+
+    try updater.update(package(.cargoInstall, "cargo:ripgrep", displayName: "Ripgrep"))
+
+    #expect(runner.commands == ["/fake/cargo binstall ripgrep --no-confirm --force"])
+}
+
+@Test func packageUpdaterFallsBackToCompilingWhenBinstallFails() throws {
+    let runner = RecordingRunner()
+    runner.failingCommandSubstring = "binstall"
+    let updater = PackageUpdater(
+        runner: runner,
+        toolPaths: ["cargo": "/fake/cargo", "cargo-binstall": "/fake/cargo-binstall"]
+    )
+
+    // A crate with no prebuilt artifact must still update rather than dead-ending.
+    try updater.update(package(.cargoInstall, "cargo:ripgrep", displayName: "Ripgrep"))
+
+    #expect(runner.commands == [
+        "/fake/cargo binstall ripgrep --no-confirm --force",
+        "/fake/cargo install ripgrep --force --color always",
+    ])
 }
 
 @Test func packageUpdaterReportsCommandAndOutputProgress() throws {
