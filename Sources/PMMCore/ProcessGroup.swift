@@ -9,9 +9,8 @@ import Foundation
 /// keeps running, holding the descriptors it inherited. Spawning with `POSIX_SPAWN_SETPGROUP` makes
 /// the child a group leader, and the whole group can then be signalled as one.
 ///
-/// Used for work we started for our own reasons and may abandon — the login-shell probe, and the
-/// query commands a scan runs. Never for an install or an update: those the user asked for, and
-/// they are theirs to finish or to stop deliberately.
+/// Deliberately *not* for package commands. Killing a group is right for a probe we started for our
+/// own reasons and can abandon; an install the user asked for is theirs to finish or stop.
 struct ProcessGroupChild {
     let id: pid_t
 
@@ -55,13 +54,34 @@ struct ProcessGroupChild {
     }
 
     /// Waits for exit, up to `timeout`. Returns the exit status, or nil if it was still running.
+    ///
+    /// Deliberately does not reap. Reaping frees the leader's pid, and the group id *is* that pid —
+    /// so once reaped, a signal aimed at "the group" can land on whatever process has since
+    /// inherited the number. Holding the zombie keeps the id reserved, which is the only thing that
+    /// makes the cleanup below safe. Call ``reap()`` once the group is dealt with.
     func wait(timeout: TimeInterval, pollInterval: TimeInterval = 0.02) -> Int32? {
         let deadline = Date(timeIntervalSinceNow: timeout)
         repeat {
-            if let status = reap(blocking: false) { return status }
+            if let status = exitStatus() { return status }
             Thread.sleep(forTimeInterval: pollInterval)
         } while Date() < deadline
-        return reap(blocking: false)
+        return exitStatus()
+    }
+
+    /// Releases the zombie. Nothing may signal the group after this.
+    func reap() {
+        var status: Int32 = 0
+        _ = waitpid(id, &status, 0)
+    }
+
+    /// The leader's exit status, observed without consuming it.
+    private func exitStatus() -> Int32? {
+        var info = siginfo_t()
+        guard waitid(P_PID, id_t(id), &info, WEXITED | WNOWAIT | WNOHANG) == 0, info.si_pid != 0 else {
+            return nil
+        }
+        // Mirrors Process.terminationStatus: the code for a normal exit, 128+n for a signal.
+        return info.si_code == Int32(CLD_EXITED) ? info.si_status : 128 + info.si_status
     }
 
     /// Signals the whole group — the child and everything it started that did not detach itself.
@@ -70,21 +90,52 @@ struct ProcessGroupChild {
     /// the user's rc file deliberately daemonised is not ours to kill.
     func terminateGroup(grace: TimeInterval) {
         kill(-id, SIGTERM)
-        if wait(timeout: grace) != nil { return }
+        let leaderExited = wait(timeout: grace) != nil
+        // Escalate even when the leader went quietly. `wait` observes the leader and nothing else,
+        // so stopping here on a polite shell left exactly the processes this exists to reach: the
+        // ones ignoring SIGTERM, which they inherit across exec. Nothing has been reaped yet, so
+        // the group id is still ours to signal.
         kill(-id, SIGKILL)
-        // Blocking, so the child is reaped rather than left a zombie.
-        _ = reap(blocking: true)
+        _ = leaderExited
+        reap()
     }
 
-    @discardableResult
-    private func reap(blocking: Bool) -> Int32? {
-        var status: Int32 = 0
-        let result = waitpid(id, &status, blocking ? 0 : WNOHANG)
-        guard result == id else { return nil }
-        // Mirrors Process.terminationStatus: the code for a normal exit, 128+n for a signal.
-        if status & 0x7F == 0 { return (status >> 8) & 0xFF }
-        return 128 + (status & 0x7F)
+    /// Clears out whatever is left in the group once the leader is done.
+    ///
+    /// The leader exiting is not the tree exiting: `wait` observes the leader and nothing else, so an
+    /// rc file's `foo &` outlives every *successful* probe as well as every timed-out one. Costs a
+    /// single `kill(…, 0)` in the normal case, where the group is already empty.
+    ///
+    /// A process that called `setsid` has left the group and is not touched, which is intended.
+    func terminateRemainingGroup(grace: TimeInterval = 0.25) {
+        // Owns the reap on every path, including the early return. `wait` deliberately leaves the
+        // leader a zombie so the group id stays reserved while it is signalled, and something has
+        // to release it afterwards. Leaving that to the caller leaked one zombie per probe — and
+        // the no-descendant early return, which is the ordinary case, leaked on every single one.
+        defer { reap() }
+        guard groupExists else { return }
+        kill(-id, SIGTERM)
+        let deadline = Date(timeIntervalSinceNow: grace)
+        while Date() < deadline {
+            if !groupExists { return }
+            Thread.sleep(forTimeInterval: 0.02)
+        }
+        // Checked immediately before signalling, and never deferred to a later queue. A group id is
+        // only free to be reused once the group is empty, so a delayed kill can land on whatever
+        // process has since inherited the number — which is not a theoretical risk: an earlier
+        // version of this scheduled the escalation and spent its afternoon killing unrelated
+        // processes, including other tests' subprocesses.
+        if groupExists { kill(-id, SIGKILL) }
     }
+
+    /// Short on purpose: this runs on the success path of every probe, and what it is waiting for is
+    /// leftovers nobody asked for. Costs nothing in the ordinary case, where the group is empty.
+    static let remainingGroupGrace: TimeInterval = 0.25
+
+    /// Whether the group still has members. The group outlives its leader while any remain, and the
+    /// leader's pid cannot be reused while it is still a live group id.
+    private var groupExists: Bool { kill(-id, 0) == 0 }
+
 }
 
 private func withCStringArray<R>(_ values: [String], _ body: ([UnsafeMutablePointer<CChar>?]) -> R) -> R {

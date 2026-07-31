@@ -161,3 +161,22 @@ func terminalOutputSurvivesASaturatedThreadPool() throws {
 
     #expect(result.stdout == "tty")
 }
+
+// Time-limited because the regression is a hang, not a wrong answer.
+@Test(.timeLimit(.minutes(1)))
+func aDescendantHoldingThePipesDoesNotStallTheCall() throws {
+    // The watchdog stopped once the leader exited, and `data()` then waited on an EOF the surviving
+    // child would never send. `sh -c 'sleep 30 &'` returns instantly and used to hang the call for
+    // the child's whole lifetime, inactivity budget or not.
+    let started = Date()
+
+    let result = try SystemCommandRunner().run(
+        "/bin/sh",
+        ["-c", "sleep 30 & printf done"],
+        options: CommandRunOptions(inactivityTimeout: 0.5)
+    )
+
+    #expect(result.stdout.contains("done"), "what the command did produce still counts")
+    #expect(result.status == 0)
+    #expect(Date().timeIntervalSince(started) < 10, "it did not wait out the straggler")
+}

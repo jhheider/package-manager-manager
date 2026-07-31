@@ -157,6 +157,23 @@ public struct SystemCommandRunner: CommandRunning {
             }
         }
 
+        // The leader exiting is not the tree exiting. A descendant that inherited the pipes holds
+        // them open, and `data()` below then waits for an EOF that never comes — `sh -c 'sleep 600 &'`
+        // returns instantly and hangs this call forever. So the budget covers reader completion too.
+        var abandoned = false
+        while !stdout.isFinished || !stderr.isFinished {
+            guard let limit = options.inactivityTimeout else { break }
+            if activity.elapsed >= limit {
+                child.terminateRemainingGroup(grace: 2)
+                abandoned = true
+                break
+            }
+            Thread.sleep(forTimeInterval: 0.02)
+        }
+        // Whatever the command already produced still counts: the leader succeeded, and only its
+        // stragglers were given up on.
+        if !abandoned { child.reap() }
+
         return CommandResult(
             stdout: String(data: stdout.data(), encoding: .utf8) ?? "",
             stderr: String(data: stderr.data(), encoding: .utf8) ?? "",
@@ -227,7 +244,11 @@ final class AsyncPipeReader: @unchecked Sendable {
     private let onOutput: (@Sendable (String) -> Void)?
     private let lock = NSLock()
     private var chunks = Data()
+    private var isDone = false
     private let done = DispatchSemaphore(value: 0)
+
+    /// Whether the stream has reached EOF, readable without consuming what ``data()`` waits on.
+    var isFinished: Bool { lock.withLock { isDone } }
 
     init(_ pipe: Pipe, onOutput: (@Sendable (String) -> Void)? = nil) {
         self.pipe = pipe
@@ -256,6 +277,7 @@ final class AsyncPipeReader: @unchecked Sendable {
             }
             self.lock.lock()
             self.chunks = data
+            self.isDone = true
             self.lock.unlock()
             self.done.signal()
         }
