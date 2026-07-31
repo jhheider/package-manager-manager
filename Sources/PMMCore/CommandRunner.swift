@@ -17,15 +17,50 @@ public struct CommandRunOptions: Sendable, Equatable {
     public var terminal: Bool
     public var environment: [String: String]
     public var streamsStandardOutput: Bool
+    /// How long a query may produce nothing at all before it is abandoned.
+    ///
+    /// Inactivity, not elapsed time: a scan command that is still printing is still working, and a
+    /// package operation is allowed to take as long as it takes. What this catches is the one that
+    /// has stopped — `cargo install-update` polling a registry that never answers, a tool waiting on
+    /// a package-cache lock another terminal holds, anything blocked on an unresponsive home
+    /// directory. Those never returned, and the refresh spinner never resolved.
+    ///
+    /// Off unless a caller asks for it. Defaulting it on armed the budget for everything that runs
+    /// through the non-terminal path, including SSH to a remote host: a remote inventory prints
+    /// only its final JSON, so a slow one was killed at two minutes and reported as "stopped
+    /// responding" while that machine was still working, or had already finished. A capability that
+    /// kills processes belongs at the call sites that know the command is a quick local query.
+    public var inactivityTimeout: TimeInterval?
 
     public init(
         terminal: Bool = false,
         environment: [String: String] = [:],
-        streamsStandardOutput: Bool = true
+        streamsStandardOutput: Bool = true,
+        inactivityTimeout: TimeInterval? = nil
     ) {
         self.terminal = terminal
         self.environment = environment
         self.streamsStandardOutput = streamsStandardOutput
+        self.inactivityTimeout = inactivityTimeout
+    }
+}
+
+/// Generous on purpose. Several scan commands print nothing until they finish, so for them this is
+/// effectively a total budget rather than an idle one — and a query that has produced no output at
+/// all for two minutes has stopped, not slowed down.
+public let defaultQueryInactivityTimeout: TimeInterval = 120
+
+public enum CommandRunError: Error, LocalizedError, Equatable {
+    case spawnFailed(String)
+    case timedOut(command: String, afterInactivity: TimeInterval)
+
+    public var errorDescription: String? {
+        switch self {
+        case .spawnFailed(let command):
+            "Could not run \(command)."
+        case .timedOut(let command, let seconds):
+            "\(command) stopped responding — no output for \(Int(seconds))s."
+        }
     }
 }
 
@@ -75,27 +110,57 @@ public struct SystemCommandRunner: CommandRunning {
             return try runInTerminal(executable, arguments, options: options, onOutput: onOutput)
         }
 
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: executable)
-        process.arguments = arguments
-        process.environment = commandEnvironment(options.environment)
-
         let output = Pipe()
         let error = Pipe()
-        process.standardOutput = output
-        process.standardError = error
+        let devNull = open("/dev/null", O_RDONLY)
+        defer { if devNull >= 0 { close(devNull) } }
+        let command = ([executable] + arguments).joined(separator: " ")
+        guard devNull >= 0,
+              let child = ProcessGroupChild.spawn(
+                  executable: executable,
+                  arguments: arguments,
+                  environment: commandEnvironment(options.environment),
+                  standardInput: devNull,
+                  standardOutput: output.fileHandleForWriting.fileDescriptor,
+                  standardError: error.fileHandleForWriting.fileDescriptor
+              )
+        else { throw CommandRunError.spawnFailed(command) }
+        // The parent's copies of the write ends have to go, or the readers never see EOF.
+        try? output.fileHandleForWriting.close()
+        try? error.fileHandleForWriting.close()
 
-        try process.run()
-        let stdout = AsyncPipeReader(output, onOutput: options.streamsStandardOutput ? onOutput : nil)
-        let stderr = AsyncPipeReader(error, onOutput: onOutput)
+        // Every chunk from either stream counts as activity, whether or not the caller wanted it
+        // streamed — a command printing only to stderr is still working.
+        let activity = ActivityClock()
+        let stdout = AsyncPipeReader(output) { text in
+            activity.touch()
+            if options.streamsStandardOutput { onOutput?(text) }
+        }
+        let stderr = AsyncPipeReader(error) { text in
+            activity.touch()
+            onOutput?(text)
+        }
         stdout.start()
         stderr.start()
-        process.waitUntilExit()
+
+        var status: Int32?
+        while status == nil {
+            if let exited = child.wait(timeout: 0.25) {
+                status = exited
+                break
+            }
+            if let limit = options.inactivityTimeout, activity.elapsed >= limit {
+                // The whole group: killing `cargo` alone would leave its fetches and its rustc
+                // children running, and they hold the pipes this call is about to read.
+                child.terminateGroup(grace: 2)
+                throw CommandRunError.timedOut(command: command, afterInactivity: limit)
+            }
+        }
 
         return CommandResult(
             stdout: String(data: stdout.data(), encoding: .utf8) ?? "",
             stderr: String(data: stderr.data(), encoding: .utf8) ?? "",
-            status: process.terminationStatus
+            status: status ?? 0
         )
     }
 
@@ -122,11 +187,10 @@ public struct SystemCommandRunner: CommandRunning {
         process.standardOutput = slaveHandle
         process.standardError = slaveHandle
 
-        try process.run()
-        try? slaveHandle.close()
-
         let output = AsyncFileHandleReader(masterHandle, onOutput: onOutput)
         output.start()
+        try process.run()
+        try? slaveHandle.close()
         process.waitUntilExit()
 
         return CommandResult(
@@ -149,7 +213,16 @@ public struct SystemCommandRunner: CommandRunning {
     }
 }
 
-private final class AsyncPipeReader: @unchecked Sendable {
+private /// Last-touched timestamp, shared between the two readers and the watchdog.
+final class ActivityClock: @unchecked Sendable {
+    private let lock = NSLock()
+    private var last = Date()
+
+    func touch() { lock.withLock { last = Date() } }
+    var elapsed: TimeInterval { lock.withLock { Date().timeIntervalSince(last) } }
+}
+
+final class AsyncPipeReader: @unchecked Sendable {
     private let pipe: Pipe
     private let onOutput: (@Sendable (String) -> Void)?
     private let lock = NSLock()
@@ -162,7 +235,10 @@ private final class AsyncPipeReader: @unchecked Sendable {
     }
 
     func start() {
-        DispatchQueue.global(qos: .utility).async {
+        // A dedicated thread, not a pooled queue. A saturated global pool can leave this block
+        // unscheduled while the subprocess runs to completion — and for a pty, once the last slave
+        // descriptor closes, anything still unread on the master is discarded, so late means gone.
+        Thread.detachNewThread {
             var data = Data()
             var decoder = IncrementalUTF8Decoder()
             while true {
@@ -206,7 +282,10 @@ private final class AsyncFileHandleReader: @unchecked Sendable {
     }
 
     func start() {
-        DispatchQueue.global(qos: .utility).async {
+        // A dedicated thread, not a pooled queue. A saturated global pool can leave this block
+        // unscheduled while the subprocess runs to completion — and for a pty, once the last slave
+        // descriptor closes, anything still unread on the master is discarded, so late means gone.
+        Thread.detachNewThread {
             var data = Data()
             var decoder = IncrementalUTF8Decoder()
             while true {

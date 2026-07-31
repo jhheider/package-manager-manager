@@ -317,6 +317,14 @@ public struct ManagedPackage: Codable, Equatable, Identifiable, Sendable {
         installedVersions.filter { $0 != installedVersion }
     }
 
+    /// Folds catalogued description into a package the scanners produced.
+    ///
+    /// The catalog owns what a package *is* — summary, category, homepage, docs — because it is the
+    /// only source for those. It does not own `latestVersion`, which is state somebody observed:
+    /// brew's `outdated`, cargo-update's list, a registry query. So the catalog fills that in when
+    /// nothing looked, and never overwrites an answer when something did. The other way round, a
+    /// crate that cargo-update had just reported as outdated would drop back out of Outdated
+    /// seconds later because a stale catalog said the installed version was current.
     public func applying(metadata: PackageMetadata?) -> ManagedPackage {
         guard let metadata else { return self }
         return ManagedPackage(
@@ -325,7 +333,7 @@ public struct ManagedPackage: Codable, Equatable, Identifiable, Sendable {
             displayName: displayName,
             installedVersion: installedVersion,
             installedVersions: installedVersions,
-            latestVersion: metadata.version ?? latestVersion,
+            latestVersion: latestVersion ?? metadata.version,
             summary: metadata.summary ?? summary,
             category: metadata.category ?? category,
             homepage: metadata.homepage ?? homepage,

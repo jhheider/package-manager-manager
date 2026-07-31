@@ -74,9 +74,29 @@ import Testing
     // Namespacing keeps one manager's dismissals from affecting another's.
     #expect(!preferences.hasDismissed(CargoHelper.installUpdate.promptKey))
     #expect(!preferences.hasDismissed("homebrew.something"))
+}
 
-    preferences.restore(CargoHelper.binstall.promptKey)
-    #expect(!preferences.hasDismissed(CargoHelper.binstall.promptKey))
+@Test func preferencesStoreKeepsBothDismissalsWhenSavesLandOutOfOrder() throws {
+    // Two dismissals in a row used to schedule two independent writes. If the older `{binstall}`
+    // landed last it replaced `{binstall, cargo-update}` on disk, and the second prompt came back
+    // after relaunch. Saving newest-first here is the worst case for a plain overwrite.
+    let url = URL(fileURLWithPath: NSTemporaryDirectory())
+        .appendingPathComponent("pmm-prefs-order-\(UUID().uuidString).json")
+    defer { try? FileManager.default.removeItem(at: url) }
+    let store = PackagePreferencesStore(url: url)
+
+    var first = PackagePreferences()
+    first.dismiss(CargoHelper.binstall.promptKey)
+    var second = first
+    second.dismiss(CargoHelper.installUpdate.promptKey)
+
+    store.save(second)
+    store.save(first)
+    store.flush()
+
+    let loaded = store.load()
+    #expect(loaded.hasDismissed(CargoHelper.binstall.promptKey))
+    #expect(loaded.hasDismissed(CargoHelper.installUpdate.promptKey))
 }
 
 @Test func packagePreferencesRoundTripThroughTheStore() throws {
@@ -89,6 +109,8 @@ import Testing
     var preferences = PackagePreferences()
     preferences.dismiss(CargoHelper.installUpdate.promptKey)
     store.save(preferences)
+    // `save` hands the write to the store's queue and returns, so reading needs the barrier.
+    store.flush()
 
     #expect(store.load().hasDismissed(CargoHelper.installUpdate.promptKey))
 }
@@ -286,6 +308,9 @@ private final class StubRunner: CommandRunning, @unchecked Sendable {
     var streamedOutput = ""
     /// Commands containing this substring exit non-zero, so fallback chains can be exercised.
     var failingCommandSubstring: String?
+    /// Per-command stderr, keyed by a substring — lets a chain fail twice with different messages,
+    /// so a test can tell which failure was reported.
+    var failingCommandStderr: [String: String] = [:]
     private let lock = NSLock()
     private var recordedCommands: [String] = []
     private var recordedOptions: [CommandRunOptions] = []
@@ -318,6 +343,9 @@ private final class StubRunner: CommandRunning, @unchecked Sendable {
         recordedOptions.append(options)
         lock.unlock()
         if !streamedOutput.isEmpty { onOutput?(streamedOutput) }
+        if let match = failingCommandStderr.first(where: { command.contains($0.key) }) {
+            return CommandResult(stdout: "", stderr: match.value, status: 1)
+        }
         if let failingCommandSubstring, command.contains(failingCommandSubstring) {
             return CommandResult(stdout: "", stderr: "no prebuilt artifact\n", status: 1)
         }
@@ -335,10 +363,15 @@ private final class StubRunner: CommandRunning, @unchecked Sendable {
     #expect(CargoHelper(promptKey: "homebrew.something") == nil)
 }
 
-@Test func managerSetupIgnoresIdentifiersNoManagerClaims() throws {
-    #expect(try ManagerSetupState.installHelper(id: "homebrew.nonexistent") == false)
-    #expect(ManagerSetupState.helperDisplayName(id: "homebrew.nonexistent") == "homebrew.nonexistent")
-    #expect(ManagerSetupState.helperDisplayName(id: CargoHelper.installUpdate.promptKey) == "cargo-update")
+@Test func helperIdentifiersResolveOnlyToCargosOwnHelpers() {
+    // The prompt key is the whole contract between the card, the dismissal, and the host request,
+    // so an identifier that is not cargo's has to resolve to nothing rather than to a guess.
+    for helper in CargoHelper.allCases {
+        #expect(CargoHelper(promptKey: helper.promptKey) == helper)
+    }
+    #expect(CargoHelper(promptKey: "homebrew.nonexistent") == nil)
+    #expect(CargoHelper(promptKey: "brew:curl") == nil)
+    #expect(CargoHelper.installUpdate.crateName == "cargo-update")
 }
 
 @Test func cargoOffersOnlyWhenItsOwnManagersHavePackages() {
@@ -351,82 +384,68 @@ private final class StubRunner: CommandRunning, @unchecked Sendable {
     #expect(none.offer(installedManagers: []) == nil)
 }
 
-@Test func managerSetupSurfacesOffersWithoutNamingTheManager() {
-    var state = ManagerSetupState()
+@Test func cargoSetupSurfacesAnOfferOnlyOnceDetected() {
+    // Status is stated rather than detected: on a machine that already has both helpers, real
+    // detection yields no offer and every assertion below would silently be skipped.
+    let state = CargoSetupState()
     #expect(state.offer(installedManagers: [.cargoInstall]) == nil, "undetected must not prompt")
 
-    state = state.merging(.detect(preferences: PackagePreferences()))
-    if let offer = state.offer(installedManagers: [.cargoInstall]) {
-        #expect(offer.manager == .cargoInstall)
-        #expect(!offer.title.isEmpty)
-        #expect(!offer.explanation.isEmpty)
-        #expect(!offer.symbolName.isEmpty)
-    }
+    let detected = state.merging(status: neitherHelperInstalled, preferences: PackagePreferences())
+    let offer = try? #require(detected.offer(installedManagers: [.cargoInstall])?.setupOffer)
+    #expect(offer?.manager == .cargoInstall)
+    #expect(offer?.title.isEmpty == false)
+    #expect(offer?.explanation.isEmpty == false)
+    #expect(offer?.symbolName.isEmpty == false)
 }
 
-@Test func managerSetupCarriesAnInFlightInstallAcrossDetection() {
-    var state = ManagerSetupState()
-    state.installingHelperID = CargoHelper.binstall.promptKey
+@Test func cargoSetupDismissalSuppressesTheOffer() {
+    var state = CargoSetupState()
+        .merging(status: neitherHelperInstalled, preferences: PackagePreferences())
+    #expect(state.offer(installedManagers: [.cargoInstall]) == .binstall)
 
-    let merged = state.merging(.detect(preferences: PackagePreferences()))
+    state.preferences.dismiss(CargoHelper.binstall.promptKey)
 
-    // Losing this on a refresh would drop the card back to its idle button mid-install.
-    #expect(merged.installingHelperID == CargoHelper.binstall.promptKey)
+    #expect(state.offer(installedManagers: [.cargoInstall]) == .installUpdate)
+    #expect(state.preferences.hasDismissed(CargoHelper.binstall.promptKey))
 }
 
-@Test func managerSetupDismissalSuppressesTheOffer() {
-    var state = ManagerSetupState().merging(.detect(preferences: PackagePreferences()))
-    guard let offer = state.offer(installedManagers: [.cargoInstall]) else { return }
-
-    state.dismiss(offer.id)
-
-    #expect(state.offer(installedManagers: [.cargoInstall])?.id != offer.id)
-    #expect(state.preferences.hasDismissed(offer.id))
-}
-
-@Test func managerSetupKeepsADismissalMadeWhileDetectionWasInFlight() {
+@Test func cargoSetupKeepsADismissalMadeWhileDetectionWasInFlight() {
     // Detection reads preferences from disk on a background task. Dismissing while that read is in
     // flight leaves the dismissal in memory only, and taking the loaded snapshot wholesale would
-    // put the card the user just dismissed straight back.
-    let stale = ManagerSetupState.detect(preferences: PackagePreferences())
-    var state = stale
-    guard let offer = state.offer(installedManagers: [.cargoInstall]) else { return }
-    state.dismiss(offer.id)
+    // put the card the user just dismissed straight back. Nothing here is detected for real: this
+    // has to assert unconditionally on every machine, whatever it happens to have installed.
+    var state = CargoSetupState(status: neitherHelperInstalled, preferences: PackagePreferences())
+    #expect(state.offer(installedManagers: [.cargoInstall]) == .binstall)
+    state.preferences.dismiss(CargoHelper.binstall.promptKey)
 
-    let merged = state.merging(stale)
+    // The in-flight read finishes and reports preferences from before the dismissal.
+    let merged = state.merging(status: neitherHelperInstalled, preferences: PackagePreferences())
 
-    #expect(merged.preferences.hasDismissed(offer.id))
-    #expect(merged.offer(installedManagers: [.cargoInstall])?.id != offer.id)
+    #expect(merged.preferences.hasDismissed(CargoHelper.binstall.promptKey))
+    #expect(merged.offer(installedManagers: [.cargoInstall]) == .installUpdate)
 }
 
-@Test func managerSetupPicksUpDismissalsRecordedElsewhere() {
+@Test func cargoSetupPicksUpDismissalsRecordedElsewhere() {
     // The other direction: the menu bar helper and previous launches write to the same file, so a
     // dismissal arriving from disk still has to take effect.
     var stored = PackagePreferences()
     stored.dismiss(CargoHelper.binstall.promptKey)
 
-    let merged = ManagerSetupState().merging(.detect(preferences: stored))
+    let merged = CargoSetupState().merging(status: neitherHelperInstalled, preferences: stored)
 
     #expect(merged.preferences.hasDismissed(CargoHelper.binstall.promptKey))
+    #expect(merged.offer(installedManagers: [.cargoInstall]) == .installUpdate)
 }
 
-@Test func managerSetupDistinguishesUndetectedFromNothingToOffer() {
-    let undetected = ManagerSetupState()
-    #expect(undetected.managerAwaitingDetection(installedManagers: [.cargoInstall]) == .cargoInstall)
+@Test func cargoSetupDistinguishesUndetectedFromNothingToOffer() {
+    let undetected = CargoSetupState()
+    #expect(undetected.isAwaitingDetection(installedManagers: [.cargoInstall]))
     // Nothing to wait for when the manager is not even in use.
-    #expect(undetected.managerAwaitingDetection(installedManagers: [.homebrew]) == nil)
-    #expect(undetected.managerAwaitingDetection(installedManagers: []) == nil)
+    #expect(!undetected.isAwaitingDetection(installedManagers: [.homebrew]))
+    #expect(!undetected.isAwaitingDetection(installedManagers: []))
 
-    let detected = undetected.merging(.detect(preferences: PackagePreferences()))
-    #expect(detected.managerAwaitingDetection(installedManagers: [.cargoInstall]) == nil)
-}
-
-@Test func managerSetupClaimsOnlyItsOwnHelperIdentifiers() {
-    for helper in CargoHelper.allCases {
-        #expect(ManagerSetupState.claimsHelper(id: helper.promptKey))
-    }
-    #expect(!ManagerSetupState.claimsHelper(id: "brew:curl"))
-    #expect(!ManagerSetupState.claimsHelper(id: "homebrew.nonexistent"))
+    let detected = undetected.merging(status: neitherHelperInstalled, preferences: PackagePreferences())
+    #expect(!detected.isAwaitingDetection(installedManagers: [.cargoInstall]))
 }
 
 @Test func packagePreferencesMergeUnionsDismissals() {
@@ -440,4 +459,218 @@ private final class StubRunner: CommandRunning, @unchecked Sendable {
     #expect(merged.hasDismissed(CargoHelper.binstall.promptKey))
     #expect(merged.hasDismissed(CargoHelper.installUpdate.promptKey))
     #expect(merged == theirs.merging(mine))
+}
+
+/// Cargo present, neither helper installed — the one state in which both offers are live.
+///
+/// Stated rather than detected on purpose: `CargoSetupState.detect` shells out, so a test built on
+/// it asserts nothing at all on a machine that already has the helpers, which is exactly where
+/// these regressions would go unnoticed.
+private let neitherHelperInstalled = CargoToolchainStatus(cargo: "/c", binstall: nil, installUpdate: nil)
+
+@Test func preferencesStoreKeepsEveryDismissalUnderConcurrentWriters() {
+    // Writers arriving from several queues at once must not lose each other's dismissals, whatever
+    // order the reads and writes interleave in.
+    let url = URL(fileURLWithPath: NSTemporaryDirectory())
+        .appendingPathComponent("pmm-prefs-race-\(UUID().uuidString).json")
+    defer { try? FileManager.default.removeItem(at: url) }
+    let store = PackagePreferencesStore(url: url)
+    let prompts = (0..<32).map { "cargo.race\($0)" }
+
+    DispatchQueue.concurrentPerform(iterations: prompts.count) { index in
+        var preferences = PackagePreferences()
+        preferences.dismiss(prompts[index])
+        store.save(preferences)
+    }
+    store.flush()
+
+    let loaded = store.load()
+    #expect(prompts.allSatisfy(loaded.hasDismissed))
+}
+
+@Test func installReportsWhichCommandFailedWhenEveryCommandFails() {
+    // `failure` is overwritten each round, so the error the user sees is the compile's, not the
+    // prebuilt download's. The compile error is the actionable one — reporting binstall's would
+    // send them chasing a missing artifact when the real problem is the crate.
+    let runner = StubRunner()
+    runner.status = 1
+    runner.stderr = "no prebuilt artifact\n"
+    runner.failingCommandStderr = ["install cargo-update": "could not compile cargo-update\n"]
+    let toolchain = CargoToolchain(runner: runner, toolPaths: ["cargo": "/c"])
+    let status = CargoToolchainStatus(cargo: "/c", binstall: "/b", installUpdate: nil)
+
+    #expect(throws: CargoToolchainError.commandFailed("could not compile cargo-update\n")) {
+        try toolchain.install(.installUpdate, status: status)
+    }
+}
+
+@Test func installExplainsTheFallbackInItsProgressStream() throws {
+    // Falling back means a multi-minute compile. The marker between the two commands is the only
+    // signal the user gets that the fast path was tried and did not work.
+    let runner = StubRunner()
+    runner.failingCommandSubstring = "binstall"
+    let toolchain = CargoToolchain(runner: runner, toolPaths: ["cargo": "/c"])
+    let status = CargoToolchainStatus(cargo: "/c", binstall: "/b", installUpdate: nil)
+    let progress = ProgressRecorder()
+
+    try toolchain.install(.installUpdate, status: status) { progress.append($0) }
+
+    #expect(progress.values == [
+        .started(command: "cargo binstall cargo-update --no-confirm --force"),
+        // Between the two commands: without this the terminal jumps straight from a binstall
+        // invocation to a compile with nothing explaining why.
+        .output("\ncargo binstall cargo-update --no-confirm --force failed.\n"),
+        .started(command: "cargo install cargo-update --force --color always"),
+    ])
+}
+
+@Test func aCargoUpdateFailureIsReportedRatherThanReadAsNothingToUpdate() throws {
+    // An offline registry, a broken config, a held package-cache lock: cargo-update runs and fails.
+    // Swallowing that empties Outdated for every crate outside the curated catalog, which the user
+    // reads as "all up to date" rather than "the check did not happen".
+    let runner = StubRunner()
+    runner.stdout = "just v1.5.0:\n    just\n"
+    runner.failingCommandStderr = ["install-update": "error: failed to query registry\n"]
+    let scanner = PackageScanner(runner: runner, toolPaths: ["cargo": "/c"])
+    let warnings = LockedStrings()
+
+    let packages = try scanner.scanCargoInstall(
+        database: PackageDatabase(),
+        cargoStatus: CargoToolchainStatus(cargo: "/c", binstall: nil, installUpdate: "/u")
+    ) { warnings.append($0) }
+
+    #expect(!packages.isEmpty, "the crates themselves still scanned fine")
+    #expect(warnings.values.count == 1)
+    #expect(warnings.values.first?.contains("cargo-update") == true)
+}
+
+@Test func cargoUpdateSimplyNotBeingInstalledIsNotAWarning() throws {
+    // The ordinary case. The offer card is how we ask about it; an error banner would be noise.
+    let runner = StubRunner()
+    runner.stdout = "just v1.5.0:\n    just\n"
+    let scanner = PackageScanner(runner: runner, toolPaths: ["cargo": "/c"])
+    let warnings = LockedStrings()
+
+    _ = try scanner.scanCargoInstall(
+        database: PackageDatabase(),
+        cargoStatus: CargoToolchainStatus(cargo: "/c", binstall: nil, installUpdate: nil)
+    ) { warnings.append($0) }
+
+    #expect(warnings.values.isEmpty)
+}
+
+private final class LockedStrings: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storage: [String] = []
+    func append(_ value: String) { lock.withLock { storage.append(value) } }
+    var values: [String] { lock.withLock { storage } }
+}
+
+@Test func catalogMetadataFillsAMissingLatestVersionButNeverOverwritesAnObservedOne() {
+    // The freshness pass enriches every scanned package with catalogued description. A crate
+    // cargo-update had just reported as outdated used to drop back out of Outdated seconds later,
+    // because a stale catalog claimed the installed version was the latest.
+    let observed = ManagedPackage(
+        manager: .cargoInstall,
+        name: "just",
+        installedVersion: "1.5.0",
+        latestVersion: "1.57.0"
+    )
+    let staleCatalog = PackageMetadata(summary: "A command runner", category: nil, homepage: nil, version: "1.5.0")
+
+    let enriched = observed.applying(metadata: staleCatalog)
+    #expect(enriched.latestVersion == "1.57.0", "what cargo-update saw wins")
+    #expect(enriched.isOutdated)
+    #expect(enriched.summary == "A command runner", "description still comes from the catalog")
+
+    // The other direction: a manager that cannot determine latest still gets it from the catalog.
+    let unobserved = ManagedPackage(
+        manager: .skills,
+        name: "thing",
+        installedVersion: "1.0.0",
+        latestVersion: nil
+    )
+    #expect(unobserved.applying(metadata: PackageMetadata(summary: nil, category: nil, homepage: nil, version: "2.0.0")).latestVersion == "2.0.0")
+}
+
+@Test func aStalledCargoUpdateBecomesAWarningRatherThanAHungRefresh() throws {
+    // End to end for the stall: cargo-update never answers, the scan gives up on it, the crates
+    // still land, and the user is told why their updates are missing instead of watching a spinner.
+    let scanner = PackageScanner(runner: StallingRunner(), toolPaths: ["cargo": "/bin/sh"])
+    let warnings = LockedStrings()
+
+    let packages = try scanner.scanCargoInstall(
+        database: PackageDatabase(),
+        cargoStatus: CargoToolchainStatus(cargo: "/bin/sh", binstall: nil, installUpdate: "/u")
+    ) { warnings.append($0) }
+
+    #expect(!packages.isEmpty, "the crates themselves still scanned")
+    #expect(warnings.values.count == 1)
+    #expect(warnings.values.first?.contains("stopped responding") == true)
+}
+
+/// Answers `install --list` immediately and hangs on `install-update`, which is the shape of a
+/// registry that never replies.
+private final class StallingRunner: CommandRunning, @unchecked Sendable {
+    func run(_ executable: String, _ arguments: [String]) throws -> CommandResult {
+        try run(executable, arguments, options: CommandRunOptions(), onOutput: nil)
+    }
+
+    func run(
+        _ executable: String,
+        _ arguments: [String],
+        options: CommandRunOptions,
+        onOutput: (@Sendable (String) -> Void)?
+    ) throws -> CommandResult {
+        guard arguments.first == "install-update" else {
+            return CommandResult(stdout: "just v1.5.0:\n    just\n", stderr: "", status: 0)
+        }
+        return try SystemCommandRunner().run(
+            "/bin/sh",
+            ["-c", "sleep 5"],
+            options: CommandRunOptions(inactivityTimeout: 0.4)
+        )
+    }
+}
+
+@Test func cargoUpdateAsksForTheTimeoutItNeeds() throws {
+    // The end-to-end stall test drives a runner that invents its own budget, so it proves the
+    // timeout error becomes a warning — not that the real call site asks for a timeout at all.
+    // Now that timeouts are opt-in, that distinction is the whole fix.
+    let runner = StubRunner()
+    runner.stdout = "Package Installed Latest Needs update\n"
+    let toolchain = CargoToolchain(runner: runner, toolPaths: ["cargo": "/c"])
+
+    _ = try toolchain.latestVersions(
+        status: CargoToolchainStatus(cargo: "/c", binstall: nil, installUpdate: "/u")
+    )
+
+    #expect(runner.options.last?.inactivityTimeout == defaultQueryInactivityTimeout)
+}
+
+@Test func helpersAreFoundWhereCargoPutsThemEvenWhenThatIsNotOnPath() throws {
+    // The Finder-launched, Homebrew-cargo case: `cargo install` drops the helper in CARGO_HOME/bin,
+    // which is not on the host's PATH. Detection used to miss it, so a successful install reported
+    // no error and then offered itself again, forever.
+    let home = URL(fileURLWithPath: NSTemporaryDirectory())
+        .appendingPathComponent("pmm-cargo-home-\(UUID().uuidString)", isDirectory: true)
+    let bin = home.appendingPathComponent("bin", isDirectory: true)
+    try FileManager.default.createDirectory(at: bin, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: home) }
+    let binstall = bin.appendingPathComponent(CargoHelper.binstall.executableName)
+    FileManager.default.createFile(atPath: binstall.path, contents: Data("#!/bin/sh\n".utf8))
+    try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: binstall.path)
+
+    let toolchain = CargoToolchain(
+        runner: StubRunner(),
+        toolPaths: ["cargo": "/c"],
+        environment: ["CARGO_HOME": home.path],
+        // Nothing on PATH: this machine almost certainly has cargo-binstall installed, and finding
+        // that one would mean the CARGO_HOME lookup under test never runs.
+        findOnPath: { _ in nil }
+    )
+
+    #expect(toolchain.status().has(.binstall))
+    // And so the updater uses it rather than compiling from source.
+    #expect(toolchain.updateCommands(for: "just").first?.arguments.first == "binstall")
 }

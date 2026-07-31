@@ -104,6 +104,8 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
     private var refreshTask: Task<Void, Never>?
     private var actionTask: Task<Void, Never>?
     private var rescanTask: Task<Void, Never>?
+    /// A helper install that arrived while the host was busy, waiting for it to go idle.
+    private var pendingHelperInstall: CargoHelper?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         loadSnapshot()
@@ -126,6 +128,7 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        PackagePreferencesStore.flushPendingWrites()
         timer?.invalidate()
         refreshTask?.cancel()
         actionTask?.cancel()
@@ -179,17 +182,18 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
             }
 
             guard !Task.isCancelled else { return }
-            self.refreshTask = nil
             self.snapshot.installedPackageFirstSeenAtByID = previousFirstSeen
             self.snapshot.loadingManagers = []
             self.publishSnapshot()
-            self.startFreshness(
-                databaseTask: databaseTask,
-                generatedAt: generatedAt,
-                previousLastBrewUpdateAt: previousLastBrewUpdateAt,
-                errorsByManager: errorsByManager,
-                appScanMode: ignoringAppCache ? .freshIgnoringCache : .fresh
-            )
+            self.finishBusyWork {
+                self.startFreshness(
+                    databaseTask: databaseTask,
+                    generatedAt: generatedAt,
+                    previousLastBrewUpdateAt: previousLastBrewUpdateAt,
+                    errorsByManager: errorsByManager,
+                    appScanMode: ignoringAppCache ? .freshIgnoringCache : .fresh
+                )
+            }
         }
     }
 
@@ -356,17 +360,16 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
 
             guard let self, !Task.isCancelled else { return }
             self.finishActionProgress(relay, runID: runID, kind: kind, packageID: package.id)
-            self.actionTask = nil
             self.snapshot.runningAction = nil
             switch result {
             case .success:
                 self.snapshot = menuBarSnapshot(self.snapshot, applyingSuccessfulAction: kind, package: package)
                 self.publishSnapshot()
-                self.rescanAfterAction()
+                self.finishBusyWork { self.rescanAfterAction() }
             case .failure(let error):
                 self.snapshot.errorMessage = error.localizedDescription
                 self.publishSnapshot()
-                self.rescanAfterAction(errorMessage: error.localizedDescription)
+                self.finishBusyWork { self.rescanAfterAction(errorMessage: error.localizedDescription) }
             }
         }
     }
@@ -425,16 +428,27 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func helperInstallRequested(_ notification: Notification) {
+        // The one place an identifier off the wire becomes a helper. Everything below holds the
+        // enum, so a held request cannot fail to parse on its way back out of the queue.
         guard let helperID = PackageHostNotifications.helperID(from: notification) else { return }
-        installHelper(helperID)
+        switch menuBarHelperInstallDisposition(
+            id: helperID,
+            isBusy: isBusy,
+            installing: snapshot.runningAction?.packageID
+        ) {
+        case .ignore: return
+        case .hold(let helper): pendingHelperInstall = helper
+        case .start(let helper): installHelper(helper)
+        }
     }
 
-    private func installHelper(_ helperID: String) {
-        // Refusing while a refresh or another action runs is safe to do silently: the app enters
-        // its installing state from this snapshot's running action rather than at click time, and
-        // disables the button whenever this guard would reject, so a dropped request neither
-        // strands the card nor is reachable from a click in the first place.
-        guard refreshTask == nil, actionTask == nil else { return }
+    /// Whether a helper install has to wait. Deliberately the same two tasks the guards on
+    /// `refresh` and `runAction` check, so "the host is busy" means one thing.
+    private var isBusy: Bool { refreshTask != nil || actionTask != nil }
+
+    private func installHelper(_ helper: CargoHelper) {
+        let helperID = helper.promptKey
+        pendingHelperInstall = nil
         cancelBackgroundRefresh()
         // Installing a helper reports progress exactly like any other install: bootstrapping
         // binstall has to compile from source, which takes minutes and looks hung without output.
@@ -444,7 +458,7 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
             runID: runID,
             kind: .install,
             packageID: packageID,
-            displayName: ManagerSetupState.helperDisplayName(id: helperID)
+            displayName: helper.crateName
         )
         snapshot.errorMessage = nil
         publishSnapshot()
@@ -453,20 +467,38 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
 
         actionTask = Task { [weak self] in
             let result = await Task.detached(priority: .background) {
-                Result { try ManagerSetupState.installHelper(id: helperID, onProgress: progressHandler) }
+                Result { try CargoToolchain().install(helper, onProgress: progressHandler) }
             }.value
 
             guard let self, !Task.isCancelled else { return }
             self.finishActionProgress(relay, runID: runID, kind: .install, packageID: packageID)
-            self.actionTask = nil
             self.snapshot.runningAction = nil
             if case .failure(let error) = result {
                 self.snapshot.errorMessage = error.localizedDescription
             }
             self.publishSnapshot()
             // A rescan is what surfaces the newly available versions cargo-update can now report.
-            self.refresh()
+            self.finishBusyWork { self.refresh() }
         }
+    }
+
+    /// The single place the host goes idle.
+    ///
+    /// Clearing both tasks and draining a held helper install are one step on purpose: the drain
+    /// re-enters `installHelper` through the same busy check, so a completion path that cleared
+    /// its task but forgot to drain would hold the request until the next unrelated action — with
+    /// nothing on screen to show for it, since a held request publishes no state. `followUp` is the
+    /// scan the caller was about to kick, skipped when an install takes precedence: that install
+    /// ends in a full refresh of its own, which is strictly fresher.
+    private func finishBusyWork(then followUp: () -> Void) {
+        refreshTask = nil
+        actionTask = nil
+        guard let helper = pendingHelperInstall else {
+            followUp()
+            return
+        }
+        pendingHelperInstall = nil
+        installHelper(helper)
     }
 
     private func rebuildMenu() {
@@ -553,11 +585,10 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
 
             guard let self, !Task.isCancelled else { return }
             let errorMessage = errors.isEmpty ? nil : errors.joined(separator: "\n")
-            self.actionTask = nil
             self.snapshot.runningAction = nil
             self.snapshot.errorMessage = errorMessage
             self.publishSnapshot()
-            self.rescanAfterAction(errorMessage: errorMessage)
+            self.finishBusyWork { self.rescanAfterAction(errorMessage: errorMessage) }
         }
     }
 
@@ -663,11 +694,10 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
 
             guard let self, !Task.isCancelled else { return }
             let errorMessage = errors.isEmpty ? nil : errors.joined(separator: "\n")
-            self.actionTask = nil
             self.snapshot.runningAction = nil
             self.snapshot.errorMessage = errorMessage
             self.publishSnapshot()
-            self.rescanAfterAction(errorMessage: errorMessage)
+            self.finishBusyWork { self.rescanAfterAction(errorMessage: errorMessage) }
         }
     }
 

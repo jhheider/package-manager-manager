@@ -69,10 +69,24 @@ public enum CargoToolchainError: Error, LocalizedError, Equatable {
 public struct CargoToolchain: Sendable {
     private let runner: CommandRunning
     private let toolPaths: [String: String]
+    private let cargoHome: URL
+    /// Injectable because `toolPaths` can force a tool present but cannot say one is absent — and
+    /// without that, a test for the not-on-PATH case silently passes on any machine that happens to
+    /// have the helper installed, which is every developer machine that has ever used one.
+    private let findOnPath: @Sendable (String) -> String?
 
-    public init(runner: CommandRunning = SystemCommandRunner(), toolPaths: [String: String] = [:]) {
+    public init(
+        runner: CommandRunning = SystemCommandRunner(),
+        toolPaths: [String: String] = [:],
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        home: URL = FileManager.default.homeDirectoryForCurrentUser,
+        findOnPath: @escaping @Sendable (String) -> String? = { firstExecutable(named: $0) }
+    ) {
         self.runner = runner
         self.toolPaths = toolPaths
+        self.findOnPath = findOnPath
+        cargoHome = environment["CARGO_HOME"].flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0) }
+            ?? home.appendingPathComponent(".cargo", isDirectory: true)
     }
 
     public func status() -> CargoToolchainStatus {
@@ -146,7 +160,12 @@ public struct CargoToolchain: Sendable {
         guard resolved.hasInstallUpdate else {
             throw CargoToolchainError.helperUnavailable(.installUpdate)
         }
-        let result = try runner.run(cargo, ["install-update", "--list"])
+        // The one command on the scan path that talks to a registry, and the one that stalls.
+        let result = try runner.run(
+            cargo,
+            ["install-update", "--list"],
+            options: CommandRunOptions(inactivityTimeout: defaultQueryInactivityTimeout)
+        )
         guard result.status == 0 else {
             throw CargoToolchainError.commandFailed(result.stderr.isEmpty ? result.stdout : result.stderr)
         }
@@ -173,7 +192,14 @@ public struct CargoToolchain: Sendable {
     }
 
     private func executable(named name: String) -> String? {
-        toolPaths[name] ?? firstExecutable(named: name)
+        if let path = toolPaths[name] { return path }
+        if let path = findOnPath(name) { return path }
+        // Where cargo actually puts things, whether or not it is on this process's PATH — and for a
+        // Finder-launched app whose cargo came from Homebrew, it is not. A helper installed there
+        // reported success, stayed undetected, and the card asking to install it came straight back.
+        // Cargo finds its own subcommands here regardless of PATH, so only the detection was wrong.
+        let candidate = cargoHome.appendingPathComponent("bin").appendingPathComponent(name).path
+        return FileManager.default.isExecutableFile(atPath: candidate) ? candidate : nil
     }
 }
 
@@ -227,6 +253,22 @@ public struct CargoSetupState: Sendable, Equatable {
     ) {
         self.status = status
         self.preferences = preferences
+    }
+
+    /// Detects what the toolchain has available. Shells out, so never call this on the main thread.
+    public static func detect(preferences: PackagePreferences) -> CargoSetupState {
+        CargoSetupState(status: CargoToolchain().status(), preferences: preferences)
+    }
+
+    /// Carries locally recorded dismissals forward across a detection.
+    ///
+    /// The two halves are named rather than taken from one `CargoSetupState`, because taking the
+    /// wrong half is precisely the bug this guards against: detection reads preferences from disk
+    /// on a background task, so a dismissal made while that read was in flight exists only in
+    /// memory, and adopting the loaded set wholesale would bring the card the user just dismissed
+    /// straight back. The status is the only half worth adopting; the preferences are folded.
+    public func merging(status: CargoToolchainStatus?, preferences loaded: PackagePreferences) -> CargoSetupState {
+        CargoSetupState(status: status, preferences: preferences.merging(loaded))
     }
 
     /// True while detection has not run for someone who does have Rust packages — the only case

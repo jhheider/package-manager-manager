@@ -80,3 +80,84 @@ private final class StringRecorder: @unchecked Sendable {
     #expect(decoder.decode(Data([0x9A, 0x80])) == "🚀")
     #expect(decoder.finish() == "")
 }
+
+@Test func aQueryThatStopsProducingOutputIsAbandonedWithItsWholeTree() throws {
+    // The stall this catches: cargo-update polling a registry that never answers, a tool waiting on
+    // a lock another terminal holds. Before, the refresh spinner simply never resolved.
+    let childSentinel = URL(fileURLWithPath: NSTemporaryDirectory())
+        .appendingPathComponent("pmm-query-child-\(UUID().uuidString)")
+    defer { try? FileManager.default.removeItem(at: childSentinel) }
+    let started = Date()
+
+    #expect(throws: CommandRunError.self) {
+        try SystemCommandRunner().run(
+            "/bin/sh",
+            ["-c", "/bin/sh -c 'sleep 3; touch \(childSentinel.path)' & sleep 3"],
+            options: CommandRunOptions(inactivityTimeout: 0.5)
+        )
+    }
+
+    #expect(Date().timeIntervalSince(started) < 3, "it gave up rather than waiting the command out")
+    Thread.sleep(forTimeInterval: 3.5)
+    // Killing the shell alone would leave cargo's fetches and its rustc children running.
+    #expect(!FileManager.default.fileExists(atPath: childSentinel.path), "its children went too")
+}
+
+@Test func aQueryStillPrintingIsNotAbandoned() throws {
+    // Inactivity, not elapsed time. This runs well past the limit while still producing output.
+    let result = try SystemCommandRunner().run(
+        "/bin/sh",
+        ["-c", "for i in 1 2 3 4 5 6; do printf 'working\\n'; sleep 0.2; done; printf done"],
+        options: CommandRunOptions(inactivityTimeout: 0.5)
+    )
+
+    #expect(result.status == 0)
+    #expect(result.stdout.hasSuffix("done"))
+}
+
+@Test func queryTimeoutsAreOptInSoQuietWorkIsNotKilled() {
+    // Defaulting this on armed a silence budget for everything on the non-terminal path, SSH to a
+    // remote host included. A remote inventory prints only its final JSON, so a slow one was killed
+    // at two minutes and reported as "stopped responding" while that machine was still working.
+    #expect(CommandRunOptions().inactivityTimeout == nil)
+    #expect(CommandRunOptions(streamsStandardOutput: false).inactivityTimeout == nil, "the remote shape")
+    #expect(CommandRunOptions(terminal: true).inactivityTimeout == nil)
+}
+
+@Test func aUserInitiatedActionIsNeverAbandonedForGoingQuiet() throws {
+    // A linker can be silent for minutes. Killing a compile the user asked for, because it stopped
+    // narrating, would be its own bug — those stop when the user says so.
+    let result = try SystemCommandRunner().run(
+        "/bin/sh",
+        ["-c", "sleep 1; printf quiet"],
+        options: CommandRunOptions(terminal: true, inactivityTimeout: 0.2)
+    )
+
+    #expect(result.status == 0)
+    #expect(result.stdout.contains("quiet"))
+}
+
+// Time-limited on purpose: without the fix the reader is never scheduled and `data()` waits
+// forever, so a regression would hang the suite rather than fail it.
+@Test(.timeLimit(.minutes(1)))
+func terminalOutputSurvivesASaturatedThreadPool() throws {
+    // The reader used to be dispatched to a pooled queue *after* the child started. With the pool
+    // busy it could sit unscheduled until the subprocess had exited — and once a pty's last slave
+    // descriptor closes, whatever is still unread on the master is discarded. Gone, not delayed:
+    // for an install, a progress sheet that never showed a line.
+    let blockers = DispatchGroup()
+    let release = DispatchSemaphore(value: 0)
+    for _ in 0..<64 {
+        DispatchQueue.global(qos: .utility).async(group: blockers) { release.wait() }
+    }
+    defer { for _ in 0..<64 { release.signal() } }
+    Thread.sleep(forTimeInterval: 0.1)
+
+    let result = try SystemCommandRunner().run(
+        "/bin/sh",
+        ["-c", "printf tty"],
+        options: CommandRunOptions(terminal: true)
+    )
+
+    #expect(result.stdout == "tty")
+}

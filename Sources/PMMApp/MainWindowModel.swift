@@ -517,7 +517,9 @@ final class MainWindowModel: NSObject, ObservableObject {
     @Published private(set) var setupOffer: ManagerSetupOffer?
     /// The manager whose detection is still running, if it could yet produce an offer.
     @Published private(set) var setupDetectingManager: PackageManagerKind?
-    private var managerSetup = ManagerSetupState()
+    private var cargoSetup = CargoSetupState()
+    /// The helper the host reports installing, if any.
+    private var installingHelper: CargoHelper?
     private var setupDetectionTask: Task<Void, Never>?
 
     nonisolated private static let newUpdatedLastClickedAtDefaultsKey = "MainWindowModel.newUpdatedLastClickedAt"
@@ -534,6 +536,8 @@ final class MainWindowModel: NSObject, ObservableObject {
     private var newUpdatedSelectionDisplayCount: Int?
     private let userDefaults: UserDefaults
     private let preferencesStore: PackagePreferencesStore
+    /// Injectable so tests can drive detection's timing; shells out in production.
+    private let detectCargoSetup: @Sendable (PackagePreferences) -> CargoSetupState
     private let store: PackageHostStore
     private let bundledCatalog: [ManagedPackage]
     private let dossierClient: PackageDossierClient?
@@ -560,9 +564,12 @@ final class MainWindowModel: NSObject, ObservableObject {
         dossierClient: PackageDossierClient? = nil,
         dashboardBlogURL: URL? = nil,
         remoteClient: RemoteSSHClient = RemoteSSHClient(),
-        preferencesStore: PackagePreferencesStore = PackagePreferencesStore()
+        preferencesStore: PackagePreferencesStore = PackagePreferencesStore(),
+        detectCargoSetup: @escaping @Sendable (PackagePreferences) -> CargoSetupState
+            = { CargoSetupState.detect(preferences: $0) }
     ) {
         self.preferencesStore = preferencesStore
+        self.detectCargoSetup = detectCargoSetup
         self.userDefaults = userDefaults
         newUpdatedLastClickedAt = userDefaults.object(forKey: Self.newUpdatedLastClickedAtDefaultsKey) as? Date
         remoteHosts = userDefaults.data(forKey: Self.remoteHostsDefaultsKey)
@@ -1015,12 +1022,12 @@ final class MainWindowModel: NSObject, ObservableObject {
     /// after a newer one would put back the tool status from before a helper was installed.
     func refreshSetupOffers() {
         setupDetectionTask?.cancel()
-        setupDetectionTask = Task { [preferencesStore] in
+        setupDetectionTask = Task { [preferencesStore, detectCargoSetup] in
             let detected = await Task.detached(priority: .utility) {
-                ManagerSetupState.detect(preferences: preferencesStore.load())
+                detectCargoSetup(preferencesStore.load())
             }.value
             guard !Task.isCancelled else { return }
-            managerSetup = managerSetup.merging(detected)
+            cargoSetup = cargoSetup.merging(status: detected.status, preferences: detected.preferences)
             refreshSetupOffer()
         }
     }
@@ -1028,11 +1035,15 @@ final class MainWindowModel: NSObject, ObservableObject {
     private func refreshSetupOffer() {
         // Recomputed on every snapshot, so no intermediate array.
         let installedManagers = Set(inventory.packages.lazy.map(\.manager))
-        setupOffer = managerSetup.offer(installedManagers: installedManagers)
-        setupDetectingManager = managerSetup.managerAwaitingDetection(installedManagers: installedManagers)
+        setupOffer = cargoSetup.offer(installedManagers: installedManagers)?.setupOffer
+        // Cargo is the only manager with an offer, so the mapping to a section lives here rather
+        // than behind a dispatch layer that would have exactly one case.
+        setupDetectingManager = cargoSetup.isAwaitingDetection(installedManagers: installedManagers)
+            ? .cargoInstall
+            : nil
     }
 
-    var isInstallingHelper: Bool { managerSetup.installingHelperID != nil }
+    var isInstallingHelper: Bool { installingHelper != nil }
 
     /// The host refuses a helper install that arrives while a refresh or another action is running,
     /// so the card disables its button rather than offering a click that goes nowhere.
@@ -1046,11 +1057,11 @@ final class MainWindowModel: NSObject, ObservableObject {
     }
 
     func dismissHelper(_ id: String) {
-        managerSetup.dismiss(id)
+        cargoSetup.preferences.dismiss(id)
         refreshSetupOffer()
-        let preferences = managerSetup.preferences
-        let store = preferencesStore
-        Task.detached(priority: .utility) { store.save(preferences) }
+        // The store owns both the ordering and the IO, so there is no background task here to
+        // reorder two dismissals made back to back.
+        preferencesStore.save(cargoSetup.preferences)
     }
 
     func update(_ package: ManagedPackage) {
@@ -1445,6 +1456,7 @@ final class MainWindowModel: NSObject, ObservableObject {
             installingPackageName = nil
             uninstallingPackageName = nil
             updatingPackageName = nil
+            installingHelper = nil
             packageActionCommand = nil
             packageActionOutput = ""
             return
@@ -1510,11 +1522,15 @@ final class MainWindowModel: NSObject, ObservableObject {
         // claim an install that never started. Its running action is also the only reliable
         // completion signal — waiting for the tool to appear leaves the card spinning forever
         // whenever the install failed.
-        managerSetup.installingHelperID = snapshot.runningAction.flatMap { action in
-            action.kind == .install && ManagerSetupState.claimsHelper(id: action.packageID)
-                ? action.packageID
-                : nil
+        let wasInstallingHelper = installingHelper != nil
+        installingHelper = snapshot.runningAction.flatMap { action in
+            action.kind == .install ? CargoHelper(promptKey: action.packageID) : nil
         }
+        // Detection shells out, and the host publishes a snapshot per manager during a refresh — a
+        // dozen in a burst. What it detects only changes when a helper install finishes, so that is
+        // the one snapshot worth re-detecting on. First load and section changes are covered by the
+        // list view's task.
+        if wasInstallingHelper, installingHelper == nil { refreshSetupOffers() }
         installingPackageName = snapshot.runningAction?.kind == .install ? snapshot.runningAction?.displayName : nil
         uninstallingPackageName = snapshot.runningAction?.kind == .uninstall ? snapshot.runningAction?.displayName : nil
         updatingPackageName = snapshot.runningAction?.kind == .update ? snapshot.runningAction?.displayName : nil
@@ -1535,7 +1551,6 @@ final class MainWindowModel: NSObject, ObservableObject {
 
     @objc private func hostSnapshotChanged(_ notification: Notification) {
         syncFromHost()
-        refreshSetupOffers()
     }
 
     @objc private func hostActionOutputChanged(_ notification: Notification) {
