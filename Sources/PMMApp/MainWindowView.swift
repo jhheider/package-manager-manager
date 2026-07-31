@@ -1014,8 +1014,11 @@ private struct DossierExecutableStack: View {
 
     private func revealExecutableInFinder(_ executable: String) {
         guard let package else { return }
-        Task.detached {
-            guard let path = mainWindowExecutablePath(named: executable, for: package) else { return }
+        Task {
+            // Tool lookup blocks on the login-shell probe when this beats priming, so it belongs on
+            // a Dispatch queue rather than one of the cooperative pool's threads.
+            let path = await runBlocking { mainWindowExecutablePath(named: executable, for: package) }
+            guard let path else { return }
             await MainActor.run { mainWindowRevealInFinder(path) }
         }
     }

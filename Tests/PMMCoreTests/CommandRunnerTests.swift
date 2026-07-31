@@ -3,11 +3,87 @@ import Testing
 @testable import PMMCore
 
 @Test func commandPathPreservesPathOrderAndAppendsFallbacks() {
-    #expect(commandPath("/custom/bin:/usr/bin") == "/custom/bin:/usr/bin:/usr/local/bin:/opt/homebrew/bin")
+    #expect(
+        commandPath(inherited: "/custom/bin:/usr/bin", shell: [], home: [])
+            == "/custom/bin:/usr/bin:/usr/local/bin:/opt/homebrew/bin"
+    )
 }
 
 @Test func commandPathUsesFallbacksWhenPathIsMissing() {
-    #expect(commandPath(nil) == "/usr/local/bin:/opt/homebrew/bin")
+    #expect(commandPath(inherited: nil, shell: [], home: []) == "/usr/local/bin:/opt/homebrew/bin")
+}
+
+@Test func commandPathPutsTheShellPathAheadOfALaunchdInheritedOne() {
+    // A Finder or login-item launch inherits launchd's stock PATH, which nobody chose, so it must
+    // not outrank the shims the user's own shell resolves.
+    #expect(
+        commandPath(inherited: "/usr/bin:/bin:/usr/sbin:/sbin", shell: ["/shim/bin"], home: [])
+            == "/shim/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/opt/homebrew/bin"
+    )
+    #expect(isLaunchdDefaultPath("/usr/bin:/bin:/usr/sbin:/sbin"))
+    #expect(isLaunchdDefaultPath("/usr/bin:/bin"), "a subset is still nobody's choice")
+    #expect(isLaunchdDefaultPath(nil))
+}
+
+@Test func commandPathKeepsATerminalsOwnEnvironmentInFront() {
+    // pmmctl is always run from a shell, and the window app can be too. There the inherited PATH is
+    // the user's *active* environment — an activated virtualenv, a project toolchain — which is
+    // more specific than what their login shell produces. Demoting it resolves the wrong binary,
+    // and then updates or uninstalls from the wrong prefix.
+    #expect(!isLaunchdDefaultPath("/Users/x/.venv/bin:/usr/bin:/bin"))
+    #expect(
+        commandPath(inherited: "/Users/x/.venv/bin:/usr/bin", shell: ["/shim/bin"], home: [])
+            == "/Users/x/.venv/bin:/usr/bin:/shim/bin:/usr/local/bin:/opt/homebrew/bin"
+    )
+}
+
+@Test func commandPathUsesHomeDirectoriesOnlyWhenTheProbeFoundNothing() {
+    // ~/.cargo/bin and ~/.local/bin stand in for a PATH that could not be read. Adding them to a
+    // PATH the shell did resolve would rediscover a tool the user deliberately left out of it.
+    #expect(
+        commandPath(inherited: "/usr/bin", shell: ["/shim/bin"], home: ["/home/.cargo/bin"])
+            == "/shim/bin:/usr/bin:/usr/local/bin:/opt/homebrew/bin"
+    )
+    #expect(
+        commandPath(inherited: "/usr/bin", shell: [], home: ["/home/.cargo/bin"])
+            == "/usr/bin:/home/.cargo/bin:/usr/local/bin:/opt/homebrew/bin"
+    )
+}
+
+@Test func commandPathKeepsAnExplicitlyRequestedPathFirst() {
+    #expect(
+        commandPath(leading: "/custom/bin", inherited: "/usr/bin", shell: ["/shim/bin"], home: [])
+            == "/custom/bin:/shim/bin:/usr/bin:/usr/local/bin:/opt/homebrew/bin"
+    )
+}
+
+@Test func commandPathDropsDuplicatesKeepingTheEarliestOccurrence() {
+    // A directory repeated across every group — explicit, shell, inherited, fallback — keeps only
+    // its earliest slot.
+    // A non-launchd inherited PATH, so `inherited` leads `shell`; the point here is that a
+    // directory repeated across every group — explicit, inherited, shell, fallback — keeps only
+    // its earliest slot.
+    #expect(
+        commandPath(
+            leading: "/custom/bin",
+            inherited: "/custom/bin:/usr/local/bin",
+            shell: ["/custom/bin", "/shim/bin"],
+            home: []
+        ) == "/custom/bin:/usr/local/bin:/shim/bin:/opt/homebrew/bin"
+    )
+}
+
+@Test func homeCommandPathsCoverCargoAndLocalBin() {
+    let paths = homeCommandPaths(environment: [:], home: URL(fileURLWithPath: "/Users/example"))
+    #expect(paths == ["/Users/example/.cargo/bin", "/Users/example/.local/bin"])
+}
+
+@Test func homeCommandPathsHonorCargoHome() {
+    let paths = homeCommandPaths(
+        environment: ["CARGO_HOME": "/opt/cargo"],
+        home: URL(fileURLWithPath: "/Users/example")
+    )
+    #expect(paths.first == "/opt/cargo/bin")
 }
 
 @Test func systemCommandRunnerAppendsFallbacksToChildPath() throws {
@@ -16,8 +92,12 @@ import Testing
         ["-c", "printf %s \"$PATH\""],
         options: CommandRunOptions(environment: ["PATH": "/custom/bin"])
     )
+    let parts = result.stdout.split(separator: ":").map(String.init)
 
-    #expect(result.stdout == "/custom/bin:/usr/local/bin:/opt/homebrew/bin")
+    #expect(parts.first == "/custom/bin")
+    #expect(parts.contains("/usr/local/bin"))
+    #expect(parts.contains("/opt/homebrew/bin"))
+    #expect(parts.count == Set(parts).count)
 }
 
 private final class StringRecorder: @unchecked Sendable {
@@ -87,6 +167,9 @@ private final class StringRecorder: @unchecked Sendable {
     let childSentinel = URL(fileURLWithPath: NSTemporaryDirectory())
         .appendingPathComponent("pmm-query-child-\(UUID().uuidString)")
     defer { try? FileManager.default.removeItem(at: childSentinel) }
+    // Resolving the login shell is a one-off cost the first command in a process pays, and it is
+    // not what this is measuring. Pay it before the clock starts.
+    _ = ShellEnvironment.shared.searchPaths()
     let started = Date()
 
     #expect(throws: CommandRunError.self) {
@@ -137,6 +220,7 @@ private final class StringRecorder: @unchecked Sendable {
     #expect(result.stdout.contains("quiet"))
 }
 
+
 // Time-limited on purpose: without the fix the reader is never scheduled and `data()` waits
 // forever, so a regression would hang the suite rather than fail it.
 @Test(.timeLimit(.minutes(1)))
@@ -180,3 +264,5 @@ func aDescendantHoldingThePipesDoesNotStallTheCall() throws {
     #expect(result.status == 0)
     #expect(Date().timeIntervalSince(started) < 10, "it did not wait out the straggler")
 }
+
+

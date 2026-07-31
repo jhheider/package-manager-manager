@@ -108,6 +108,7 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
     private var pendingHelperInstall: CargoHelper?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        ShellEnvironment.shared.prime()
         loadSnapshot()
         observeCommands()
         configureStatusButton()
@@ -161,10 +162,10 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
             guard let self else { return }
             var errorsByManager: [PackageManagerKind: [String]] = [:]
             let bootstrapDatabase = await bootstrapDatabaseTask.value
-            let catalogPackages = await Task.detached(priority: .utility) {
+            let catalogPackages = await runBlocking(qos: .utility) {
                 let scanner = PackageScanner()
                 return bootstrapDatabase.catalogPackages(homebrewPrefix: scanner.homebrewPrefix())
-            }.value
+            }
             guard !Task.isCancelled else { return }
             self.snapshot.catalogPackages = catalogPackages
             self.publishSnapshot(updateFirstSeen: false)
@@ -212,7 +213,7 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
             guard !Task.isCancelled else { return }
 
             let packages = self.snapshot.inventory?.packages ?? []
-            let enriched = await Task.detached(priority: .utility) {
+            let enriched = await runBlocking(qos: .utility) {
                 let scanner = PackageScanner()
                 return (
                     packages.map { package in
@@ -220,7 +221,7 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
                     },
                     database.catalogPackages(homebrewPrefix: scanner.homebrewPrefix())
                 )
-            }.value
+            }
             guard !Task.isCancelled else { return }
             self.snapshot.inventory = PackageInventory(
                 generatedAt: generatedAt,
@@ -231,12 +232,14 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
             self.snapshot.loadingManagers?.insert(.macApp)
             self.publishSnapshot()
 
-            let brewUpdateTask = Task.detached(priority: .background) { () -> (Date?, String?) in
-                do {
-                    try HomebrewMaintenance().update()
-                    return (Date(), nil)
-                } catch {
-                    return (nil, error.localizedDescription)
+            let brewUpdateTask = Task {
+                await runBlocking { () -> (Date?, String?) in
+                    do {
+                        try HomebrewMaintenance().update()
+                        return (Date(), nil)
+                    } catch {
+                        return (nil, error.localizedDescription)
+                    }
                 }
             }
             let scanner = PackageScanner()
@@ -345,7 +348,7 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
         let progressHandler = actionProgressHandler(runID: runID, kind: kind, packageID: package.id, relay: relay)
 
         actionTask = Task { [weak self] in
-            let result = await Task.detached(priority: .background) {
+            let result = await runBlocking {
                 Result {
                     switch kind {
                     case .install:
@@ -356,7 +359,7 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
                         try PackageUninstaller().uninstall(package, onProgress: progressHandler)
                     }
                 }
-            }.value
+            }
 
             guard let self, !Task.isCancelled else { return }
             self.finishActionProgress(relay, runID: runID, kind: kind, packageID: package.id)
@@ -570,11 +573,11 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
                 let relay = self.actionProgressRelay(runID: runID, kind: .update, packageID: package.id)
                 let progressHandler = self.actionProgressHandler(runID: runID, kind: .update, packageID: package.id, relay: relay)
 
-                let result = await Task.detached(priority: .background) {
+                let result = await runBlocking {
                     Result {
                         try PackageUpdater().update(package, onProgress: progressHandler)
                     }
-                }.value
+                }
                 self.finishActionProgress(relay, runID: runID, kind: .update, packageID: package.id)
                 if case .success = result {
                     self.snapshot = menuBarSnapshot(self.snapshot, applyingSuccessfulAction: .update, package: package)
@@ -679,11 +682,11 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
                 let relay = self.actionProgressRelay(runID: runID, kind: .install, packageID: package.id)
                 let progressHandler = self.actionProgressHandler(runID: runID, kind: .install, packageID: package.id, relay: relay)
 
-                let result = await Task.detached(priority: .background) {
+                let result = await runBlocking {
                     Result {
                         try PackageInstaller().install(package, onProgress: progressHandler)
                     }
-                }.value
+                }
                 self.finishActionProgress(relay, runID: runID, kind: .install, packageID: package.id)
                 if case .success = result {
                     self.snapshot = menuBarSnapshot(self.snapshot, applyingSuccessfulAction: .install, package: package)

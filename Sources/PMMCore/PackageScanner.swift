@@ -83,6 +83,9 @@ public struct PackageScanner: @unchecked Sendable {
     ) -> AsyncStream<PackageManagerScanResult> {
         AsyncStream { continuation in
             let task = Task {
+                // Every manager finds its tool by PATH, and a Finder-launched app inherits
+                // launchd's, so resolve the login shell's once before any of them run.
+                _ = await ShellEnvironment.shared.resolvedSearchPaths()
                 await withTaskGroup(of: PackageManagerScanResult.self) { group in
                     for manager in managers {
                         group.addTask {

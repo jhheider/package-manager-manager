@@ -47,6 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        ShellEnvironment.shared.prime()
         PostHogTelemetry.shared.captureAppOpened()
         NSApp.mainMenu = makeMainMenu()
 #if DEBUG
