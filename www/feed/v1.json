@@ -2,54 +2,54 @@
   "content": [
     {
       "artwork": {
-        "alt": "A luminous origami rulebook connects by teal, amber, and violet paths to six abstract developer workspaces on a deep navy background.",
-        "attribution": "Generated with OpenAI image generation",
+        "alt": "A glowing clockwork schedule ring joins a container panel, a network wave panel, and a timeline on a deep navy background.",
+        "attribution": "Generated with OpenAI image generation for Package Manager Manager.",
         "boxColors": {
-          "backgroundEnd": "#112548",
-          "backgroundStart": "#061329",
+          "backgroundEnd": "#0B2944",
+          "backgroundStart": "#06172E",
           "foreground": "#FFFFFF"
         },
         "license": "OpenAI terms of use",
-        "path": "feed/assets/rulesync-unified-agent-rules.png"
+        "path": "feed/assets/cronboard-observability-2026-07-31.png"
       },
-      "body": "## Configuration Is Becoming a Compatibility Problem\n\nA repository can now carry instructions for several coding agents: project rules, commands, skills, tool permissions, hooks, ignore lists, and MCP servers. Each agent has useful ideas about filenames and structure, but the formats are not interchangeable. A change to one policy can become a small, error-prone copy-and-paste campaign. The obvious shortcut—keeping only one tool's file—makes the setup less portable and gives contributors different behavior depending on the agent they choose.\n\n**Rulesync** takes a different route. It keeps a source tree for shared AI-agent guidance, imports some existing configurations, and generates target-specific output. Its repository documents targets for Claude Code, Codex CLI, GitHub Copilot, Cursor, OpenCode, and many other tools, alongside an `AGENTS.md` target. The intent is not to claim every agent behaves identically. It is to make the differences explicit while giving the common policy one place to live.\n\n## A Young Tool in a Fast-Moving Space\n\nRulesync published its first stable `0.1.0` release on June 18, 2025. That timing matters: the surrounding agent ecosystem changes quickly, with new configuration surfaces appearing alongside familiar instruction files. The project's release history shows steady iteration, and the documentation tracks feature support per target rather than pretending every output can represent every capability. That is the right posture for a compatibility tool: generation is useful only if it is honest about what can be generated.\n\nThe basic workflow is deliberately small. Initialize a rulesync layout, put reusable rules and components in it, then generate selected targets. Existing repositories can also import tool-specific files before adopting the source-of-truth layout. A conversion command supports direct translation when a repository needs to move from one format to another without immediately adopting a managed tree. Generated files should still be reviewed like any other derived artifact; they influence how tools read, edit, and execute inside a repository.\n\n## What Belongs in the Shared Layer\n\nThe shared layer works best for stable repository facts and working agreements:\n\n- architecture boundaries and naming conventions;\n- test and validation commands;\n- security or data-handling constraints;\n- review expectations and prohibited shortcuts;\n- reusable agent skills and task commands.\n\nIt works less well for instructions that only make sense in a single product. One agent may support a hook event, permission rule, or custom-agent setting that another does not expose. Flattening that distinction can create a configuration that looks standardized but silently loses behavior. Rulesync's supported-tools matrix is useful here: treat it as a compatibility map, not a promise of semantic equivalence. Keep genuinely tool-specific settings scoped to the target that needs them.\n\nA shared file also needs normal software ownership. Put changes through review, pin the generator version where repeatability matters, and decide whether CI should regenerate and fail on a diff. A generated configuration file is not documentation someone can casually edit in a panic; the source layout is the place to make the enduring change. That discipline prevents the source and output from drifting apart.\n\n## Evidence of Use, With Limits\n\nThe upstream repository shows an active project with over a thousand GitHub stars, forks, issue activity, releases, and documentation for a broad set of agent targets. Those signals demonstrate attention and public use beyond an unpublished experiment. They do not measure production deployments, reliability in a particular organization, or the quality of every generated integration. The project is still young enough that a cautious evaluation is sensible.\n\nStart with one repository that already has two or three agent configurations. Import or recreate only the instructions that are actually shared, generate those targets, and inspect the diff line by line. Run each agent's normal workflow against a disposable branch. Pay special attention to permissions, hooks, commands, and MCP settings because those surfaces can have real operational consequences. If the generated output is clearer and remains in sync through one policy change, expand from there.\n\n## Adjacent Tools, Different Jobs\n\nThis pattern is broader than agent configuration. **vfox** offers one command surface for selecting several language runtimes, while recognizing familiar version files; it is a practical companion when teams want fewer per-language setup rituals. **yutu** shows the opposite boundary: it automates authenticated YouTube work, where capabilities are intentionally specific and account permissions matter. Neither tool is a Rulesync substitute, but together they underline the principle: consolidate the policy that is truly shared, and leave specialized behavior close to the system that owns it.\n\nRulesync earns its place when a team already maintains multiple agent files and can name the common rules. For a single agent or a small repository, a well-kept `AGENTS.md` may be all that is needed. The value begins when duplication is real—and ends if the generator obscures more than it removes.",
-      "deck": "A focused CLI for turning one maintained ruleset into the differing files that modern coding agents expect.",
-      "id": "editorial:2026-07-27:rulesync-shared-agent-instructions",
-      "primaryPackageID": "brew:rulesync",
-      "publishedAt": "2026-07-27T13:01:16Z",
+      "body": "## Start with the work that runs when nobody is watching\n\nScheduled tasks are easy to overlook because a crontab is deliberately quiet. A backup, report, cleanup, or certificate renewal often exists as one compact line that only becomes visible after it fails. **Cronboard** is a new terminal-first attempt to make that layer easier to inspect. Its project site describes a keyboard-driven dashboard for local cron jobs and remote servers, with creation, editing, pausing, resuming, search, human-readable schedules, and SSH-based management. The goal is not a different scheduling engine. It is a clearer view of the cron configuration already responsible for work.\n\nThat is a useful distinction. A dashboard can reduce the friction of reading a crowded crontab, but it does not make the command correct, give it retries, or prove that an unattended job succeeded. Keep the script itself in version control when practical, write its output somewhere intentional, and decide which failures need an external alert. Cronboard can make an operator's next question faster: *what is meant to run, where, and when?* It should not become the only record of that answer.\n\nThe project reached its stable 1.0.0 release on July 27, 2026, so this is a younger tool than the venerable cron subsystem it works with. That makes a small trial the sensible route. Start on a personal machine or an unimportant server, compare its view to `crontab -l`, and verify exactly which account and remote user each edit reaches.\n\n## Observation is not administration\n\n**dtop** lives one layer above the scheduler. The project's documentation and repository describe a terminal dashboard for monitoring Docker across multiple hosts, including container actions, health information, filtering, and integration with Dozzle for logs. Used together with a scheduler, it can help an operator move from “this job should have run” to “what is the container doing now?” without immediately opening a web control panel.\n\nThat convenience needs a boundary. A view that can start, stop, or remove containers is no longer read-only. Docker socket access and remote host credentials are operationally powerful, so the right setup is the least privileged one that still answers the question. dtop also does not replace a deployment definition, resource limits, central metrics, or paging. For a small fleet, it can shorten an investigation; for a production service, use it alongside durable telemetry and alerts rather than as the signal that wakes someone up.\n\nThe shared theme with Cronboard is **interactive inspection**. Both tools surface state that otherwise hides in configuration files, process lists, or several remote shells. Neither removes the need to document ownership. Before adopting either, name the job or container owner, where logs belong, and the condition that counts as failure. A clean terminal interface is most helpful when it reflects an already-clear operating model.\n\n## Network measurements have a different kind of consequence\n\n**OONI Probe CLI** makes another hidden system visible: network interference. OONI's user guide says the command-line client can test website blocking, messaging apps, circumvention tools, middleboxes, and network performance. Measurements are submitted to OONI and published as open data in near real time; OONI reports more than 400 million measurements from 23,000 networks in 240 countries and territories since 2012. That documented public record is why it belongs here as the underexposed companion rather than merely another diagnostic utility.\n\nIts tradeoff is sharper than the other two tools'. OONI explicitly says the probe is not a privacy tool and that testing can carry legal or personal risk depending on the country, network, sites tested, and threat model. Do not treat it as a casual speed test or run automated measurements for someone else without informed judgment. Read the onboarding and risk guidance, understand whether results will be public, and seek local expertise when the consequences are unclear. A blocked connection can also have multiple explanations, so compare evidence before drawing a conclusion.\n\n## A small, auditable practice\n\nThese tools work best as a compact loop:\n\n- inspect a schedule in Cronboard before changing it;\n- inspect the affected container or logs in dtop when the job touches Docker; and\n- use OONI Probe only when its research purpose and publication model fit the situation.\n\nThe common win is not more dashboards. It is making a specific operational question visible while preserving the underlying boundaries: cron remains the scheduler, Docker permissions remain sensitive, and network measurements can be consequential public research. Start with one question, verify the data against the native tools, and retain the plain-text configuration and logs that let another person audit what happened.",
+      "deck": "Cronboard, dtop, and OONI Probe make different systems visible—provided their operational and privacy boundaries stay explicit.",
+      "id": "editorial:2026-07-31:terminal-observability-with-cronboard",
+      "primaryPackageID": "brew:cronboard",
+      "publishedAt": "2026-07-31T13:02:36Z",
       "relatedPackageIDs": [
-        "brew:rulesync",
-        "brew:vfox",
-        "brew:yutu"
+        "brew:cronboard",
+        "brew:dtop",
+        "brew:ooniprobe"
       ],
       "selection": {
-        "firstStableReleaseAt": "2025-06-18T14:13:17Z",
-        "firstStableReleaseSourceURL": "https://github.com/dyoshikawa/rulesync/releases/tag/0.1.0",
+        "firstStableReleaseAt": "2026-07-27T15:39:00Z",
+        "firstStableReleaseSourceURL": "https://github.com/antoniorodr/cronboard/releases/tag/v1.0.0",
         "rationale": "newer"
       },
       "sources": [
         {
           "kind": "primary",
-          "title": "Rulesync project repository",
-          "url": "https://github.com/dyoshikawa/rulesync"
+          "title": "Cronboard releases",
+          "url": "https://github.com/antoniorodr/cronboard/releases"
         },
         {
           "kind": "primary",
-          "title": "Rulesync releases",
-          "url": "https://github.com/dyoshikawa/rulesync/releases"
+          "title": "Cronboard project site",
+          "url": "https://cronboard.dev/"
         },
         {
           "kind": "primary",
-          "title": "Rulesync documentation",
-          "url": "https://rulesync.dyoshikawa.com/"
+          "title": "dtop repository",
+          "url": "https://github.com/amir20/dtop"
         },
         {
-          "kind": "independent",
-          "title": "AGENTS.md open format",
-          "url": "https://agents.md/"
+          "kind": "primary",
+          "title": "OONI Probe CLI user guide",
+          "url": "https://openobservatory.github.io/support/ooni-probe-cli/"
         }
       ],
-      "title": "Rulesync: One Set of Instructions, Many Agents",
+      "title": "Terminal Observability Starts With What You Schedule",
       "type": "editorial"
     },
     {
@@ -118,8 +118,7 @@
         "brew:rapid-mlx",
         "brew:dskditto",
         "brew:advai-cli",
-        "brew:zsh-patina",
-        "brew:woxi"
+        "brew:zsh-patina"
       ],
       "title": "New Packages",
       "type": "newPackages"
@@ -127,6 +126,9 @@
     {
       "id": "recently-updated",
       "packageIDs": [
+        "brew:ooniprobe",
+        "brew:cronboard",
+        "brew:dtop",
         "brew:mcpsnoop",
         "brew:rulesync",
         "brew:vfox",
@@ -135,13 +137,62 @@
         "brew:ty",
         "brew:agent-browser",
         "brew:oxfmt",
-        "brew:droast",
-        "brew:rapid-mlx",
-        "brew:dskditto",
-        "brew:advai-cli"
+        "brew:droast"
       ],
       "title": "Recently Updated",
       "type": "recentlyUpdated"
+    },
+    {
+      "artwork": {
+        "alt": "A luminous origami rulebook connects by teal, amber, and violet paths to six abstract developer workspaces on a deep navy background.",
+        "attribution": "Generated with OpenAI image generation",
+        "boxColors": {
+          "backgroundEnd": "#112548",
+          "backgroundStart": "#061329",
+          "foreground": "#FFFFFF"
+        },
+        "license": "OpenAI terms of use",
+        "path": "feed/assets/rulesync-unified-agent-rules.png"
+      },
+      "body": "## Configuration Is Becoming a Compatibility Problem\n\nA repository can now carry instructions for several coding agents: project rules, commands, skills, tool permissions, hooks, ignore lists, and MCP servers. Each agent has useful ideas about filenames and structure, but the formats are not interchangeable. A change to one policy can become a small, error-prone copy-and-paste campaign. The obvious shortcut—keeping only one tool's file—makes the setup less portable and gives contributors different behavior depending on the agent they choose.\n\n**Rulesync** takes a different route. It keeps a source tree for shared AI-agent guidance, imports some existing configurations, and generates target-specific output. Its repository documents targets for Claude Code, Codex CLI, GitHub Copilot, Cursor, OpenCode, and many other tools, alongside an `AGENTS.md` target. The intent is not to claim every agent behaves identically. It is to make the differences explicit while giving the common policy one place to live.\n\n## A Young Tool in a Fast-Moving Space\n\nRulesync published its first stable `0.1.0` release on June 18, 2025. That timing matters: the surrounding agent ecosystem changes quickly, with new configuration surfaces appearing alongside familiar instruction files. The project's release history shows steady iteration, and the documentation tracks feature support per target rather than pretending every output can represent every capability. That is the right posture for a compatibility tool: generation is useful only if it is honest about what can be generated.\n\nThe basic workflow is deliberately small. Initialize a rulesync layout, put reusable rules and components in it, then generate selected targets. Existing repositories can also import tool-specific files before adopting the source-of-truth layout. A conversion command supports direct translation when a repository needs to move from one format to another without immediately adopting a managed tree. Generated files should still be reviewed like any other derived artifact; they influence how tools read, edit, and execute inside a repository.\n\n## What Belongs in the Shared Layer\n\nThe shared layer works best for stable repository facts and working agreements:\n\n- architecture boundaries and naming conventions;\n- test and validation commands;\n- security or data-handling constraints;\n- review expectations and prohibited shortcuts;\n- reusable agent skills and task commands.\n\nIt works less well for instructions that only make sense in a single product. One agent may support a hook event, permission rule, or custom-agent setting that another does not expose. Flattening that distinction can create a configuration that looks standardized but silently loses behavior. Rulesync's supported-tools matrix is useful here: treat it as a compatibility map, not a promise of semantic equivalence. Keep genuinely tool-specific settings scoped to the target that needs them.\n\nA shared file also needs normal software ownership. Put changes through review, pin the generator version where repeatability matters, and decide whether CI should regenerate and fail on a diff. A generated configuration file is not documentation someone can casually edit in a panic; the source layout is the place to make the enduring change. That discipline prevents the source and output from drifting apart.\n\n## Evidence of Use, With Limits\n\nThe upstream repository shows an active project with over a thousand GitHub stars, forks, issue activity, releases, and documentation for a broad set of agent targets. Those signals demonstrate attention and public use beyond an unpublished experiment. They do not measure production deployments, reliability in a particular organization, or the quality of every generated integration. The project is still young enough that a cautious evaluation is sensible.\n\nStart with one repository that already has two or three agent configurations. Import or recreate only the instructions that are actually shared, generate those targets, and inspect the diff line by line. Run each agent's normal workflow against a disposable branch. Pay special attention to permissions, hooks, commands, and MCP settings because those surfaces can have real operational consequences. If the generated output is clearer and remains in sync through one policy change, expand from there.\n\n## Adjacent Tools, Different Jobs\n\nThis pattern is broader than agent configuration. **vfox** offers one command surface for selecting several language runtimes, while recognizing familiar version files; it is a practical companion when teams want fewer per-language setup rituals. **yutu** shows the opposite boundary: it automates authenticated YouTube work, where capabilities are intentionally specific and account permissions matter. Neither tool is a Rulesync substitute, but together they underline the principle: consolidate the policy that is truly shared, and leave specialized behavior close to the system that owns it.\n\nRulesync earns its place when a team already maintains multiple agent files and can name the common rules. For a single agent or a small repository, a well-kept `AGENTS.md` may be all that is needed. The value begins when duplication is real—and ends if the generator obscures more than it removes.",
+      "deck": "A focused CLI for turning one maintained ruleset into the differing files that modern coding agents expect.",
+      "id": "editorial:2026-07-27:rulesync-shared-agent-instructions",
+      "primaryPackageID": "brew:rulesync",
+      "publishedAt": "2026-07-27T13:01:16Z",
+      "relatedPackageIDs": [
+        "brew:rulesync",
+        "brew:vfox",
+        "brew:yutu"
+      ],
+      "selection": {
+        "firstStableReleaseAt": "2025-06-18T14:13:17Z",
+        "firstStableReleaseSourceURL": "https://github.com/dyoshikawa/rulesync/releases/tag/0.1.0",
+        "rationale": "newer"
+      },
+      "sources": [
+        {
+          "kind": "primary",
+          "title": "Rulesync project repository",
+          "url": "https://github.com/dyoshikawa/rulesync"
+        },
+        {
+          "kind": "primary",
+          "title": "Rulesync releases",
+          "url": "https://github.com/dyoshikawa/rulesync/releases"
+        },
+        {
+          "kind": "primary",
+          "title": "Rulesync documentation",
+          "url": "https://rulesync.dyoshikawa.com/"
+        },
+        {
+          "kind": "independent",
+          "title": "AGENTS.md open format",
+          "url": "https://agents.md/"
+        }
+      ],
+      "title": "Rulesync: One Set of Instructions, Many Agents",
+      "type": "editorial"
     },
     {
       "artwork": {
@@ -435,7 +486,7 @@
       "type": "editorial"
     }
   ],
-  "generatedAt": "2026-07-29T13:01:23Z",
+  "generatedAt": "2026-07-31T13:02:36Z",
   "packages": {
     "brew:advai-cli": {
       "agentSummary": "advai-cli is a local-first command line tool that combines skill management, external CLI workflows, browser-bridge automation, and a terminal AI chat interface.",
@@ -591,6 +642,60 @@
         }
       ],
       "upstreamSummary": "Dependency manager for AI agent configuration",
+      "version": null
+    },
+    "brew:cronboard": {
+      "agentSummary": "Cronboard is a keyboard-driven terminal dashboard for viewing and editing local or SSH-managed crontabs, showing schedules in human terms and bringing job output closer to operations.",
+      "assessment": {
+        "alternatives": [
+          "Editing crontabs with crontab -e",
+          "Systemd timers for systems that standardize on systemd"
+        ],
+        "audiences": [
+          "People maintaining local cron jobs",
+          "Operators responsible for a small set of SSH-accessible servers"
+        ],
+        "caveats": [
+          "Cronboard manages cron rather than replacing it with a scheduler",
+          "Remote access and job-editing privileges deserve the same care as direct SSH access"
+        ],
+        "complements": [
+          "Version-controlled scripts",
+          "Service monitoring and alerting",
+          "Regular backups of important job configuration"
+        ],
+        "prerequisites": [
+          "A Unix-like system with cron",
+          "SSH key access for remote-server management"
+        ],
+        "useCases": [
+          "Reviewing schedules before changing a crontab",
+          "Creating, pausing, or editing scheduled jobs without manually editing a crontab"
+        ]
+      },
+      "category": "developer-tools",
+      "displayName": "cronboard",
+      "docs": "https://github.com/antoniorodr/cronboard#readme",
+      "homepage": "https://cronboard.dev/",
+      "id": "brew:cronboard",
+      "installURL": "pkgmgrmgr://install?package=brew%3Acronboard",
+      "lastUpdatedAt": "2026-07-27T19:29:23Z",
+      "manager": "homebrew",
+      "repository": "https://github.com/antoniorodr/cronboard",
+      "researchedAt": "2026-07-31T13:02:36Z",
+      "sources": [
+        {
+          "kind": "primary",
+          "title": "Cronboard project site",
+          "url": "https://cronboard.dev/"
+        },
+        {
+          "kind": "primary",
+          "title": "Cronboard getting-started guide",
+          "url": "https://cronboard.dev/getting-started/"
+        }
+      ],
+      "upstreamSummary": "Terminal-based dashboard for managing cron jobs locally and on servers",
       "version": null
     },
     "brew:datasette": {
@@ -831,6 +936,59 @@
       "upstreamSummary": "Ultra-fast duplicate file finder TUI/GUI",
       "version": null
     },
+    "brew:dtop": {
+      "agentSummary": "Dtop is a Rust terminal dashboard for Docker hosts that surfaces containers, health, resource activity, and Dozzle log access across multiple machines without becoming an orchestrator.",
+      "assessment": {
+        "alternatives": [
+          "docker ps and docker stats",
+          "Portainer or other web-based Docker dashboards"
+        ],
+        "audiences": [
+          "Developers operating Docker hosts",
+          "Small teams that need a terminal view across several container machines"
+        ],
+        "caveats": [
+          "A terminal dashboard is an investigation aid, not a replacement for alerts",
+          "Host and Docker-socket access can expose sensitive operational control"
+        ],
+        "complements": [
+          "Docker Compose or another deployment definition",
+          "Metrics and alerting for unattended production monitoring"
+        ],
+        "prerequisites": [
+          "Docker access on each monitored host",
+          "Network connectivity and credentials appropriate for the configured hosts"
+        ],
+        "useCases": [
+          "Inspecting container health and resource activity",
+          "Opening related logs while investigating a Docker workload"
+        ]
+      },
+      "category": "cloud-infrastructure",
+      "displayName": "dtop",
+      "docs": "https://dtop.dev/",
+      "homepage": "https://dtop.dev/",
+      "id": "brew:dtop",
+      "installURL": "pkgmgrmgr://install?package=brew%3Adtop",
+      "lastUpdatedAt": "2026-07-27T18:28:47Z",
+      "manager": "homebrew",
+      "repository": "https://github.com/amir20/dtop",
+      "researchedAt": "2026-07-31T13:02:36Z",
+      "sources": [
+        {
+          "kind": "primary",
+          "title": "dtop repository",
+          "url": "https://github.com/amir20/dtop"
+        },
+        {
+          "kind": "primary",
+          "title": "dtop documentation",
+          "url": "https://dtop.dev/"
+        }
+      ],
+      "upstreamSummary": "Terminal dashboard for Docker monitoring across multiple hosts",
+      "version": null
+    },
     "brew:ggshield": {
       "agentSummary": "ggshield scans repositories, commits, files, and CI changes for exposed secrets using GitGuardian, helping teams catch credentials before they reach production.",
       "assessment": {
@@ -978,6 +1136,60 @@
         }
       ],
       "upstreamSummary": "Transparent proxy and TUI for debugging MCP traffic",
+      "version": null
+    },
+    "brew:ooniprobe": {
+      "agentSummary": "OONI Probe CLI runs open network-interference measurements for websites, messaging apps, circumvention tools, and performance, publishing results that can support censorship research and local troubleshooting.",
+      "assessment": {
+        "alternatives": [
+          "Manual connectivity tests that do not create comparable public measurements",
+          "Commercial network-monitoring products for private infrastructure"
+        ],
+        "audiences": [
+          "Researchers and advocates studying internet interference",
+          "Technically confident users investigating access problems on their own network"
+        ],
+        "caveats": [
+          "OONI explicitly warns that running censorship measurements can carry risk in some places",
+          "A measurement is evidence to interpret carefully, not proof of a single cause"
+        ],
+        "complements": [
+          "OONI Explorer",
+          "Local legal and digital-security advice",
+          "Independent network diagnostics"
+        ],
+        "prerequisites": [
+          "A considered threat model",
+          "Awareness that measurements may be uploaded and publicly published"
+        ],
+        "useCases": [
+          "Measuring suspected blocking of a website or app",
+          "Contributing reproducible network measurements to OONI's open-data work"
+        ]
+      },
+      "category": "networking",
+      "displayName": "ooniprobe",
+      "docs": "https://github.com/ooni/probe-cli#readme",
+      "homepage": "https://ooni.org/",
+      "id": "brew:ooniprobe",
+      "installURL": "pkgmgrmgr://install?package=brew%3Aooniprobe",
+      "lastUpdatedAt": "2026-07-28T01:00:56Z",
+      "manager": "homebrew",
+      "repository": "https://github.com/ooni/probe-cli",
+      "researchedAt": "2026-07-31T13:02:36Z",
+      "sources": [
+        {
+          "kind": "primary",
+          "title": "OONI Probe CLI user guide",
+          "url": "https://openobservatory.github.io/support/ooni-probe-cli/"
+        },
+        {
+          "kind": "primary",
+          "title": "OONI Probe CLI repository",
+          "url": "https://github.com/ooni/probe-cli"
+        }
+      ],
+      "upstreamSummary": "Network interference detection tool",
       "version": null
     },
     "brew:oxfmt": {
@@ -1386,61 +1598,6 @@
         }
       ],
       "upstreamSummary": "Version manager with support for Java, Node.js, Flutter, .NET & more",
-      "version": null
-    },
-    "brew:woxi": {
-      "agentSummary": "Woxi is an experimental Rust implementation of Wolfram Language features, providing a lightweight command-line evaluator, script runner, and interactive REPL.",
-      "assessment": {
-        "alternatives": [
-          "WolframScript for the official Wolfram Language command-line experience",
-          "Other computer algebra systems when Wolfram Language compatibility is not required"
-        ],
-        "audiences": [
-          "Developers experimenting with Wolfram Language syntax and symbolic computing",
-          "Rust and open-source users evaluating an emerging Mathematica-like tool"
-        ],
-        "caveats": [
-          "The project is new and implements only a subset of the language",
-          "It cannot run .nb notebook files directly",
-          "AGPL-3.0 obligations should be reviewed before redistribution or integration"
-        ],
-        "complements": [
-          "A terminal with shell completion support",
-          "The upstream language-compatibility documentation"
-        ],
-        "prerequisites": [
-          "A supported platform and a workflow that does not require direct notebook execution",
-          "Familiarity with the supported subset of Wolfram Language syntax"
-        ],
-        "useCases": [
-          "Evaluating expressions from a terminal",
-          "Running compatible Wolfram Language scripts",
-          "Prototyping symbolic-computing workflows"
-        ]
-      },
-      "category": null,
-      "displayName": "woxi",
-      "docs": null,
-      "homepage": "https://github.com/ad-si/Woxi",
-      "id": "brew:woxi",
-      "installURL": "pkgmgrmgr://install?package=brew%3Awoxi",
-      "lastUpdatedAt": "2026-07-17T08:34:00Z",
-      "manager": "homebrew",
-      "repository": "https://github.com/ad-si/Woxi",
-      "researchedAt": "2026-07-18T13:02:33Z",
-      "sources": [
-        {
-          "kind": "primary",
-          "title": "Woxi source repository and usage documentation",
-          "url": "https://github.com/ad-si/Woxi"
-        },
-        {
-          "kind": "primary",
-          "title": "Woxi project website",
-          "url": "https://woxi.ad-si.com/"
-        }
-      ],
-      "upstreamSummary": "Interpreter for a subset of the Wolfram Language",
       "version": null
     },
     "brew:yutu": {
