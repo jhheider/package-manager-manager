@@ -401,3 +401,39 @@ func probeSeesPathEntriesBehindTheDumbTerminalGuard() throws {
     #expect(!FileManager.default.fileExists(atPath: childSentinel.path), "and so did what it started")
 }
 
+
+@Test func readTailReturnsAtMostItsCeiling() throws {
+    // Contract only, and no subprocess: the bug this guards — `readToEnd` chasing a writer that is
+    // still appending — needs a writer fast enough that the reader never sees EOF, and one that
+    // fast destabilises the pty tests running alongside it. `read(upToCount:)` bounds the result by
+    // construction, which is the actual guarantee.
+    let url = URL(fileURLWithPath: NSTemporaryDirectory())
+        .appendingPathComponent("pmm-tail-\(UUID().uuidString)")
+    defer { try? FileManager.default.removeItem(at: url) }
+    try Data(repeating: 0x61, count: 3 << 20).write(to: url)
+    let handle = try FileHandle(forReadingFrom: url)
+    defer { try? handle.close() }
+
+    #expect(readTail(handle, bytes: 1 << 20)?.count == 1 << 20)
+    #expect(readTail(handle, bytes: 8 << 20)?.count == 3 << 20, "a smaller file comes back whole")
+}
+
+@Test func aSuccessfulProbeTakesItsBackgroundChildrenWithIt() {
+    // The leader exiting is not the tree exiting. An rc file's `foo &` used to outlive every
+    // successful probe — this suite's own background-stdout test started a `sleep 20` on each run
+    // and abandoned it — still holding the descriptor it inherited and writing into a file that had
+    // already been unlinked.
+    let sentinel = URL(fileURLWithPath: NSTemporaryDirectory())
+        .appendingPathComponent("pmm-success-child-\(UUID().uuidString)")
+    defer { try? FileManager.default.removeItem(at: sentinel) }
+
+    let output = ShellEnvironment.runProbe(
+        "/bin/sh",
+        .init(["-c", "(sleep 1; touch \(sentinel.path)) & printf '\\n__PMM_PATH_BEGIN__/a/bin__PMM_PATH_END__\\n'"])
+    )
+
+    #expect(output.flatMap(ShellEnvironment.parseProbeOutput) == "/a/bin", "the probe still succeeded")
+    // The cleanup lands inside its 0.25s grace, well before the child's own second is up.
+    Thread.sleep(forTimeInterval: 1.3)
+    #expect(!FileManager.default.fileExists(atPath: sentinel.path))
+}

@@ -323,6 +323,10 @@ extension ShellEnvironment {
             child.terminateGroup(grace: terminationGrace)
             return nil
         }
+        // The leader finishing is not the tree finishing. Whatever the rc files started is still
+        // running, still holding the descriptor it inherited, and still writing into the file about
+        // to be read — on a successful probe exactly as much as on a timed-out one.
+        child.terminateRemainingGroup(grace: ProcessGroupChild.remainingGroupGrace)
         guard status == 0 else { return nil }
         // Read a bounded window, and read it from the end. A descendant that outlived the kill can
         // still be writing to the descriptor it inherited, so the file has no size this code gets
@@ -348,10 +352,14 @@ extension ShellEnvironment {
 private let maxProbeOutputBytes: UInt64 = 1 << 20
 
 /// The last `bytes` of a file, or all of it when it is smaller.
-private func readTail(_ handle: FileHandle, bytes: UInt64) -> Data? {
+///
+/// Reads a bounded count rather than to EOF: a surviving writer keeps appending, and `readToEnd`
+/// chases it, so the ceiling this exists to impose was no ceiling at all — memory and disk grow
+/// together and the probe never publishes.
+func readTail(_ handle: FileHandle, bytes: UInt64) -> Data? {
     let size = (try? handle.seekToEnd()) ?? 0
     try? handle.seek(toOffset: size > bytes ? size - bytes : 0)
-    return try? handle.readToEnd()
+    return try? handle.read(upToCount: Int(bytes))
 }
 private let probeBeginMarker = "__PMM_PATH_BEGIN__"
 private let probeEndMarker = "__PMM_PATH_END__"

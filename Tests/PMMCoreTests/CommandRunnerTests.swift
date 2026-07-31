@@ -217,6 +217,7 @@ private final class StringRecorder: @unchecked Sendable {
     #expect(result.stdout.contains("quiet"))
 }
 
+
 // Time-limited on purpose: without the fix the reader is never scheduled and `data()` waits
 // forever, so a regression would hang the suite rather than fail it.
 @Test(.timeLimit(.minutes(1)))
@@ -260,3 +261,5 @@ func aDescendantHoldingThePipesDoesNotStallTheCall() throws {
     #expect(result.status == 0)
     #expect(Date().timeIntervalSince(started) < 10, "it did not wait out the straggler")
 }
+
+
