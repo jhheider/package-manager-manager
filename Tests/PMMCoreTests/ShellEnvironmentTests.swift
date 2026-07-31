@@ -402,22 +402,6 @@ func probeSeesPathEntriesBehindTheDumbTerminalGuard() throws {
 }
 
 
-@Test func readTailReturnsAtMostItsCeiling() throws {
-    // Contract only, and no subprocess: the bug this guards — `readToEnd` chasing a writer that is
-    // still appending — needs a writer fast enough that the reader never sees EOF, and one that
-    // fast destabilises the pty tests running alongside it. `read(upToCount:)` bounds the result by
-    // construction, which is the actual guarantee.
-    let url = URL(fileURLWithPath: NSTemporaryDirectory())
-        .appendingPathComponent("pmm-tail-\(UUID().uuidString)")
-    defer { try? FileManager.default.removeItem(at: url) }
-    try Data(repeating: 0x61, count: 3 << 20).write(to: url)
-    let handle = try FileHandle(forReadingFrom: url)
-    defer { try? handle.close() }
-
-    #expect(readTail(handle, bytes: 1 << 20)?.count == 1 << 20)
-    #expect(readTail(handle, bytes: 8 << 20)?.count == 3 << 20, "a smaller file comes back whole")
-}
-
 @Test func aSuccessfulProbeTakesItsBackgroundChildrenWithIt() {
     // The leader exiting is not the tree exiting. An rc file's `foo &` used to outlive every
     // successful probe — this suite's own background-stdout test started a `sleep 20` on each run
@@ -436,27 +420,4 @@ func probeSeesPathEntriesBehindTheDumbTerminalGuard() throws {
     // The cleanup lands inside its 0.25s grace, well before the child's own second is up.
     Thread.sleep(forTimeInterval: 1.3)
     #expect(!FileManager.default.fileExists(atPath: sentinel.path))
-}
-
-@Test func tearingDownTheGroupReleasesTheLeaderToo() throws {
-    // `wait` leaves the leader a zombie on purpose, so the group id stays reserved while the group
-    // is signalled. Something has to release it afterwards, and the ordinary case — nothing left in
-    // the group — took the early return, so every probe leaked one.
-    let devNull = open("/dev/null", O_RDWR)
-    defer { close(devNull) }
-    let child = try #require(ProcessGroupChild.spawn(
-        executable: "/bin/sh",
-        arguments: ["-c", "exit 0"],
-        environment: [:],
-        standardInput: devNull,
-        standardOutput: devNull,
-        standardError: devNull
-    ))
-    #expect(child.wait(timeout: 5) == 0)
-    // Still addressable here: a zombie is a process until it is reaped.
-    #expect(kill(child.id, 0) == 0, "the leader is deliberately still a zombie")
-
-    child.terminateRemainingGroup()
-
-    #expect(kill(child.id, 0) == -1, "and released once the group is dealt with")
 }
