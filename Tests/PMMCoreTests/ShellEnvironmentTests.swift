@@ -437,3 +437,26 @@ func probeSeesPathEntriesBehindTheDumbTerminalGuard() throws {
     Thread.sleep(forTimeInterval: 1.3)
     #expect(!FileManager.default.fileExists(atPath: sentinel.path))
 }
+
+@Test func tearingDownTheGroupReleasesTheLeaderToo() throws {
+    // `wait` leaves the leader a zombie on purpose, so the group id stays reserved while the group
+    // is signalled. Something has to release it afterwards, and the ordinary case — nothing left in
+    // the group — took the early return, so every probe leaked one.
+    let devNull = open("/dev/null", O_RDWR)
+    defer { close(devNull) }
+    let child = try #require(ProcessGroupChild.spawn(
+        executable: "/bin/sh",
+        arguments: ["-c", "exit 0"],
+        environment: [:],
+        standardInput: devNull,
+        standardOutput: devNull,
+        standardError: devNull
+    ))
+    #expect(child.wait(timeout: 5) == 0)
+    // Still addressable here: a zombie is a process until it is reaped.
+    #expect(kill(child.id, 0) == 0, "the leader is deliberately still a zombie")
+
+    child.terminateRemainingGroup()
+
+    #expect(kill(child.id, 0) == -1, "and released once the group is dealt with")
+}

@@ -231,7 +231,7 @@ public struct SystemCommandRunner: CommandRunning {
 }
 
 /// Last-touched timestamp, shared between the two readers and the watchdog.
-final class ActivityClock: @unchecked Sendable {
+private final class ActivityClock: @unchecked Sendable {
     private let lock = NSLock()
     private var last = Date()
 

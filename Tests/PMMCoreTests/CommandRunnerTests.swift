@@ -167,6 +167,9 @@ private final class StringRecorder: @unchecked Sendable {
     let childSentinel = URL(fileURLWithPath: NSTemporaryDirectory())
         .appendingPathComponent("pmm-query-child-\(UUID().uuidString)")
     defer { try? FileManager.default.removeItem(at: childSentinel) }
+    // Resolving the login shell is a one-off cost the first command in a process pays, and it is
+    // not what this is measuring. Pay it before the clock starts.
+    _ = ShellEnvironment.shared.searchPaths()
     let started = Date()
 
     #expect(throws: CommandRunError.self) {
