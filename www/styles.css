@@ -540,6 +540,52 @@ h1 {
   border-radius: 22px;
 }
 
+.configuration-card {
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--panel);
+  box-shadow: 0 24px 70px rgb(23 23 23 / 0.08);
+}
+
+.configuration-card figcaption {
+  margin-bottom: 18px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.configuration-file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-height: 54px;
+  padding: 0 16px;
+  border-top: 1px solid var(--line);
+}
+
+.configuration-file code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.configuration-file span {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.configuration-card > p {
+  margin-top: 18px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
 .story-copy h2 {
   font-size: clamp(2.4rem, 5vw, 4rem);
 }
