@@ -86,6 +86,41 @@ import Testing
     #expect(paths.first == "/opt/cargo/bin")
 }
 
+@Test func homeCommandPathsIncludeCargoInstallRoot() {
+    let paths = homeCommandPaths(
+        environment: ["CARGO_HOME": "/opt/cargo", "CARGO_INSTALL_ROOT": "/opt/tools"],
+        home: URL(fileURLWithPath: "/Users/example")
+    )
+    #expect(paths.prefix(2) == ["/opt/cargo/bin", "/opt/tools/bin"])
+}
+
+@Test func commandEnvironmentPrefersTheShellForALaunchdProcess() {
+    let environment = commandEnvironment(
+        [:],
+        inherited: ["PATH": "/usr/bin:/bin", "SOURCE": "launchd"],
+        shell: ["PATH": "/shell/bin:/usr/bin", "SOURCE": "shell", "CARGO_INSTALL_ROOT": "/tools"],
+        home: URL(fileURLWithPath: "/Users/example")
+    )
+
+    #expect(environment["SOURCE"] == "shell")
+    #expect(environment["CARGO_INSTALL_ROOT"] == "/tools")
+    #expect(environment["PATH"]?.hasPrefix("/shell/bin:/usr/bin:/bin") == true)
+}
+
+@Test func commandEnvironmentPreservesAnActiveTerminalAndExplicitOverrides() {
+    let environment = commandEnvironment(
+        ["SOURCE": "override", "PATH": "/explicit/bin"],
+        inherited: ["PATH": "/venv/bin:/usr/bin", "SOURCE": "terminal", "ACTIVE": "1"],
+        shell: ["PATH": "/shell/bin:/usr/bin", "SOURCE": "shell", "SHELL_ONLY": "1"],
+        home: URL(fileURLWithPath: "/Users/example")
+    )
+
+    #expect(environment["SOURCE"] == "override")
+    #expect(environment["ACTIVE"] == "1")
+    #expect(environment["SHELL_ONLY"] == "1")
+    #expect(environment["PATH"]?.hasPrefix("/explicit/bin:/venv/bin:/usr/bin:/shell/bin") == true)
+}
+
 @Test func systemCommandRunnerAppendsFallbacksToChildPath() throws {
     let result = try SystemCommandRunner().run(
         "/bin/sh",
@@ -264,5 +299,4 @@ func aDescendantHoldingThePipesDoesNotStallTheCall() throws {
     #expect(result.status == 0)
     #expect(Date().timeIntervalSince(started) < 10, "it did not wait out the straggler")
 }
-
 

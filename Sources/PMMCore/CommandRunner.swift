@@ -386,10 +386,14 @@ func homeCommandPaths(
 ) -> [String] {
     let cargoHome = environment["CARGO_HOME"].flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0) }
         ?? home.appendingPathComponent(".cargo", isDirectory: true)
+    let cargoInstallRoot = environment["CARGO_INSTALL_ROOT"].flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0) }
+        ?? cargoHome
+    var seen = Set<String>()
     return [
         cargoHome.appendingPathComponent("bin", isDirectory: true).path,
+        cargoInstallRoot.appendingPathComponent("bin", isDirectory: true).path,
         home.appendingPathComponent(".local/bin", isDirectory: true).path,
-    ]
+    ].filter { seen.insert($0).inserted }
 }
 
 /// The login shell's PATH, waiting for it to be resolved if it has not been already. Blocking here
@@ -471,11 +475,21 @@ private func pathEntries(_ path: String?) -> [String] {
     return path.split(separator: ":").map(String.init)
 }
 
-private func commandEnvironment(_ overrides: [String: String]) -> [String: String] {
-    var environment = ProcessInfo.processInfo.environment.merging(overrides) { _, new in new }
+func commandEnvironment(
+    _ overrides: [String: String],
+    inherited: [String: String] = ProcessInfo.processInfo.environment,
+    shell: [String: String] = ShellEnvironment.shared.environment(),
+    home: URL = FileManager.default.homeDirectoryForCurrentUser
+) -> [String: String] {
+    var environment = isLaunchdDefaultPath(inherited["PATH"])
+        ? inherited.merging(shell) { _, shell in shell }
+        : shell.merging(inherited) { _, inherited in inherited }
+    environment.merge(overrides) { _, override in override }
     environment["PATH"] = commandPath(
         leading: overrides["PATH"],
-        inherited: ProcessInfo.processInfo.environment["PATH"]
+        inherited: inherited["PATH"],
+        shell: ShellEnvironment.searchPaths(in: shell),
+        home: homeCommandPaths(environment: environment, home: home)
     )
     return environment
 }

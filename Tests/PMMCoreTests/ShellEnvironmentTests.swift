@@ -3,17 +3,26 @@ import Testing
 @testable import PMMCore
 
 @Test func parseProbeOutputExtractsTheFencedValue() {
-    let output = "some rc chatter\n__PMM_PATH_BEGIN__/a/bin:/b/bin__PMM_PATH_END__\n"
-    #expect(ShellEnvironment.parseProbeOutput(output) == "/a/bin:/b/bin")
+    let output = "some rc chatter\n__PMM_ENV_BEGIN__PATH=/a/bin:/b/bin\0CARGO_INSTALL_ROOT=/cargo=root\0EMPTY=\0__PMM_ENV_END__\n"
+    #expect(ShellEnvironment.parseProbeOutput(output) == [
+        "PATH": "/a/bin:/b/bin",
+        "CARGO_INSTALL_ROOT": "/cargo=root",
+        "EMPTY": "",
+    ])
 }
 
 @Test func parseProbeOutputIgnoresUnfencedOutput() {
-    #expect(ShellEnvironment.parseProbeOutput("/a/bin:/b/bin") == nil)
+    #expect(ShellEnvironment.parseProbeOutput("PATH=/a/bin:/b/bin\0") == nil)
     #expect(ShellEnvironment.parseProbeOutput("") == nil)
 }
 
 @Test func parseProbeOutputRejectsAnEmptyValue() {
-    #expect(ShellEnvironment.parseProbeOutput("__PMM_PATH_BEGIN____PMM_PATH_END__") == nil)
+    #expect(ShellEnvironment.parseProbeOutput("__PMM_ENV_BEGIN____PMM_ENV_END__") == nil)
+}
+
+@Test func parseProbeOutputKeepsUnicodeAndNewlinesButDropsVolatileValues() {
+    let output = "__PMM_ENV_BEGIN__PATH=/bin\0NOTE=héllo\nworld\0TERM=xterm\0PWD=/tmp\0BASH_FUNC_x%%=() {}\0__PMM_ENV_END__"
+    #expect(ShellEnvironment.parseProbeOutput(output) == ["PATH": "/bin", "NOTE": "héllo\nworld"])
 }
 
 @Test func userLoginShellIsExecutable() {
@@ -24,7 +33,7 @@ import Testing
     let counter = CallCounter()
     let environment = ShellEnvironment {
         counter.increment()
-        return ["/resolved/bin"]
+        return ["PATH": "/resolved/bin"]
     }
 
     #expect(environment.searchPaths() == ["/resolved/bin"])
@@ -34,7 +43,7 @@ import Testing
 }
 
 @Test func cachedSearchPathsIsEmptyBeforeResolution() {
-    let environment = ShellEnvironment { ["/resolved/bin"] }
+    let environment = ShellEnvironment { ["PATH": "/resolved/bin"] }
     #expect(environment.cachedSearchPaths().isEmpty)
 }
 
@@ -46,7 +55,7 @@ import Testing
     // `-l` alone, because csh and tcsh exit 1 on any `-l` combined with another flag — so the
     // script cannot ride along as `-c` and has to arrive on stdin.
     #expect(invocations.first?.arguments == ["-l"])
-    #expect(invocations.first?.input?.contains("__PMM_PATH_BEGIN__") == true)
+    #expect(invocations.first?.input?.contains("__PMM_ENV_BEGIN__") == true)
     // `-c` stays behind it: an rc-file PATH beats no PATH if the login shell itself fails.
     #expect(invocations.last?.arguments.contains("-c") == true)
     #expect(invocations.last?.input == nil)
@@ -61,10 +70,8 @@ import Testing
 @Test func probeInvocationsBuildTheFenceForShellsWithoutStringInterpolation() {
     #expect(ShellEnvironment.probeDialect(forShell: "/opt/homebrew/bin/nu") == .nushell)
     #expect(ShellEnvironment.probeDialect(forShell: "/usr/local/bin/elvish") == .elvish)
-    // Neither expands `$PATH` inside a string literal, so the Bourne script comes back holding the
-    // two literal characters and both keep PATH as a list that has to be joined.
-    #expect(ShellEnvironment.probeInvocations(for: .nushell).allSatisfy { $0.arguments.last?.contains("str join") == true })
-    #expect(ShellEnvironment.probeInvocations(for: .elvish).allSatisfy { $0.arguments.last?.contains("$E:PATH") == true })
+    #expect(ShellEnvironment.probeInvocations(for: .nushell).allSatisfy { $0.arguments.last?.contains("env -0") == true })
+    #expect(ShellEnvironment.probeInvocations(for: .elvish).allSatisfy { $0.arguments.last?.contains("env -0") == true })
 }
 
 @Test func searchPathsKeepOnlyAbsoluteDirectories() {
@@ -99,23 +106,24 @@ func cshProbeSeesPathEntriesOnlyTheLoginFilesAdd() throws {
         .appendingPathComponent("pmm-csh-home-\(UUID().uuidString)", isDirectory: true)
     try FileManager.default.createDirectory(at: home, withIntermediateDirectories: true)
     defer { try? FileManager.default.removeItem(at: home) }
-    try "set path = ( /tmp/pmm-login-only $path )\n"
+    try "set path = ( /tmp/pmm-login-only $path )\nsetenv CARGO_INSTALL_ROOT /tmp/pmm-cargo-root\n"
         .write(to: home.appendingPathComponent(".login"), atomically: true, encoding: .utf8)
     try "set path = ( /tmp/pmm-cshrc-only $path )\n"
         .write(to: home.appendingPathComponent(".cshrc"), atomically: true, encoding: .utf8)
 
     var environment = ProcessInfo.processInfo.environment
     environment["HOME"] = home.path
-    let paths = ShellEnvironment.searchPaths(forShell: "/bin/tcsh", environment: environment)
+    let resolved = ShellEnvironment.environment(forShell: "/bin/tcsh", environment: environment)
+    let paths = ShellEnvironment.searchPaths(in: resolved)
 
     #expect(paths.contains("/tmp/pmm-login-only"))
     #expect(paths.contains("/tmp/pmm-cshrc-only"))
+    #expect(resolved["CARGO_INSTALL_ROOT"] == "/tmp/pmm-cargo-root")
 }
 
-@Test func probeInvocationsJoinTheFishPathList() {
+@Test func probeInvocationsUseNativeEnvironmentSerializationForFish() {
     #expect(ShellEnvironment.probeDialect(forShell: "/opt/homebrew/bin/fish") == .fish)
-    // `"$PATH"` is space-separated in fish, so the script has to join the list itself.
-    #expect(ShellEnvironment.probeInvocations(for: .fish).allSatisfy { $0.arguments.last?.contains("string join") == true })
+    #expect(ShellEnvironment.probeInvocations(for: .fish).allSatisfy { $0.arguments.last?.contains("env -0") == true })
 }
 
 @Test func runProbeReturnsWhenABackgroundProcessInheritsStdout() {
@@ -124,11 +132,11 @@ func cshProbeSeesPathEntriesOnlyTheLoginFilesAdd() throws {
     let started = Date()
     let output = ShellEnvironment.runProbe(
         "/bin/sh",
-        .init(["-c", "sleep 20 & printf '\\n__PMM_PATH_BEGIN__/a/bin__PMM_PATH_END__\\n'"])
+        .init(["-c", "sleep 20 & printf '\\n__PMM_ENV_BEGIN__PATH=/a/bin\\0__PMM_ENV_END__\\n'"])
     )
 
     #expect(Date().timeIntervalSince(started) < 10)
-    #expect(output.flatMap(ShellEnvironment.parseProbeOutput) == "/a/bin")
+    #expect(output.flatMap(ShellEnvironment.parseProbeOutput)?["PATH"] == "/a/bin")
 }
 
 @Test func runProbeGivesUpOnAShellThatNeverExits() {
@@ -137,10 +145,10 @@ func cshProbeSeesPathEntriesOnlyTheLoginFilesAdd() throws {
     #expect(Date().timeIntervalSince(started) < 10)
 }
 
-@Test func loginShellSearchPathsFindsRealToolDirectories() {
+@Test func loginShellEnvironmentFindsRealToolDirectories() {
     // The probe has to survive whatever is in the user's rc files, so assert on the shape of the
     // result rather than on specific entries.
-    let paths = ShellEnvironment.loginShellSearchPaths()
+    let paths = ShellEnvironment.searchPaths(in: ShellEnvironment.loginShellEnvironment())
     #expect(!paths.isEmpty)
     #expect(paths.allSatisfy { $0.hasPrefix("/") })
     #expect(paths.contains("/usr/bin"))
@@ -184,7 +192,7 @@ private func fakeShell(_ body: String) throws -> (path: String, remove: () -> Vo
     for a in "$@"; do
       if [ "$a" = "-i" ]; then exit 1; fi
     done
-    printf '\\n__PMM_PATH_BEGIN__/second/bin__PMM_PATH_END__\\n'
+    printf '\\n__PMM_ENV_BEGIN__PATH=/second/bin\\0__PMM_ENV_END__\\n'
     """)
     defer { shell.remove() }
 
@@ -196,9 +204,9 @@ private func fakeShell(_ body: String) throws -> (path: String, remove: () -> Vo
     // without the absolute-path filter the chain stops here holding one nonsense entry.
     let shell = try fakeShell("""
     for a in "$@"; do
-      if [ "$a" = "-i" ]; then printf '\\n__PMM_PATH_BEGIN__$PATH__PMM_PATH_END__\\n'; exit 0; fi
+      if [ "$a" = "-i" ]; then printf '\\n__PMM_ENV_BEGIN__PATH=$PATH\\0__PMM_ENV_END__\\n'; exit 0; fi
     done
-    printf '\\n__PMM_PATH_BEGIN__/second/bin__PMM_PATH_END__\\n'
+    printf '\\n__PMM_ENV_BEGIN__PATH=/second/bin\\0__PMM_ENV_END__\\n'
     """)
     defer { shell.remove() }
 
@@ -208,7 +216,7 @@ private func fakeShell(_ body: String) throws -> (path: String, remove: () -> Vo
 @Test func probeGivesUpWhenEveryInvocationIsUseless() throws {
     // Nothing absolute anywhere means the static fallbacks have to take over, so this must be
     // empty rather than a list of junk the caller would put on a PATH.
-    let shell = try fakeShell(#"printf '\n__PMM_PATH_BEGIN__$PATH:relative/bin__PMM_PATH_END__\n'"#)
+    let shell = try fakeShell(#"printf '\n__PMM_ENV_BEGIN__PATH=$PATH:relative/bin\0__PMM_ENV_END__\n'"#)
     defer { shell.remove() }
 
     #expect(ShellEnvironment.searchPaths(forShell: shell.path).isEmpty)
@@ -219,7 +227,7 @@ private func fakeShell(_ body: String) throws -> (path: String, remove: () -> Vo
     // chain, so its PATH is not one to trust.
     #expect(ShellEnvironment.runProbe(
         "/bin/sh",
-        .init(["-c", "printf '\\n__PMM_PATH_BEGIN__/a/bin__PMM_PATH_END__\\n'; exit 3"])
+        .init(["-c", "printf '\\n__PMM_ENV_BEGIN__PATH=/a/bin\\0__PMM_ENV_END__\\n'; exit 3"])
     ) == nil)
 }
 
@@ -228,10 +236,10 @@ private func fakeShell(_ body: String) throws -> (path: String, remove: () -> Vo
     // throw away the whole PATH over one stray byte, so the bytes go outside the fence here.
     let output = ShellEnvironment.runProbe(
         "/bin/sh",
-        .init(["-c", #"printf 'chat\377ter\n__PMM_PATH_BEGIN__/a/bin__PMM_PATH_END__\n'"#])
+        .init(["-c", #"printf 'chat\377ter\n__PMM_ENV_BEGIN__PATH=/a/bin\0__PMM_ENV_END__\n'"#])
     )
 
-    #expect(output.flatMap(ShellEnvironment.parseProbeOutput) == "/a/bin")
+    #expect(output.flatMap(ShellEnvironment.parseProbeOutput)?["PATH"] == "/a/bin")
 }
 
 @Test func runProbeKillsAShellThatIgnoresTermination() {
@@ -261,7 +269,7 @@ private func fakeShell(_ body: String) throws -> (path: String, remove: () -> Vo
     let environment = ShellEnvironment {
         counter.increment()
         gate.wait()
-        return ["/resolved/bin"]
+        return ["PATH": "/resolved/bin"]
     }
     let results = LockedPaths()
     let group = DispatchGroup()
@@ -295,7 +303,7 @@ private final class LockedPaths: @unchecked Sendable {
     let attempts = CallCounter()
     let environment = ShellEnvironment {
         attempts.increment()
-        return attempts.value == 1 ? [] : ["/recovered/bin"]
+        return attempts.value == 1 ? [:] : ["PATH": "/recovered/bin"]
     }
 
     #expect(environment.searchPaths().isEmpty)
@@ -309,7 +317,7 @@ private final class LockedPaths: @unchecked Sendable {
     let attempts = CallCounter()
     let environment = ShellEnvironment {
         attempts.increment()
-        return ["/resolved/bin"]
+        return ["PATH": "/resolved/bin"]
     }
 
     #expect(environment.searchPaths(retryAfter: 0) == ["/resolved/bin"])
@@ -330,13 +338,16 @@ func probeSeesPathEntriesBehindTheDumbTerminalGuard() throws {
     try """
     [[ "$TERM" == "dumb" ]] && return
     export PATH="/tmp/pmm-interactive-only:$PATH"
+    export CARGO_INSTALL_ROOT="/tmp/pmm-cargo-root"
     """.write(to: zdotdir.appendingPathComponent(".zshrc"), atomically: true, encoding: .utf8)
 
     var environment = ProcessInfo.processInfo.environment
     environment["ZDOTDIR"] = zdotdir.path
-    let paths = ShellEnvironment.searchPaths(forShell: "/bin/zsh", environment: environment)
+    let resolved = ShellEnvironment.environment(forShell: "/bin/zsh", environment: environment)
+    let paths = ShellEnvironment.searchPaths(in: resolved)
 
     #expect(paths.contains("/tmp/pmm-interactive-only"))
+    #expect(resolved["CARGO_INSTALL_ROOT"] == "/tmp/pmm-cargo-root")
 }
 
 @Test func asyncWaitersAreNeverParkedAfterTheResolverHasDrainedThem() async {
@@ -349,7 +360,7 @@ func probeSeesPathEntriesBehindTheDumbTerminalGuard() throws {
     let environment = ShellEnvironment {
         attempts.increment()
         Thread.sleep(forTimeInterval: 0.2)
-        return attempts.value == 1 ? [] : ["/resolved/bin"]
+        return attempts.value == 1 ? [:] : ["PATH": "/resolved/bin"]
     }
 
     var during: [[String]] = []
@@ -429,10 +440,10 @@ func probeSeesPathEntriesBehindTheDumbTerminalGuard() throws {
 
     let output = ShellEnvironment.runProbe(
         "/bin/sh",
-        .init(["-c", "(sleep 1; touch \(sentinel.path)) & printf '\\n__PMM_PATH_BEGIN__/a/bin__PMM_PATH_END__\\n'"])
+        .init(["-c", "(sleep 1; touch \(sentinel.path)) & printf '\\n__PMM_ENV_BEGIN__PATH=/a/bin\\0__PMM_ENV_END__\\n'"])
     )
 
-    #expect(output.flatMap(ShellEnvironment.parseProbeOutput) == "/a/bin", "the probe still succeeded")
+    #expect(output.flatMap(ShellEnvironment.parseProbeOutput)?["PATH"] == "/a/bin", "the probe still succeeded")
     // The cleanup lands inside its 0.25s grace, well before the child's own second is up.
     Thread.sleep(forTimeInterval: 1.3)
     #expect(!FileManager.default.fileExists(atPath: sentinel.path))

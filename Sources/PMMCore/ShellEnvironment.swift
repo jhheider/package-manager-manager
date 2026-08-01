@@ -1,14 +1,15 @@
 import Darwin
 import Foundation
 
-/// Resolves the PATH the user actually has in their shell.
+/// Resolves the exported environment the user actually has in their shell.
 ///
 /// A Finder-launched app inherits launchd's PATH (`/usr/bin:/bin:/usr/sbin:/sbin`), not the one
 /// built up by `.zshenv`/`/etc/zprofile`/`.zshrc`. That hides every tool installed outside those
-/// directories — `~/.cargo/bin` most notably — so package scans silently come back empty.
+/// directories — `~/.cargo/bin` most notably — and misses configuration such as
+/// `CARGO_INSTALL_ROOT`, so package scans silently come back empty.
 ///
 /// Resolution runs the login shell once and caches the result. Call ``prime()`` at launch, then
-/// ``searchPaths()`` from a background thread or ``cachedSearchPaths()`` from the main one.
+/// ``environment()`` from a background thread or ``cachedEnvironment()`` from the main one.
 public final class ShellEnvironment: @unchecked Sendable {
     public static let shared = ShellEnvironment()
 
@@ -28,13 +29,13 @@ public final class ShellEnvironment: @unchecked Sendable {
     public static let retryInterval: TimeInterval = 60
 
     private let condition = NSCondition()
-    private let resolver: @Sendable () -> [String]
-    private var resolved: [String]?
+    private let resolver: @Sendable () -> [String: String]
+    private var resolved: [String: String]?
     private var isResolving = false
     private var failedAt: Date?
-    private var waiters: [CheckedContinuation<[String], Never>] = []
+    private var waiters: [CheckedContinuation<[String: String], Never>] = []
 
-    init(resolver: @escaping @Sendable () -> [String] = { ShellEnvironment.loginShellSearchPaths() }) {
+    init(resolver: @escaping @Sendable () -> [String: String] = { ShellEnvironment.loginShellEnvironment() }) {
         self.resolver = resolver
     }
 
@@ -55,32 +56,34 @@ public final class ShellEnvironment: @unchecked Sendable {
         condition.unlock()
 
         Self.queue.async {
-            let paths = self.resolver()
+            let environment = self.resolver()
             self.condition.lock()
-            self.resolved = paths
-            self.failedAt = paths.isEmpty ? Date() : nil
+            self.resolved = environment
+            self.failedAt = Self.searchPaths(in: environment).isEmpty ? Date() : nil
             self.isResolving = false
             let waiters = self.waiters
             self.waiters = []
             self.condition.broadcast()
             self.condition.unlock()
-            for waiter in waiters { waiter.resume(returning: paths) }
+            for waiter in waiters { waiter.resume(returning: environment) }
         }
     }
 
     /// Caller must hold the lock.
     private func shouldAttemptLocked(retryAfter: TimeInterval) -> Bool {
         guard let resolved else { return true }
-        guard resolved.isEmpty, let failedAt else { return false }
+        guard Self.searchPaths(in: resolved).isEmpty, let failedAt else { return false }
         return Date().timeIntervalSince(failedAt) >= retryAfter
     }
 
     /// Whatever has been resolved so far, without waiting. Empty until resolution finishes.
-    public func cachedSearchPaths() -> [String] {
+    public func cachedEnvironment() -> [String: String] {
         condition.lock()
         defer { condition.unlock() }
-        return resolved ?? []
+        return resolved ?? [:]
     }
+
+    public func cachedSearchPaths() -> [String] { Self.searchPaths(in: cachedEnvironment()) }
 
     /// Awaits resolution without blocking the calling thread, so callers do not have to know that
     /// probing the shell blocks. Returns straight away once resolution has happened.
@@ -88,7 +91,7 @@ public final class ShellEnvironment: @unchecked Sendable {
     /// Parks a continuation rather than a thread: the obvious version dispatches ``searchPaths()``
     /// onto a queue and blocks there, which costs one worker per concurrent caller for the whole
     /// probe. Every scan calls this, so those add up against exactly the pool the resolver needs.
-    public func resolvedSearchPaths() async -> [String] {
+    public func resolvedEnvironment() async -> [String: String] {
         prime()
         return await withCheckedContinuation { continuation in
             condition.lock()
@@ -104,18 +107,26 @@ public final class ShellEnvironment: @unchecked Sendable {
         }
     }
 
+    public func resolvedSearchPaths() async -> [String] {
+        Self.searchPaths(in: await resolvedEnvironment())
+    }
+
     /// Blocks until the shell PATH is resolved. Never call this from the main thread.
     ///
     /// Deliberately carries no deadline of its own. Every probe is individually bounded and the
     /// resolver always publishes a result, so a second deadline here could only abandon a probe
     /// that was about to succeed and hand back a truncated PATH — which is exactly the bug this
     /// type exists to fix.
-    public func searchPaths(retryAfter: TimeInterval = ShellEnvironment.retryInterval) -> [String] {
+    public func environment(retryAfter: TimeInterval = ShellEnvironment.retryInterval) -> [String: String] {
         prime(retryAfter: retryAfter)
         condition.lock()
         defer { condition.unlock() }
         while resolved == nil || isResolving { condition.wait() }
-        return resolved ?? []
+        return resolved ?? [:]
+    }
+
+    public func searchPaths(retryAfter: TimeInterval = ShellEnvironment.retryInterval) -> [String] {
+        Self.searchPaths(in: environment(retryAfter: retryAfter))
     }
 }
 
@@ -131,7 +142,7 @@ extension ShellEnvironment {
         return "/bin/zsh"
     }
 
-    /// How a shell wants to be asked for its PATH.
+    /// How a shell wants to be asked for its exported environment.
     ///
     /// Bourne flags and Bourne syntax are both non-universal. macOS ships `/bin/csh` and
     /// `/bin/tcsh` as valid login shells and both exit 1 on `-l -c`. fish, nushell, and elvish take
@@ -175,7 +186,7 @@ extension ShellEnvironment {
             // `-i -l` sources the full chain (.zshenv, /etc/zprofile's path_helper, .zshrc), which
             // is the only way to see entries added by an interactive rc. Fall back to `-l` alone if
             // the interactive pass fails or hangs — some rc files misbehave without a tty.
-            [ProbeInvocation(["-i", "-l", "-c", pathProbeScript]), ProbeInvocation(["-l", "-c", pathProbeScript])]
+            [ProbeInvocation(["-i", "-l", "-c", environmentProbeScript]), ProbeInvocation(["-l", "-c", environmentProbeScript])]
         case .csh:
             // csh and tcsh accept `-l` only as the sole flag, so the script cannot ride along as
             // `-c` and goes on stdin instead. That is not only about flag syntax: `-c` reads
@@ -184,43 +195,50 @@ extension ShellEnvironment {
             // csh too, so the Bourne script works verbatim. `-c` stays as the fallback, since an
             // rc-file PATH beats no PATH if the login shell itself fails.
             [
-                ProbeInvocation(["-l"], input: pathProbeScript + "\n"),
-                ProbeInvocation(["-c", pathProbeScript]),
+                ProbeInvocation(["-l"], input: environmentProbeScript + "\n"),
+                ProbeInvocation(["-c", environmentProbeScript]),
             ]
         case .fish:
             [
-                ProbeInvocation(["-i", "-l", "-c", fishPathProbeScript]),
-                ProbeInvocation(["-l", "-c", fishPathProbeScript]),
+                ProbeInvocation(["-i", "-l", "-c", environmentProbeScript]),
+                ProbeInvocation(["-l", "-c", environmentProbeScript]),
             ]
         case .nushell:
             [
-                ProbeInvocation(["-i", "-l", "-c", nushellPathProbeScript]),
-                ProbeInvocation(["-l", "-c", nushellPathProbeScript]),
+                ProbeInvocation(["-i", "-l", "-c", nushellEnvironmentProbeScript]),
+                ProbeInvocation(["-l", "-c", nushellEnvironmentProbeScript]),
             ]
         case .elvish:
             [
-                ProbeInvocation(["-l", "-c", elvishPathProbeScript]),
-                ProbeInvocation(["-c", elvishPathProbeScript]),
+                ProbeInvocation(["-l", "-c", elvishEnvironmentProbeScript]),
+                ProbeInvocation(["-c", elvishEnvironmentProbeScript]),
             ]
         }
     }
 
-    static func loginShellSearchPaths() -> [String] {
-        searchPaths(forShell: userLoginShell())
+    static func loginShellEnvironment() -> [String: String] {
+        environment(forShell: userLoginShell())
+    }
+
+    static func environment(
+        forShell shell: String,
+        environment: [String: String] = ProcessInfo.processInfo.environment
+    ) -> [String: String] {
+        for invocation in probeInvocations(for: probeDialect(forShell: shell)) {
+            if let output = runProbe(shell, invocation, environment: environment),
+               let resolved = parseProbeOutput(output),
+               !searchPaths(in: resolved).isEmpty {
+                return resolved
+            }
+        }
+        return [:]
     }
 
     static func searchPaths(
         forShell shell: String,
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) -> [String] {
-        for invocation in probeInvocations(for: probeDialect(forShell: shell)) {
-            if let output = runProbe(shell, invocation, environment: environment),
-               let path = parseProbeOutput(output) {
-                let paths = searchPaths(fromProbeValue: path)
-                if !paths.isEmpty { return paths }
-            }
-        }
-        return []
+        searchPaths(in: self.environment(forShell: shell, environment: environment))
     }
 
     /// Absolute directories only.
@@ -236,14 +254,28 @@ extension ShellEnvironment {
         value.split(separator: ":").filter { $0.hasPrefix("/") }.map(String.init)
     }
 
-    static func parseProbeOutput(_ output: String) -> String? {
+    static func searchPaths(in environment: [String: String]) -> [String] {
+        environment["PATH"].map(searchPaths(fromProbeValue:)) ?? []
+    }
+
+    static func parseProbeOutput(_ output: String) -> [String: String]? {
         // rc files chatter on stdout, so the value is fenced by markers rather than assumed to be
         // the whole output.
         guard let start = output.range(of: probeBeginMarker),
               let end = output.range(of: probeEndMarker, range: start.upperBound..<output.endIndex)
         else { return nil }
-        let value = String(output[start.upperBound..<end.lowerBound])
-        return value.isEmpty ? nil : value
+        let value = output[start.upperBound..<end.lowerBound]
+        var environment: [String: String] = [:]
+        for entry in value.split(separator: "\0") {
+            guard let separator = entry.firstIndex(of: "=") else { continue }
+            let name = String(entry[..<separator])
+            guard !name.isEmpty,
+                  !ignoredEnvironmentVariables.contains(name),
+                  !name.hasPrefix("BASH_FUNC_")
+            else { continue }
+            environment[name] = String(entry[entry.index(after: separator)...])
+        }
+        return environment.isEmpty ? nil : environment
     }
 
     static func runProbe(
@@ -361,16 +393,12 @@ func readTail(_ handle: FileHandle, bytes: UInt64) -> Data? {
     try? handle.seek(toOffset: size > bytes ? size - bytes : 0)
     return try? handle.read(upToCount: Int(bytes))
 }
-private let probeBeginMarker = "__PMM_PATH_BEGIN__"
-private let probeEndMarker = "__PMM_PATH_END__"
-private let pathProbeScript = #"printf '\n__PMM_PATH_BEGIN__%s__PMM_PATH_END__\n' "$PATH""#
-/// fish keeps `PATH` as a list, so `"$PATH"` would come back space-separated.
-private let fishPathProbeScript =
-    #"printf '\n__PMM_PATH_BEGIN__%s__PMM_PATH_END__\n' (string join : $PATH)"#
-/// nushell keeps `PATH` as a list and does not interpolate in ordinary string literals, so both the
-/// join and the fence have to be built explicitly.
-private let nushellPathProbeScript =
-    #"print ("__PMM_PATH_BEGIN__" + ($env.PATH | str join ":") + "__PMM_PATH_END__")"#
-/// elvish exposes the raw colon-joined variable as `$E:PATH`; `$PATH` is its own list type.
-private let elvishPathProbeScript =
-    #"print "__PMM_PATH_BEGIN__"$E:PATH"__PMM_PATH_END__"; print "\n""#
+private let probeBeginMarker = "__PMM_ENV_BEGIN__"
+private let probeEndMarker = "__PMM_ENV_END__"
+private let environmentProbeScript =
+    #"printf '\n__PMM_ENV_BEGIN__'; /usr/bin/env -0; printf '__PMM_ENV_END__\n'"#
+private let nushellEnvironmentProbeScript =
+    #"print -n '__PMM_ENV_BEGIN__'; ^/usr/bin/env -0; print -n '__PMM_ENV_END__'"#
+private let elvishEnvironmentProbeScript =
+    #"print -n '__PMM_ENV_BEGIN__'; /usr/bin/env -0; print -n '__PMM_ENV_END__'"#
+private let ignoredEnvironmentVariables: Set<String> = ["TERM", "PWD", "OLDPWD", "SHLVL", "_"]
