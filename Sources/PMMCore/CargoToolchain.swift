@@ -69,7 +69,8 @@ public enum CargoToolchainError: Error, LocalizedError, Equatable {
 public struct CargoToolchain: Sendable {
     private let runner: CommandRunning
     private let toolPaths: [String: String]
-    private let cargoHome: URL
+    private let environment: [String: String]?
+    private let home: URL
     /// Injectable because `toolPaths` can force a tool present but cannot say one is absent — and
     /// without that, a test for the not-on-PATH case silently passes on any machine that happens to
     /// have the helper installed, which is every developer machine that has ever used one.
@@ -78,15 +79,15 @@ public struct CargoToolchain: Sendable {
     public init(
         runner: CommandRunning = SystemCommandRunner(),
         toolPaths: [String: String] = [:],
-        environment: [String: String] = ProcessInfo.processInfo.environment,
+        environment: [String: String]? = nil,
         home: URL = FileManager.default.homeDirectoryForCurrentUser,
         findOnPath: @escaping @Sendable (String) -> String? = { firstExecutable(named: $0) }
     ) {
         self.runner = runner
         self.toolPaths = toolPaths
         self.findOnPath = findOnPath
-        cargoHome = environment["CARGO_HOME"].flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0) }
-            ?? home.appendingPathComponent(".cargo", isDirectory: true)
+        self.environment = environment
+        self.home = home
     }
 
     public func status() -> CargoToolchainStatus {
@@ -194,12 +195,23 @@ public struct CargoToolchain: Sendable {
     private func executable(named name: String) -> String? {
         if let path = toolPaths[name] { return path }
         if let path = findOnPath(name) { return path }
-        // Where cargo actually puts things, whether or not it is on this process's PATH — and for a
-        // Finder-launched app whose cargo came from Homebrew, it is not. A helper installed there
-        // reported success, stayed undetected, and the card asking to install it came straight back.
+        // Where cargo actually installs things, whether or not it is on this process's PATH — and
+        // for a Finder-launched app whose cargo came from Homebrew, it is not. A helper installed
+        // there reported success, stayed undetected, and the card asking to install it came back.
         // Cargo finds its own subcommands here regardless of PATH, so only the detection was wrong.
-        let candidate = cargoHome.appendingPathComponent("bin").appendingPathComponent(name).path
+        let candidate = cargoInstallRoot.appendingPathComponent("bin").appendingPathComponent(name).path
         return FileManager.default.isExecutableFile(atPath: candidate) ? candidate : nil
+    }
+
+    private var cargoInstallRoot: URL {
+        let environment = environment ?? commandEnvironment()
+        if let root = environment["CARGO_INSTALL_ROOT"], !root.isEmpty {
+            return URL(fileURLWithPath: root, isDirectory: true)
+        }
+        if let root = environment["CARGO_HOME"], !root.isEmpty {
+            return URL(fileURLWithPath: root, isDirectory: true)
+        }
+        return home.appendingPathComponent(".cargo", isDirectory: true)
     }
 }
 

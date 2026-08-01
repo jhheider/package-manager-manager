@@ -649,7 +649,7 @@ private final class StallingRunner: CommandRunning, @unchecked Sendable {
 }
 
 @Test func helpersAreFoundWhereCargoPutsThemEvenWhenThatIsNotOnPath() throws {
-    // The Finder-launched, Homebrew-cargo case: `cargo install` drops the helper in CARGO_HOME/bin,
+    // The Finder-launched, Homebrew-cargo case: `cargo install` drops the helper in its install root,
     // which is not on the host's PATH. Detection used to miss it, so a successful install reported
     // no error and then offered itself again, forever.
     let home = URL(fileURLWithPath: NSTemporaryDirectory())
@@ -664,7 +664,7 @@ private final class StallingRunner: CommandRunning, @unchecked Sendable {
     let toolchain = CargoToolchain(
         runner: StubRunner(),
         toolPaths: ["cargo": "/c"],
-        environment: ["CARGO_HOME": home.path],
+        environment: ["CARGO_HOME": "/wrong/cargo-home", "CARGO_INSTALL_ROOT": home.path],
         // Nothing on PATH: this machine almost certainly has cargo-binstall installed, and finding
         // that one would mean the CARGO_HOME lookup under test never runs.
         findOnPath: { _ in nil }

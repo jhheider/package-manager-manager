@@ -1470,6 +1470,17 @@ private func attributeRunCount(in string: NSAttributedString) -> Int {
     ]) == ["\(home)/.config/direnv/direnv.toml"])
 }
 
+@Test func shellPathResolutionUsesTheResolvedCommandEnvironment() {
+    #expect(mainWindowResolveShellPaths(
+        ["$CARGO_INSTALL_ROOT/config.toml"],
+        environment: [
+            "HOME": NSHomeDirectory(),
+            "PATH": "/usr/bin:/bin",
+            "CARGO_INSTALL_ROOT": "/tmp/pmm-cargo-root",
+        ]
+    ) == ["/tmp/pmm-cargo-root/config.toml"])
+}
+
 @Test func outdatedGitHubPackageLoadsLatestReleaseNotes() {
     let url = mainWindowReleaseNotesURL(for: ManagedPackage(
         manager: .homebrew,

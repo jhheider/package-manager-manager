@@ -27,7 +27,7 @@ public struct PackageScanner: @unchecked Sendable {
     private let fileManager: FileManager
     private let homeDirectory: URL
     private let toolPaths: [String: String]
-    private let environment: [String: String]
+    private let environment: [String: String]?
     private let applicationDirectories: [URL]
     private let urlSession: URLSession
     private let appVersionCacheURL: URL
@@ -37,7 +37,7 @@ public struct PackageScanner: @unchecked Sendable {
         fileManager: FileManager = .default,
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
         toolPaths: [String: String] = [:],
-        environment: [String: String] = ProcessInfo.processInfo.environment,
+        environment: [String: String]? = nil,
         applicationDirectories: [URL]? = nil,
         urlSession: URLSession = .shared,
         appVersionCacheURL: URL? = nil
@@ -395,7 +395,7 @@ public struct PackageScanner: @unchecked Sendable {
                 latestVersion: latestVersions[crate.name],
                 summary: "cargo-installed Rust binary",
                 category: "developer-tools",
-                installLocation: cargoHome.path,
+                installLocation: cargoInstallRoot.path,
                 binaryPath: crate.bins.first.flatMap(cargoBinaryPath)
             ))
         }
@@ -480,15 +480,20 @@ public struct PackageScanner: @unchecked Sendable {
         return parts[1]
     }
 
-    private var cargoHome: URL {
-        if let value = environment["CARGO_HOME"], !value.isEmpty {
+    private var effectiveEnvironment: [String: String] { environment ?? commandEnvironment() }
+
+    private var cargoInstallRoot: URL {
+        if let value = effectiveEnvironment["CARGO_INSTALL_ROOT"], !value.isEmpty {
+            return URL(fileURLWithPath: value, isDirectory: true)
+        }
+        if let value = effectiveEnvironment["CARGO_HOME"], !value.isEmpty {
             return URL(fileURLWithPath: value, isDirectory: true)
         }
         return homeDirectory.appendingPathComponent(".cargo", isDirectory: true)
     }
 
     private func cargoBinaryPath(_ name: String) -> String? {
-        let path = cargoHome.appendingPathComponent("bin", isDirectory: true).appendingPathComponent(name).path
+        let path = cargoInstallRoot.appendingPathComponent("bin", isDirectory: true).appendingPathComponent(name).path
         return fileManager.fileExists(atPath: path) ? path : nil
     }
 
@@ -633,7 +638,7 @@ public struct PackageScanner: @unchecked Sendable {
 
     private var homebrewCacheURLs: [URL] {
         var urls: [URL] = []
-        if let cache = environment["HOMEBREW_CACHE"], !cache.isEmpty {
+        if let cache = effectiveEnvironment["HOMEBREW_CACHE"], !cache.isEmpty {
             urls.append(URL(fileURLWithPath: cache, isDirectory: true))
         }
         urls.append(homeDirectory.appendingPathComponent("Library/Caches/Homebrew", isDirectory: true))
@@ -845,7 +850,7 @@ public struct PackageScanner: @unchecked Sendable {
 
     private func skillRepositories() -> [String: String] {
         let lock: URL
-        if let stateHome = environment["XDG_STATE_HOME"], !stateHome.isEmpty {
+        if let stateHome = effectiveEnvironment["XDG_STATE_HOME"], !stateHome.isEmpty {
             lock = URL(fileURLWithPath: stateHome).appendingPathComponent("skills/.skill-lock.json")
         } else {
             lock = homeDirectory.appendingPathComponent(".agents/.skill-lock.json")

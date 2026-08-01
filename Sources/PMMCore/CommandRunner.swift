@@ -94,7 +94,18 @@ public extension CommandRunning {
 }
 
 public struct SystemCommandRunner: CommandRunning {
-    public init() {}
+    private let shellEnvironment: ShellEnvironment
+    private let inheritedEnvironment: [String: String]
+
+    public init() {
+        shellEnvironment = .shared
+        inheritedEnvironment = ProcessInfo.processInfo.environment
+    }
+
+    init(shellEnvironment: ShellEnvironment, inheritedEnvironment: [String: String]) {
+        self.shellEnvironment = shellEnvironment
+        self.inheritedEnvironment = inheritedEnvironment
+    }
 
     public func run(_ executable: String, _ arguments: [String]) throws -> CommandResult {
         try run(executable, arguments, options: CommandRunOptions(), onOutput: nil)
@@ -119,7 +130,7 @@ public struct SystemCommandRunner: CommandRunning {
               let child = ProcessGroupChild.spawn(
                   executable: executable,
                   arguments: arguments,
-                  environment: commandEnvironment(options.environment),
+                  environment: childEnvironment(options.environment),
                   standardInput: devNull,
                   standardOutput: output.fileHandleForWriting.fileDescriptor,
                   standardError: error.fileHandleForWriting.fileDescriptor
@@ -199,7 +210,7 @@ public struct SystemCommandRunner: CommandRunning {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = arguments
-        process.environment = commandEnvironment(terminalEnvironment(options.environment))
+        process.environment = childEnvironment(terminalEnvironment(options.environment))
         process.standardInput = FileHandle.nullDevice
         process.standardOutput = slaveHandle
         process.standardError = slaveHandle
@@ -227,6 +238,15 @@ public struct SystemCommandRunner: CommandRunning {
             "COLUMNS": "80",
             "LINES": "24",
         ].merging(overrides) { _, new in new }
+    }
+
+    private func childEnvironment(_ overrides: [String: String]) -> [String: String] {
+        commandEnvironment(
+            overrides,
+            inherited: inheritedEnvironment,
+            shell: shellEnvironment.environment(),
+            home: FileManager.default.homeDirectoryForCurrentUser
+        )
     }
 }
 
@@ -475,11 +495,22 @@ private func pathEntries(_ path: String?) -> [String] {
     return path.split(separator: ":").map(String.init)
 }
 
+/// The environment local commands should inherit. Resolving the shell can block; never call this
+/// from the main thread.
+public func commandEnvironment(_ overrides: [String: String] = [:]) -> [String: String] {
+    commandEnvironment(
+        overrides,
+        inherited: ProcessInfo.processInfo.environment,
+        shell: ShellEnvironment.shared.environment(),
+        home: FileManager.default.homeDirectoryForCurrentUser
+    )
+}
+
 func commandEnvironment(
     _ overrides: [String: String],
-    inherited: [String: String] = ProcessInfo.processInfo.environment,
-    shell: [String: String] = ShellEnvironment.shared.environment(),
-    home: URL = FileManager.default.homeDirectoryForCurrentUser
+    inherited: [String: String],
+    shell: [String: String],
+    home: URL
 ) -> [String: String] {
     var environment = isLaunchdDefaultPath(inherited["PATH"])
         ? inherited.merging(shell) { _, shell in shell }

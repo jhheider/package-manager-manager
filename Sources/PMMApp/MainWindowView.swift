@@ -628,19 +628,20 @@ private func mainWindowIsAbsolutePath(_ path: String) -> Bool {
     path.hasPrefix("/")
 }
 
-func mainWindowResolveShellPaths(_ paths: [String]) -> [String] {
-    let paths = paths.filter { !mainWindowReferencesUnsetEnvironmentVariable($0) }
+func mainWindowResolveShellPaths(
+    _ paths: [String],
+    environment: [String: String]? = nil,
+    runner: CommandRunning = SystemCommandRunner()
+) -> [String] {
+    let environment = environment ?? commandEnvironment()
+    let paths = paths.filter { !mainWindowReferencesUnsetEnvironmentVariable($0, environment: environment) }
     guard !paths.isEmpty else { return [] }
-    let process = Process()
-    let output = Pipe()
-    process.executableURL = URL(fileURLWithPath: "/bin/zsh")
-    process.arguments = ["-lc", #"for p in "$@"; do print -r -- ${(e)p}; done"#, "--"] + paths.map(mainWindowShellExpandablePath)
-    process.standardOutput = output
-    guard (try? process.run()) != nil else { return paths.map(mainWindowExpandTilde) }
-    process.waitUntilExit()
-    guard process.terminationStatus == 0 else { return paths.map(mainWindowExpandTilde) }
-    let data = output.fileHandleForReading.readDataToEndOfFile()
-    let resolved = String(decoding: data, as: UTF8.self).split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+    guard let result = try? runner.run(
+        "/bin/zsh",
+        ["-lc", #"for p in "$@"; do print -r -- ${(e)p}; done"#, "--"] + paths.map(mainWindowShellExpandablePath),
+        options: CommandRunOptions(environment: environment)
+    ), result.status == 0 else { return paths.map(mainWindowExpandTilde) }
+    let resolved = result.stdout.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
     let resolvedPaths = resolved.last == "" ? Array(resolved.dropLast()) : resolved
     return resolvedPaths.map(mainWindowExpandTilde)
 }

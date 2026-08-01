@@ -170,6 +170,44 @@ private final class EmptyNPMRegistryURLProtocol: URLProtocol, @unchecked Sendabl
     #expect(packages.last?.binaryPath == nil)
 }
 
+@Test func cargoInstallScannerReceivesTheShellInstallRoot() throws {
+    let root = FileManager.default.temporaryDirectory
+        .appendingPathComponent("pmm-cargo-root-\(UUID().uuidString)", isDirectory: true)
+    let bin = root.appendingPathComponent("bin", isDirectory: true)
+    try FileManager.default.createDirectory(at: bin, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: root) }
+    let cargo = root.appendingPathComponent("cargo")
+    try """
+    #!/bin/sh
+    if [ "$CARGO_INSTALL_ROOT" = "\(root.path)" ]; then
+      printf 'shell-crate v1.2.3:\n    shell-crate\n'
+    fi
+    """.write(to: cargo, atomically: true, encoding: .utf8)
+    try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: cargo.path)
+    FileManager.default.createFile(atPath: bin.appendingPathComponent("shell-crate").path, contents: Data())
+
+    let resolved = ["PATH": "/usr/bin:/bin", "CARGO_INSTALL_ROOT": root.path]
+    let shell = ShellEnvironment { resolved }
+    let runner = SystemCommandRunner(
+        shellEnvironment: shell,
+        inheritedEnvironment: ["HOME": NSHomeDirectory(), "PATH": "/usr/bin:/bin:/usr/sbin:/sbin"]
+    )
+    let scanner = PackageScanner(
+        runner: runner,
+        toolPaths: ["cargo": cargo.path],
+        environment: resolved
+    )
+
+    let packages = try scanner.scanCargoInstall(
+        database: PackageDatabase(),
+        cargoStatus: CargoToolchainStatus(cargo: cargo.path, binstall: nil, installUpdate: nil)
+    )
+
+    #expect(packages.map(\.identifier) == ["cargo:shell-crate"])
+    #expect(packages.first?.installLocation == root.path)
+    #expect(packages.first?.binaryPath == bin.appendingPathComponent("shell-crate").path)
+}
+
 @Test func miseScannerIncludesAllInstalledTools() throws {
     let json = #"{"node":[{"version":"20.19.4","install_path":"/mise/node/20.19.4"},{"version":"22.17.0","install_path":"/mise/node/22.17.0"}],"python":[{"version":"3.13.5","install_path":"/mise/python/3.13.5"}]}"#
     let runner = RecordingRunner(responses: [
