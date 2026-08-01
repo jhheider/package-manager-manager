@@ -285,47 +285,6 @@ extension ShellEnvironment {
         terminationGrace: TimeInterval = 2,
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) -> String? {
-        // The probe collects output in a temporary file rather than a pipe. An rc file can start a
-        // background process that inherits stdout; the shell then exits while that grandchild keeps
-        // the write end open, and a pipe read would block forever on an EOF that never comes. A
-        // regular file is readable the moment we stop waiting, no matter who else still holds it.
-        let outputURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("pmm-path-probe-\(UUID().uuidString)")
-        guard FileManager.default.createFile(atPath: outputURL.path, contents: nil) else { return nil }
-        // Registered before the handle is opened: opening can fail on a file that was just created,
-        // and a `defer` set up after that point would never run to clean the file up.
-        defer { try? FileManager.default.removeItem(at: outputURL) }
-        guard let sink = try? FileHandle(forWritingTo: outputURL) else { return nil }
-        defer { try? sink.close() }
-
-        // stdin gets the same treatment for the same reason: a file cannot deadlock against a shell
-        // that never reads, the way writing a script into a pipe can. `/dev/null` is opened rather
-        // than taken from `FileHandle.nullDevice`, whose `fileDescriptor` is -1 — spawning with
-        // that as a dup2 source fails the whole spawn.
-        let nullDescriptor = open("/dev/null", O_RDONLY)
-        defer { if nullDescriptor >= 0 { close(nullDescriptor) } }
-        guard nullDescriptor >= 0 else { return nil }
-        // Kept separate from the handle's descriptor rather than overwritten: reassigning leaked
-        // this one and left both `defer`s closing the same number, which is EBADF at best and a
-        // close of somebody else's reopened descriptor at worst.
-        var inputHandle: FileHandle?
-        let inputURL = invocation.input.map { _ in
-            FileManager.default.temporaryDirectory
-                .appendingPathComponent("pmm-path-probe-in-\(UUID().uuidString)")
-        }
-        // Again registered up front, so the script file cannot outlive a failed open.
-        defer {
-            if let inputURL { try? FileManager.default.removeItem(at: inputURL) }
-            try? inputHandle?.close()
-        }
-        if let input = invocation.input, let inputURL {
-            guard FileManager.default.createFile(atPath: inputURL.path, contents: Data(input.utf8)),
-                  let handle = try? FileHandle(forReadingFrom: inputURL)
-            else { return nil }
-            inputHandle = handle
-        }
-        let inputDescriptor = inputHandle?.fileDescriptor ?? nullDescriptor
-
         // A real TERM, emphatically not `dumb`. `[[ "$TERM" == "dumb" ]] && return` is the standard
         // Emacs TRAMP guard and sits near the top of a great many real `.zshrc` files, above the
         // nvm/pyenv/asdf/mise block. Forcing `dumb` tripped it: the shell returned early, exited 0,
@@ -334,64 +293,16 @@ extension ShellEnvironment {
         // the output were the reason for `dumb`, and they cost nothing here: the value is fenced by
         // markers, so chatter around it is already ignored.
         let probeEnvironment = environment.merging(["TERM": "xterm-256color"]) { _, new in new }
-
-        // Spawned into a process group of its own so the timeout can take the whole tree. Signalling
-        // the shell alone leaves whatever its rc files started still running — and still holding the
-        // descriptor it inherited, writing into a file we have already unlinked.
-        let devNull = open("/dev/null", O_WRONLY)
-        defer { if devNull >= 0 { close(devNull) } }
-        guard devNull >= 0,
-              let child = ProcessGroupChild.spawn(
-                  executable: shell,
-                  arguments: invocation.arguments,
-                  environment: probeEnvironment,
-                  standardInput: inputDescriptor,
-                  standardOutput: sink.fileDescriptor,
-                  standardError: devNull
-              )
-        else { return nil }
-
-        guard let status = child.wait(timeout: timeout) else {
-            child.terminateGroup(grace: terminationGrace)
-            return nil
-        }
-        // The leader finishing is not the tree finishing. Whatever the rc files started is still
-        // running, still holding the descriptor it inherited, and still writing into the file about
-        // to be read — on a successful probe exactly as much as on a timed-out one.
-        child.terminateRemainingGroup(grace: ProcessGroupChild.remainingGroupGrace)
-        guard status == 0 else { return nil }
-        // Read a bounded window, and read it from the end. A descendant that outlived the kill can
-        // still be writing to the descriptor it inherited, so the file has no size this code gets
-        // to assume; and the fence is printed after all the rc chatter, so the tail is the part
-        // worth having.
-        guard let reader = try? FileHandle(forReadingFrom: outputURL) else { return nil }
-        defer { try? reader.close() }
-        // A descendant that outlived the shell keeps appending, and it only takes one noisy binary
-        // on stdout to push the fence out of the window between the shell's exit and this read. So
-        // widen once when the marker is missing rather than reporting a successful probe as failed.
-        guard var data = readTail(reader, bytes: maxProbeOutputBytes) else { return nil }
-        if !String(decoding: data, as: UTF8.self).contains(probeBeginMarker),
-           let wider = readTail(reader, bytes: maxProbeOutputBytes * 16) {
-            data = wider
-        }
-        // Lenient decoding: an rc file that emits a stray non-UTF-8 byte must not cost us the PATH.
-        return String(decoding: data, as: UTF8.self)
+        return ProcessExecution.runBounded(
+            shell,
+            invocation.arguments,
+            input: invocation.input,
+            timeout: timeout,
+            terminationGrace: terminationGrace,
+            environment: probeEnvironment,
+            requiredOutputMarker: probeBeginMarker
+        )
     }
-}
-
-/// Enough for any plausible rc chatter, small enough that a runaway writer cannot be read into
-/// memory wholesale.
-private let maxProbeOutputBytes: UInt64 = 1 << 20
-
-/// The last `bytes` of a file, or all of it when it is smaller.
-///
-/// Reads a bounded count rather than to EOF: a surviving writer keeps appending, and `readToEnd`
-/// chases it, so the ceiling this exists to impose was no ceiling at all — memory and disk grow
-/// together and the probe never publishes.
-func readTail(_ handle: FileHandle, bytes: UInt64) -> Data? {
-    let size = (try? handle.seekToEnd()) ?? 0
-    try? handle.seek(toOffset: size > bytes ? size - bytes : 0)
-    return try? handle.read(upToCount: Int(bytes))
 }
 private let probeBeginMarker = "__PMM_ENV_BEGIN__"
 private let probeEndMarker = "__PMM_ENV_END__"

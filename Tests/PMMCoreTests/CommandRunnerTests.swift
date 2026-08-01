@@ -196,6 +196,18 @@ private final class StringRecorder: @unchecked Sendable {
     #expect(decoder.finish() == "")
 }
 
+@Test func boundedCaptureReadsAtMostItsCeiling() throws {
+    let url = URL(fileURLWithPath: NSTemporaryDirectory())
+        .appendingPathComponent("pmm-tail-\(UUID().uuidString)")
+    defer { try? FileManager.default.removeItem(at: url) }
+    try Data(repeating: 0x61, count: 3 << 20).write(to: url)
+    let handle = try FileHandle(forReadingFrom: url)
+    defer { try? handle.close() }
+
+    #expect(ProcessExecution.readTail(handle, bytes: 1 << 20)?.count == 1 << 20)
+    #expect(ProcessExecution.readTail(handle, bytes: 8 << 20)?.count == 3 << 20)
+}
+
 @Test func aQueryThatStopsProducingOutputIsAbandonedWithItsWholeTree() throws {
     // The stall this catches: cargo-update polling a registry that never answers, a tool waiting on
     // a lock another terminal holds. Before, the refresh spinner simply never resolved.
