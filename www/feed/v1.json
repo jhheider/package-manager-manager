@@ -2,54 +2,54 @@
   "content": [
     {
       "artwork": {
-        "alt": "A glowing clockwork schedule ring joins a container panel, a network wave panel, and a timeline on a deep navy background.",
+        "alt": "A glowing agent node connects a terminal-like panel to several abstract tool nodes through blue and amber data streams, with a magnifying lens inspecting one stream.",
         "attribution": "Generated with OpenAI image generation for Package Manager Manager.",
         "boxColors": {
-          "backgroundEnd": "#0B2944",
-          "backgroundStart": "#06172E",
+          "backgroundEnd": "#073D57",
+          "backgroundStart": "#01051B",
           "foreground": "#FFFFFF"
         },
         "license": "OpenAI terms of use",
-        "path": "feed/assets/cronboard-observability-2026-07-31.png"
+        "path": "feed/assets/mcpsnoop-tool-traffic-2026-08-04.png"
       },
-      "body": "## Start with the work that runs when nobody is watching\n\nScheduled tasks are easy to overlook because a crontab is deliberately quiet. A backup, report, cleanup, or certificate renewal often exists as one compact line that only becomes visible after it fails. **Cronboard** is a new terminal-first attempt to make that layer easier to inspect. Its project site describes a keyboard-driven dashboard for local cron jobs and remote servers, with creation, editing, pausing, resuming, search, human-readable schedules, and SSH-based management. The goal is not a different scheduling engine. It is a clearer view of the cron configuration already responsible for work.\n\nThat is a useful distinction. A dashboard can reduce the friction of reading a crowded crontab, but it does not make the command correct, give it retries, or prove that an unattended job succeeded. Keep the script itself in version control when practical, write its output somewhere intentional, and decide which failures need an external alert. Cronboard can make an operator's next question faster: *what is meant to run, where, and when?* It should not become the only record of that answer.\n\nThe project reached its stable 1.0.0 release on July 27, 2026, so this is a younger tool than the venerable cron subsystem it works with. That makes a small trial the sensible route. Start on a personal machine or an unimportant server, compare its view to `crontab -l`, and verify exactly which account and remote user each edit reaches.\n\n## Observation is not administration\n\n**dtop** lives one layer above the scheduler. The project's documentation and repository describe a terminal dashboard for monitoring Docker across multiple hosts, including container actions, health information, filtering, and integration with Dozzle for logs. Used together with a scheduler, it can help an operator move from “this job should have run” to “what is the container doing now?” without immediately opening a web control panel.\n\nThat convenience needs a boundary. A view that can start, stop, or remove containers is no longer read-only. Docker socket access and remote host credentials are operationally powerful, so the right setup is the least privileged one that still answers the question. dtop also does not replace a deployment definition, resource limits, central metrics, or paging. For a small fleet, it can shorten an investigation; for a production service, use it alongside durable telemetry and alerts rather than as the signal that wakes someone up.\n\nThe shared theme with Cronboard is **interactive inspection**. Both tools surface state that otherwise hides in configuration files, process lists, or several remote shells. Neither removes the need to document ownership. Before adopting either, name the job or container owner, where logs belong, and the condition that counts as failure. A clean terminal interface is most helpful when it reflects an already-clear operating model.\n\n## Network measurements have a different kind of consequence\n\n**OONI Probe CLI** makes another hidden system visible: network interference. OONI's user guide says the command-line client can test website blocking, messaging apps, circumvention tools, middleboxes, and network performance. Measurements are submitted to OONI and published as open data in near real time; OONI reports more than 400 million measurements from 23,000 networks in 240 countries and territories since 2012. That documented public record is why it belongs here as the underexposed companion rather than merely another diagnostic utility.\n\nIts tradeoff is sharper than the other two tools'. OONI explicitly says the probe is not a privacy tool and that testing can carry legal or personal risk depending on the country, network, sites tested, and threat model. Do not treat it as a casual speed test or run automated measurements for someone else without informed judgment. Read the onboarding and risk guidance, understand whether results will be public, and seek local expertise when the consequences are unclear. A blocked connection can also have multiple explanations, so compare evidence before drawing a conclusion.\n\n## A small, auditable practice\n\nThese tools work best as a compact loop:\n\n- inspect a schedule in Cronboard before changing it;\n- inspect the affected container or logs in dtop when the job touches Docker; and\n- use OONI Probe only when its research purpose and publication model fit the situation.\n\nThe common win is not more dashboards. It is making a specific operational question visible while preserving the underlying boundaries: cron remains the scheduler, Docker permissions remain sensitive, and network measurements can be consequential public research. Start with one question, verify the data against the native tools, and retain the plain-text configuration and logs that let another person audit what happened.",
-      "deck": "Cronboard, dtop, and OONI Probe make different systems visible—provided their operational and privacy boundaries stay explicit.",
-      "id": "editorial:2026-07-31:terminal-observability-with-cronboard",
-      "primaryPackageID": "brew:cronboard",
-      "publishedAt": "2026-07-31T13:02:36Z",
+      "body": "## The gap between a configured tool and a real call\n\nA Model Context Protocol integration can fail long before anyone sees a clear error. A client may not discover a capability, choose a different tool, send arguments that do not match the server’s expectations, or wait on a response that never arrives. Configuration files and server logs answer only part of that story. **mcpsnoop** takes a more direct approach: it sits in the actual path between a client and an MCP server, then presents the JSON-RPC exchange in a terminal interface. Its upstream documentation describes both a stdio shim and a reverse-proxy mode for streamable HTTP, so it is aimed at the traffic a real client sends rather than a separate test client’s session.\n\nThat makes it a useful debugging boundary. The project’s release history shows rapid 2026 development, and its early v0.8.0 release makes it a genuinely newer tool to evaluate cautiously. The right first use is a disposable client and a non-production server: wrap the existing launch command, reproduce one narrow workflow, and compare what the client intended with what the server received. Start with observation, not a new platform or a fleet-wide policy.\n\n## Observation needs data discipline\n\nTool calls can carry user prompts, file paths, API arguments, tokens, and private business context. A traffic viewer is therefore not automatically safe merely because it helps debug a protocol. mcpsnoop documents key, value, and JSON-path redaction controls, but also describes redaction as best effort. That is the honest tradeoff: redaction reduces exposure, while a capture still deserves the same retention, access, and sharing rules as application logs.\n\nBefore recording a session, decide what may enter it and where the result may go. Use test accounts, synthetic inputs, and an isolated state directory where possible. Review exported traces before attaching them to an issue. Keep the proxy local or inside the intended network boundary, and avoid treating a successful trace as permission to replay a consequential action. The important question is not only *can we see this call?* but also *who can now read it?*\n\nmcpsnoop can also make a test more specific. Its `check` command can fail on protocol errors, invalid frames, warnings, or selected conditions such as hung calls and tool-definition drift. That is valuable when a team has a known integration contract. It is less useful as a generic quality score: a passing capture verifies the observed run, not every possible prompt, server version, or authorization outcome. Keep ordinary integration tests and server-side validation in place.\n\n## n8n-mcp shows why boundaries matter\n\n**n8n-mcp** is a practical companion because it gives compatible AI clients structured access to n8n documentation, node data, templates, and validation; its optional management functions can also work with a configured n8n API. That combination makes an MCP conversation more than a read-only lookup. A wrong tool call can become a workflow change, and a broadly scoped credential can turn a helpful assistant into an overpowered operator.\n\nThe project’s own guidance recommends copying workflows, testing in development, exporting backups, and validating before deployment. Those are sound boundaries even when mcpsnoop makes the exchange legible. Trace the client against a sandbox first, verify which tools the server advertises, and make credentials narrow enough that a capture or configuration mistake cannot modify production. The goal is not to distrust automation; it is to make **intent, authority, and evidence** line up.\n\n## A broader agent system raises the stakes\n\n**LibreFang** illustrates the other end of the scale. Its documentation describes a self-hostable agent operating system with model drivers, channel adapters, MCP and A2A support, scheduling, RBAC, and audit logging. A system with that reach can be appropriate for a team that genuinely needs lifecycle management across agents and integrations. It also has a larger deployment, security, and incident-response surface than a focused traffic inspector.\n\nThat contrast is useful. mcpsnoop can answer whether a specific client-server exchange is shaped as expected; n8n-mcp can expose a rich workflow-building surface; LibreFang can organize larger agent operations. None substitutes for a threat model or an approval boundary. If a call can spend money, publish content, alter workflow state, or reach sensitive data, use explicit authorization and an environment designed for that consequence.\n\nA compact adoption path is enough:\n\n- capture one harmless MCP session with redaction enabled;\n- compare the trace with server logs and expected tool definitions;\n- turn only stable, intentional conditions into CI checks; and\n- expand permissions only after the observation path and rollback process are understood.\n\nVisibility is most valuable when it reduces guesswork without quietly widening access. mcpsnoop earns attention as a small, current tool for making that visible layer easier to inspect.",
+      "deck": "A young MCP traffic inspector can make agent integrations observable—if teams treat captured data and proxy placement as real operational concerns.",
+      "id": "editorial:2026-08-04:making-mcp-tool-traffic-visible-with-mcpsnoop",
+      "primaryPackageID": "brew:mcpsnoop",
+      "publishedAt": "2026-08-04T13:01:59Z",
       "relatedPackageIDs": [
-        "brew:cronboard",
-        "brew:dtop",
-        "brew:ooniprobe"
+        "brew:mcpsnoop",
+        "brew:n8n-mcp",
+        "brew:librefang"
       ],
       "selection": {
-        "firstStableReleaseAt": "2026-07-27T15:39:00Z",
-        "firstStableReleaseSourceURL": "https://github.com/antoniorodr/cronboard/releases/tag/v1.0.0",
+        "firstStableReleaseAt": "2026-07-09T12:00:00Z",
+        "firstStableReleaseSourceURL": "https://github.com/kerlenton/mcpsnoop/releases/tag/v0.8.0",
         "rationale": "newer"
       },
       "sources": [
         {
           "kind": "primary",
-          "title": "Cronboard releases",
-          "url": "https://github.com/antoniorodr/cronboard/releases"
+          "title": "mcpsnoop project repository",
+          "url": "https://github.com/kerlenton/mcpsnoop"
         },
         {
           "kind": "primary",
-          "title": "Cronboard project site",
-          "url": "https://cronboard.dev/"
+          "title": "mcpsnoop release history",
+          "url": "https://github.com/kerlenton/mcpsnoop/releases"
         },
         {
           "kind": "primary",
-          "title": "dtop repository",
-          "url": "https://github.com/amir20/dtop"
+          "title": "n8n-mcp project repository",
+          "url": "https://github.com/czlonkowski/n8n-mcp"
         },
         {
           "kind": "primary",
-          "title": "OONI Probe CLI user guide",
-          "url": "https://openobservatory.github.io/support/ooni-probe-cli/"
+          "title": "LibreFang documentation",
+          "url": "https://docs.librefang.ai/"
         }
       ],
-      "title": "Terminal Observability Starts With What You Schedule",
+      "title": "mcpsnoop: Inspect the Tool Calls That Actually Happen",
       "type": "editorial"
     },
     {
@@ -116,9 +116,7 @@
         "brew:apm",
         "brew:droast",
         "brew:rapid-mlx",
-        "brew:dskditto",
-        "brew:advai-cli",
-        "brew:zsh-patina"
+        "brew:dskditto"
       ],
       "title": "New Packages",
       "type": "newPackages"
@@ -130,17 +128,69 @@
         "brew:cronboard",
         "brew:dtop",
         "brew:mcpsnoop",
+        "brew:librefang",
+        "brew:n8n-mcp",
         "brew:rulesync",
         "brew:vfox",
         "brew:yutu",
         "brew:apm",
         "brew:ty",
-        "brew:agent-browser",
-        "brew:oxfmt",
-        "brew:droast"
+        "brew:agent-browser"
       ],
       "title": "Recently Updated",
       "type": "recentlyUpdated"
+    },
+    {
+      "artwork": {
+        "alt": "A glowing clockwork schedule ring joins a container panel, a network wave panel, and a timeline on a deep navy background.",
+        "attribution": "Generated with OpenAI image generation for Package Manager Manager.",
+        "boxColors": {
+          "backgroundEnd": "#0B2944",
+          "backgroundStart": "#06172E",
+          "foreground": "#FFFFFF"
+        },
+        "license": "OpenAI terms of use",
+        "path": "feed/assets/cronboard-observability-2026-07-31.png"
+      },
+      "body": "## Start with the work that runs when nobody is watching\n\nScheduled tasks are easy to overlook because a crontab is deliberately quiet. A backup, report, cleanup, or certificate renewal often exists as one compact line that only becomes visible after it fails. **Cronboard** is a new terminal-first attempt to make that layer easier to inspect. Its project site describes a keyboard-driven dashboard for local cron jobs and remote servers, with creation, editing, pausing, resuming, search, human-readable schedules, and SSH-based management. The goal is not a different scheduling engine. It is a clearer view of the cron configuration already responsible for work.\n\nThat is a useful distinction. A dashboard can reduce the friction of reading a crowded crontab, but it does not make the command correct, give it retries, or prove that an unattended job succeeded. Keep the script itself in version control when practical, write its output somewhere intentional, and decide which failures need an external alert. Cronboard can make an operator's next question faster: *what is meant to run, where, and when?* It should not become the only record of that answer.\n\nThe project reached its stable 1.0.0 release on July 27, 2026, so this is a younger tool than the venerable cron subsystem it works with. That makes a small trial the sensible route. Start on a personal machine or an unimportant server, compare its view to `crontab -l`, and verify exactly which account and remote user each edit reaches.\n\n## Observation is not administration\n\n**dtop** lives one layer above the scheduler. The project's documentation and repository describe a terminal dashboard for monitoring Docker across multiple hosts, including container actions, health information, filtering, and integration with Dozzle for logs. Used together with a scheduler, it can help an operator move from “this job should have run” to “what is the container doing now?” without immediately opening a web control panel.\n\nThat convenience needs a boundary. A view that can start, stop, or remove containers is no longer read-only. Docker socket access and remote host credentials are operationally powerful, so the right setup is the least privileged one that still answers the question. dtop also does not replace a deployment definition, resource limits, central metrics, or paging. For a small fleet, it can shorten an investigation; for a production service, use it alongside durable telemetry and alerts rather than as the signal that wakes someone up.\n\nThe shared theme with Cronboard is **interactive inspection**. Both tools surface state that otherwise hides in configuration files, process lists, or several remote shells. Neither removes the need to document ownership. Before adopting either, name the job or container owner, where logs belong, and the condition that counts as failure. A clean terminal interface is most helpful when it reflects an already-clear operating model.\n\n## Network measurements have a different kind of consequence\n\n**OONI Probe CLI** makes another hidden system visible: network interference. OONI's user guide says the command-line client can test website blocking, messaging apps, circumvention tools, middleboxes, and network performance. Measurements are submitted to OONI and published as open data in near real time; OONI reports more than 400 million measurements from 23,000 networks in 240 countries and territories since 2012. That documented public record is why it belongs here as the underexposed companion rather than merely another diagnostic utility.\n\nIts tradeoff is sharper than the other two tools'. OONI explicitly says the probe is not a privacy tool and that testing can carry legal or personal risk depending on the country, network, sites tested, and threat model. Do not treat it as a casual speed test or run automated measurements for someone else without informed judgment. Read the onboarding and risk guidance, understand whether results will be public, and seek local expertise when the consequences are unclear. A blocked connection can also have multiple explanations, so compare evidence before drawing a conclusion.\n\n## A small, auditable practice\n\nThese tools work best as a compact loop:\n\n- inspect a schedule in Cronboard before changing it;\n- inspect the affected container or logs in dtop when the job touches Docker; and\n- use OONI Probe only when its research purpose and publication model fit the situation.\n\nThe common win is not more dashboards. It is making a specific operational question visible while preserving the underlying boundaries: cron remains the scheduler, Docker permissions remain sensitive, and network measurements can be consequential public research. Start with one question, verify the data against the native tools, and retain the plain-text configuration and logs that let another person audit what happened.",
+      "deck": "Cronboard, dtop, and OONI Probe make different systems visible—provided their operational and privacy boundaries stay explicit.",
+      "id": "editorial:2026-07-31:terminal-observability-with-cronboard",
+      "primaryPackageID": "brew:cronboard",
+      "publishedAt": "2026-07-31T13:02:36Z",
+      "relatedPackageIDs": [
+        "brew:cronboard",
+        "brew:dtop",
+        "brew:ooniprobe"
+      ],
+      "selection": {
+        "firstStableReleaseAt": "2026-07-27T15:39:00Z",
+        "firstStableReleaseSourceURL": "https://github.com/antoniorodr/cronboard/releases/tag/v1.0.0",
+        "rationale": "newer"
+      },
+      "sources": [
+        {
+          "kind": "primary",
+          "title": "Cronboard releases",
+          "url": "https://github.com/antoniorodr/cronboard/releases"
+        },
+        {
+          "kind": "primary",
+          "title": "Cronboard project site",
+          "url": "https://cronboard.dev/"
+        },
+        {
+          "kind": "primary",
+          "title": "dtop repository",
+          "url": "https://github.com/amir20/dtop"
+        },
+        {
+          "kind": "primary",
+          "title": "OONI Probe CLI user guide",
+          "url": "https://openobservatory.github.io/support/ooni-probe-cli/"
+        }
+      ],
+      "title": "Terminal Observability Starts With What You Schedule",
+      "type": "editorial"
     },
     {
       "artwork": {
@@ -486,61 +536,8 @@
       "type": "editorial"
     }
   ],
-  "generatedAt": "2026-07-31T13:02:36Z",
+  "generatedAt": "2026-08-04T13:01:59Z",
   "packages": {
-    "brew:advai-cli": {
-      "agentSummary": "advai-cli is a local-first command line tool that combines skill management, external CLI workflows, browser-bridge automation, and a terminal AI chat interface.",
-      "assessment": {
-        "alternatives": [
-          "Dedicated skill managers, browser automation frameworks, or standalone terminal AI clients"
-        ],
-        "audiences": [
-          "Developers who want one local command surface for skills, external tools, browser work, and terminal AI assistance"
-        ],
-        "caveats": [
-          "The project is newly released, so its integration surface may change quickly",
-          "Browser features require a companion extension and local bridge rather than working as a self-contained browser client",
-          "External CLI workflows depend on OpenCLI being installed separately"
-        ],
-        "complements": [
-          "OpenCLI for registering and running external CLIs",
-          "A supported browser extension and local bridge for browser automation"
-        ],
-        "prerequisites": [
-          "Python 3.10 or later",
-          "The optional OpenCLI dependency on PATH for external CLI management",
-          "A configured compatible AI provider for terminal chat features"
-        ],
-        "useCases": [
-          "Inspecting and managing local skills or registered external command-line tools",
-          "Driving a configured browser bridge from a terminal session"
-        ]
-      },
-      "category": null,
-      "displayName": "advai-cli",
-      "docs": null,
-      "homepage": "https://github.com/Advai-X/advai-cli",
-      "id": "brew:advai-cli",
-      "installURL": "pkgmgrmgr://install?package=brew%3Aadvai-cli",
-      "lastUpdatedAt": "2026-07-20T06:25:46Z",
-      "manager": "homebrew",
-      "repository": null,
-      "researchedAt": "2026-07-21T13:01:08Z",
-      "sources": [
-        {
-          "kind": "primary",
-          "title": "advai-cli repository and usage documentation",
-          "url": "https://github.com/Advai-X/advai-cli"
-        },
-        {
-          "kind": "primary",
-          "title": "advai-cli PyPI package and release history",
-          "url": "https://pypi.org/project/advai-cli/"
-        }
-      ],
-      "upstreamSummary": "CLI for managing skills and external CLIs",
-      "version": null
-    },
     "brew:agent-browser": {
       "agentSummary": "Agent Browser is a command-line browser automation tool for AI agents, exposing structured navigation, inspection, interaction, and session controls through a compact terminal-first interface.",
       "assessment": {
@@ -1091,26 +1088,87 @@
       "upstreamSummary": "Command-line music player",
       "version": null
     },
-    "brew:mcpsnoop": {
-      "agentSummary": "A transparent MCP proxy and terminal interface that captures JSON-RPC exchanges, replays calls, and helps developers inspect negotiation, failures, latency, and sensitive trace data.",
+    "brew:librefang": {
+      "agentSummary": "LibreFang is a self-hostable Rust-based agent operating system with lifecycle management, channels, model drivers, MCP and A2A integration, policy controls, audit logging, and command-capable agent workflows.",
       "assessment": {
         "alternatives": [
-          "Application logs and generic HTTP debugging proxies"
+          "Purpose-built single-agent services",
+          "Frameworks such as LangGraph or AutoGen"
         ],
         "audiences": [
-          "Developers building or integrating MCP clients and servers"
+          "Teams evaluating self-hosted agent platforms",
+          "Developers needing MCP and agent-to-agent integration"
         ],
         "caveats": [
-          "Captured protocol traffic can contain sensitive arguments or results; review redaction and storage practices before use"
+          "A broad agent platform has a larger security and operational surface than a focused tool",
+          "Claims about safeguards still require deployment-specific review"
         ],
         "complements": [
-          "MCP server logs and reproducible integration tests"
+          "Network isolation",
+          "Credential vaults",
+          "Operational monitoring"
         ],
         "prerequisites": [
-          "An MCP client-server workflow to proxy, plus permission to inspect its traffic"
+          "Infrastructure for self-hosting",
+          "A defined authorization and data-handling model"
         ],
         "useCases": [
-          "Tracing JSON-RPC requests, responses, errors, and slow MCP calls during integration debugging"
+          "Managing scheduled or multi-channel agents",
+          "Building self-hosted agent workflows with audit trails"
+        ]
+      },
+      "category": "ai",
+      "displayName": "librefang",
+      "docs": "https://docs.librefang.ai/",
+      "homepage": "https://librefang.ai",
+      "id": "brew:librefang",
+      "installURL": "pkgmgrmgr://install?package=brew%3Alibrefang",
+      "lastUpdatedAt": "2026-07-27T13:40:17Z",
+      "manager": "homebrew",
+      "repository": "https://github.com/librefang/librefang",
+      "researchedAt": "2026-08-04T13:01:59Z",
+      "sources": [
+        {
+          "kind": "primary",
+          "title": "LibreFang project repository",
+          "url": "https://github.com/librefang/librefang"
+        },
+        {
+          "kind": "primary",
+          "title": "LibreFang documentation",
+          "url": "https://docs.librefang.ai/"
+        }
+      ],
+      "upstreamSummary": "Self-hostable operating system for autonomous AI agents",
+      "version": null
+    },
+    "brew:mcpsnoop": {
+      "agentSummary": "mcpsnoop is a terminal-first transparent proxy and inspector for observing real Model Context Protocol traffic, recording sessions, redacting sensitive values, comparing behavior, and gating captured runs in CI.",
+      "assessment": {
+        "alternatives": [
+          "MCP Inspector for an independent client session",
+          "Application-specific structured logging"
+        ],
+        "audiences": [
+          "Developers integrating MCP clients and servers",
+          "Teams debugging agent tool calls"
+        ],
+        "caveats": [
+          "Captured arguments can contain sensitive data unless redaction is configured",
+          "A proxy adds another component to diagnose when testing connectivity"
+        ],
+        "complements": [
+          "MCP server logs",
+          "Test environments",
+          "Secret-redaction policies"
+        ],
+        "prerequisites": [
+          "An MCP client and server configuration to inspect",
+          "Careful handling of captured request data"
+        ],
+        "useCases": [
+          "Tracing a client’s actual MCP requests",
+          "Checking captured MCP sessions in continuous integration"
         ]
       },
       "category": null,
@@ -1122,20 +1180,74 @@
       "lastUpdatedAt": "2026-07-27T14:30:15Z",
       "manager": "homebrew",
       "repository": "https://github.com/kerlenton/mcpsnoop",
-      "researchedAt": "2026-07-29T13:01:23Z",
+      "researchedAt": "2026-08-04T13:01:59Z",
       "sources": [
         {
           "kind": "primary",
-          "title": "mcpsnoop repository and usage documentation",
+          "title": "mcpsnoop project repository",
           "url": "https://github.com/kerlenton/mcpsnoop"
         },
         {
-          "kind": "independent",
-          "title": "LinuxLinks overview of mcpsnoop",
-          "url": "https://www.linuxlinks.com/mcpsnoop-transparent-proxy-terminal-interface/"
+          "kind": "primary",
+          "title": "mcpsnoop release history",
+          "url": "https://github.com/kerlenton/mcpsnoop/releases"
         }
       ],
       "upstreamSummary": "Transparent proxy and TUI for debugging MCP traffic",
+      "version": null
+    },
+    "brew:n8n-mcp": {
+      "agentSummary": "n8n-mcp exposes structured n8n node documentation, templates, validation, and optional workflow-management tools to compatible AI clients, helping automate workflow design while keeping deployment and credential boundaries explicit.",
+      "assessment": {
+        "alternatives": [
+          "n8n’s native editor and documentation",
+          "Direct n8n API scripts"
+        ],
+        "audiences": [
+          "n8n builders using compatible AI clients",
+          "Teams validating workflow configuration before deployment"
+        ],
+        "caveats": [
+          "Workflow-management features require API credentials",
+          "AI-generated workflow changes need review before production use"
+        ],
+        "complements": [
+          "n8n backups",
+          "Staging workflows",
+          "Secret management"
+        ],
+        "prerequisites": [
+          "An MCP-compatible client",
+          "An n8n environment for workflow-management features"
+        ],
+        "useCases": [
+          "Searching n8n node documentation from an agent",
+          "Validating workflow configurations and templates"
+        ]
+      },
+      "category": "ai",
+      "displayName": "n8n-mcp",
+      "docs": "https://github.com/czlonkowski/n8n-mcp#readme",
+      "homepage": "https://www.n8n-mcp.com/",
+      "id": "brew:n8n-mcp",
+      "installURL": "pkgmgrmgr://install?package=brew%3An8n-mcp",
+      "lastUpdatedAt": "2026-07-27T13:02:58Z",
+      "manager": "homebrew",
+      "repository": "https://github.com/czlonkowski/n8n-mcp",
+      "researchedAt": "2026-08-04T13:01:59Z",
+      "sources": [
+        {
+          "kind": "primary",
+          "title": "n8n-mcp project repository",
+          "url": "https://github.com/czlonkowski/n8n-mcp"
+        },
+        {
+          "kind": "primary",
+          "title": "n8n-mcp deployment guide",
+          "url": "https://github.com/czlonkowski/n8n-mcp/blob/main/docs/N8N_DEPLOYMENT.md"
+        }
+      ],
+      "upstreamSummary": "MCP for Claude Desktop, Claude Code, Windsurf, Cursor to build n8n workflows",
       "version": null
     },
     "brew:ooniprobe": {
@@ -1652,53 +1764,6 @@
         }
       ],
       "upstreamSummary": "MCP server and CLI for YouTube",
-      "version": null
-    },
-    "brew:zsh-patina": {
-      "agentSummary": "zsh-patina adds fast syntax highlighting to interactive Zsh sessions, offering prompt-time feedback without requiring a large shell framework or plugin stack.",
-      "assessment": {
-        "alternatives": [
-          "zsh-syntax-highlighting and fast-syntax-highlighting"
-        ],
-        "audiences": [
-          "Zsh users who want syntax feedback while typing commands"
-        ],
-        "caveats": [
-          "Shell plugins can affect startup time and may need ordering or theme adjustments alongside existing Zsh configuration"
-        ],
-        "complements": [
-          "A Zsh prompt, completion system, and plugin manager or shell configuration"
-        ],
-        "prerequisites": [
-          "A configured interactive Zsh shell"
-        ],
-        "useCases": [
-          "Highlighting commands, paths, and shell syntax in interactive Zsh sessions"
-        ]
-      },
-      "category": "developer-tools",
-      "displayName": "zsh-patina",
-      "docs": "https://github.com/michel-kraemer/zsh-patina",
-      "homepage": "https://github.com/michel-kraemer/zsh-patina",
-      "id": "brew:zsh-patina",
-      "installURL": "pkgmgrmgr://install?package=brew%3Azsh-patina",
-      "lastUpdatedAt": "2026-07-18T12:44:14Z",
-      "manager": "homebrew",
-      "repository": "https://github.com/michel-kraemer/zsh-patina",
-      "researchedAt": "2026-07-19T13:03:12Z",
-      "sources": [
-        {
-          "kind": "primary",
-          "title": "zsh-patina repository and setup documentation",
-          "url": "https://github.com/michel-kraemer/zsh-patina"
-        },
-        {
-          "kind": "primary",
-          "title": "zsh-patina 1.0.0 release",
-          "url": "https://github.com/michel-kraemer/zsh-patina/releases/tag/1.0.0"
-        }
-      ],
-      "upstreamSummary": "Blazingly fast Zsh syntax highlighter",
       "version": null
     },
     "npm:autoprefixer": {
