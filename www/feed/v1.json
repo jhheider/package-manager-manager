@@ -112,11 +112,11 @@
     {
       "id": "new-packages",
       "packageIDs": [
+        "brew:dnsglobe",
         "brew:mcpsnoop",
         "brew:apm",
         "brew:droast",
-        "brew:rapid-mlx",
-        "brew:dskditto"
+        "brew:rapid-mlx"
       ],
       "title": "New Packages",
       "type": "newPackages"
@@ -124,6 +124,7 @@
     {
       "id": "recently-updated",
       "packageIDs": [
+        "brew:dnsglobe",
         "brew:ooniprobe",
         "brew:cronboard",
         "brew:dtop",
@@ -134,8 +135,7 @@
         "brew:vfox",
         "brew:yutu",
         "brew:apm",
-        "brew:ty",
-        "brew:agent-browser"
+        "brew:ty"
       ],
       "title": "Recently Updated",
       "type": "recentlyUpdated"
@@ -536,7 +536,7 @@
       "type": "editorial"
     }
   ],
-  "generatedAt": "2026-08-04T13:01:59Z",
+  "generatedAt": "2026-08-05T13:03:25Z",
   "packages": {
     "brew:agent-browser": {
       "agentSummary": "Agent Browser is a command-line browser automation tool for AI agents, exposing structured navigation, inspection, interaction, and session controls through a compact terminal-first interface.",
@@ -792,6 +792,53 @@
       "upstreamSummary": "Secure runtime for JavaScript and TypeScript",
       "version": null
     },
+    "brew:dnsglobe": {
+      "agentSummary": "dnsglobe is a terminal TUI for checking DNS propagation across public resolvers, helping operators compare responses while diagnosing records, rollouts, and resolver-specific visibility.",
+      "assessment": {
+        "alternatives": [
+          "dig, nslookup, and web-based propagation checkers"
+        ],
+        "audiences": [
+          "DNS operators and developers managing domain changes"
+        ],
+        "caveats": [
+          "Resolver responses can differ because of caching, geography, and configured resolver behavior"
+        ],
+        "complements": [
+          "Authoritative DNS provider dashboards and command-line DNS tools"
+        ],
+        "prerequisites": [
+          "A terminal and a domain or record to query"
+        ],
+        "useCases": [
+          "Comparing DNS propagation across public resolvers after record updates"
+        ]
+      },
+      "category": null,
+      "displayName": "dnsglobe",
+      "docs": null,
+      "homepage": "https://github.com/514-labs/dnsglobe",
+      "id": "brew:dnsglobe",
+      "installURL": "pkgmgrmgr://install?package=brew%3Adnsglobe",
+      "lastUpdatedAt": "2026-08-04T07:04:35Z",
+      "manager": "homebrew",
+      "repository": "https://github.com/514-labs/dnsglobe",
+      "researchedAt": "2026-08-05T13:03:25Z",
+      "sources": [
+        {
+          "kind": "primary",
+          "title": "dnsglobe official repository",
+          "url": "https://github.com/514-labs/dnsglobe"
+        },
+        {
+          "kind": "primary",
+          "title": "dnsglobe v0.1.0 release",
+          "url": "https://github.com/514-labs/dnsglobe/releases/tag/v0.1.0"
+        }
+      ],
+      "upstreamSummary": "Global DNS propagation checker TUI",
+      "version": null
+    },
     "brew:dolt": {
       "agentSummary": "Dolt is a SQL database with Git-style versioning, enabling teams to branch, diff, merge, and collaborate on structured relational data.",
       "assessment": {
@@ -884,53 +931,6 @@
         }
       ],
       "upstreamSummary": "Opinionated Dockerfile linter",
-      "version": null
-    },
-    "brew:dskditto": {
-      "agentSummary": "dskDitto is a desktop and terminal duplicate-file finder that helps users identify repeated files, preview candidates, and reclaim storage after reviewing deletion choices carefully.",
-      "assessment": {
-        "alternatives": [
-          "fdupes, rmlint, or other duplicate-file scanners"
-        ],
-        "audiences": [
-          "People cleaning duplicate files from local storage"
-        ],
-        "caveats": [
-          "Duplicate detection needs human review because matching files can still be intentionally retained"
-        ],
-        "complements": [
-          "A current backup and a deliberate deletion review"
-        ],
-        "prerequisites": [
-          "Read access to the folders being scanned"
-        ],
-        "useCases": [
-          "Finding and reviewing duplicate files before deletion"
-        ]
-      },
-      "category": null,
-      "displayName": "dskditto",
-      "docs": null,
-      "homepage": "https://github.com/jdefrancesco/dskDitto",
-      "id": "brew:dskditto",
-      "installURL": "pkgmgrmgr://install?package=brew%3Adskditto",
-      "lastUpdatedAt": "2026-07-22T12:20:29Z",
-      "manager": "homebrew",
-      "repository": "https://github.com/jdefrancesco/dskDitto",
-      "researchedAt": "2026-07-23T13:04:07Z",
-      "sources": [
-        {
-          "kind": "primary",
-          "title": "dskDitto repository",
-          "url": "https://github.com/jdefrancesco/dskDitto"
-        },
-        {
-          "kind": "primary",
-          "title": "dskDitto v0.5.6 release",
-          "url": "https://github.com/jdefrancesco/dskDitto/releases/tag/v0.5.6"
-        }
-      ],
-      "upstreamSummary": "Ultra-fast duplicate file finder TUI/GUI",
       "version": null
     },
     "brew:dtop": {
@@ -2618,7 +2618,7 @@
   },
   "schemaVersion": 1,
   "source": {
-    "generatedAt": "2026-07-28T01:29:59Z",
+    "generatedAt": "2026-08-04T21:18:35Z",
     "url": "https://www.automicvault.com/db.json"
   }
 }
