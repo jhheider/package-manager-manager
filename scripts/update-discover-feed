@@ -167,7 +167,8 @@ def https_string(value: object) -> str | None:
 
 def normalize_catalog(raw: dict) -> tuple[str, dict[str, dict]]:
     try:
-        database = raw["sources"]["db"]
+        sources = raw.get("sources")
+        database = sources.get("db") if isinstance(sources, dict) and isinstance(sources.get("db"), dict) else raw
         generated_at = timestamp(parse_date(database["generated_at"]))
     except (KeyError, TypeError) as error:
         raise FeedError("catalog is missing sources.db.generated_at") from error
@@ -1526,7 +1527,7 @@ def fixture_catalog(at: datetime, count: int = 32) -> dict:
             "summary": f"Fixture tool {index}",
             "version": "1.0.0",
         }
-    return {"sources": {"db": {"generated_at": timestamp(at), "formulas": formulas, "casks": {}, "npms": {}}}}
+    return {"generated_at": timestamp(at), "formulas": formulas, "casks": {}, "npms": {}}
 
 
 def fixture_card() -> dict:
