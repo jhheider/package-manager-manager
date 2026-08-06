@@ -112,11 +112,10 @@
     {
       "id": "new-packages",
       "packageIDs": [
+        "brew:open-code-review",
         "brew:dnsglobe",
         "brew:mcpsnoop",
-        "brew:apm",
-        "brew:droast",
-        "brew:rapid-mlx"
+        "brew:apm"
       ],
       "title": "New Packages",
       "type": "newPackages"
@@ -124,6 +123,7 @@
     {
       "id": "recently-updated",
       "packageIDs": [
+        "brew:open-code-review",
         "brew:dnsglobe",
         "brew:ooniprobe",
         "brew:cronboard",
@@ -134,8 +134,7 @@
         "brew:rulesync",
         "brew:vfox",
         "brew:yutu",
-        "brew:apm",
-        "brew:ty"
+        "brew:apm"
       ],
       "title": "Recently Updated",
       "type": "recentlyUpdated"
@@ -536,7 +535,7 @@
       "type": "editorial"
     }
   ],
-  "generatedAt": "2026-08-05T13:03:25Z",
+  "generatedAt": "2026-08-06T13:01:35Z",
   "packages": {
     "brew:agent-browser": {
       "agentSummary": "Agent Browser is a command-line browser automation tool for AI agents, exposing structured navigation, inspection, interaction, and session controls through a compact terminal-first interface.",
@@ -884,53 +883,6 @@
         }
       ],
       "upstreamSummary": "Git for Data",
-      "version": null
-    },
-    "brew:droast": {
-      "agentSummary": "droast is an opinionated Dockerfile linter that inspects container build instructions, helping teams spot maintainability and style problems before images reach CI or production.",
-      "assessment": {
-        "alternatives": [
-          "Hadolint or a project's existing Dockerfile review rules"
-        ],
-        "audiences": [
-          "Teams maintaining Dockerfiles"
-        ],
-        "caveats": [
-          "Its opinionated rules may not match every established image convention"
-        ],
-        "complements": [
-          "Container image scanning and CI checks"
-        ],
-        "prerequisites": [
-          "A Dockerfile and a container build workflow"
-        ],
-        "useCases": [
-          "Reviewing Dockerfile conventions before image builds"
-        ]
-      },
-      "category": "developer-tools",
-      "displayName": "droast",
-      "docs": "https://github.com/immanuwell/dockerfile-roast#readme",
-      "homepage": "https://ewry.net/droast-dockerfile-linter/",
-      "id": "brew:droast",
-      "installURL": "pkgmgrmgr://install?package=brew%3Adroast",
-      "lastUpdatedAt": "2026-07-22T18:29:28Z",
-      "manager": "homebrew",
-      "repository": "https://github.com/immanuwell/dockerfile-roast",
-      "researchedAt": "2026-07-23T13:04:07Z",
-      "sources": [
-        {
-          "kind": "primary",
-          "title": "dockerfile-roast repository",
-          "url": "https://github.com/immanuwell/dockerfile-roast"
-        },
-        {
-          "kind": "primary",
-          "title": "dockerfile-roast 1.0.0 release",
-          "url": "https://github.com/immanuwell/dockerfile-roast/releases/tag/1.0.0"
-        }
-      ],
-      "upstreamSummary": "Opinionated Dockerfile linter",
       "version": null
     },
     "brew:dtop": {
@@ -1304,6 +1256,60 @@
       "upstreamSummary": "Network interference detection tool",
       "version": null
     },
+    "brew:open-code-review": {
+      "agentSummary": "AI-powered command-line code review tool that combines deterministic diff handling with configurable language models for focused, line-level feedback across local changes, commits, and branch ranges.",
+      "assessment": {
+        "alternatives": [
+          "General-purpose coding agents",
+          "Hosted pull-request review services"
+        ],
+        "audiences": [
+          "Developers reviewing Git changes",
+          "Teams integrating automated review into CI"
+        ],
+        "caveats": [
+          "Model calls can incur cost and expose code to the configured provider",
+          "Its precision-oriented benchmark tradeoff may reduce recall"
+        ],
+        "complements": [
+          "GitHub Actions or other CI systems",
+          "Repository-specific review rules"
+        ],
+        "prerequisites": [
+          "Git 2.41 or later",
+          "A configured compatible LLM provider unless using delegation mode"
+        ],
+        "useCases": [
+          "Review working-tree changes",
+          "Compare branches or inspect a single commit",
+          "Scan whole files when a diff is unavailable"
+        ]
+      },
+      "category": "developer-tools",
+      "displayName": "open-code-review",
+      "docs": "https://github.com/alibaba/open-code-review#readme",
+      "homepage": "https://github.com/alibaba/open-code-review",
+      "id": "brew:open-code-review",
+      "installURL": "pkgmgrmgr://install?package=brew%3Aopen-code-review",
+      "lastUpdatedAt": "2026-08-06T05:45:41Z",
+      "manager": "homebrew",
+      "repository": "https://github.com/alibaba/open-code-review",
+      "researchedAt": "2026-08-06T13:01:35Z",
+      "sources": [
+        {
+          "kind": "primary",
+          "title": "Open Code Review repository and usage guide",
+          "url": "https://github.com/alibaba/open-code-review"
+        },
+        {
+          "kind": "primary",
+          "title": "Open Code Review release history",
+          "url": "https://github.com/alibaba/open-code-review/releases"
+        }
+      ],
+      "upstreamSummary": "AI-powered code review tool with deterministic pipelines and an LLM agent",
+      "version": null
+    },
     "brew:oxfmt": {
       "agentSummary": "Oxfmt is a Rust-powered formatter for JavaScript and TypeScript projects, aiming for Prettier compatibility while reducing formatting time in large repositories and continuous-integration workflows.",
       "assessment": {
@@ -1405,53 +1411,6 @@
         }
       ],
       "upstreamSummary": "Fast, disk space efficient package manager",
-      "version": null
-    },
-    "brew:rapid-mlx": {
-      "agentSummary": "Rapid-MLX runs local language models on Apple Silicon through an OpenAI-compatible server, emphasizing fast inference, model tooling, and optional capabilities for vision, audio, and embeddings.",
-      "assessment": {
-        "alternatives": [
-          "Ollama, llama.cpp, or another local inference server"
-        ],
-        "audiences": [
-          "Apple Silicon users building local AI workflows"
-        ],
-        "caveats": [
-          "Model downloads and optional features can require substantial disk space and memory"
-        ],
-        "complements": [
-          "An OpenAI-compatible client and downloaded model weights"
-        ],
-        "prerequisites": [
-          "An Apple Silicon Mac and enough memory for a chosen model"
-        ],
-        "useCases": [
-          "Serving local models through an OpenAI-compatible API"
-        ]
-      },
-      "category": "ai",
-      "displayName": "rapid-mlx",
-      "docs": "https://rapidmlx.com/docs",
-      "homepage": "https://github.com/raullenchai/Rapid-MLX",
-      "id": "brew:rapid-mlx",
-      "installURL": "pkgmgrmgr://install?package=brew%3Arapid-mlx",
-      "lastUpdatedAt": "2026-07-22T17:13:46Z",
-      "manager": "homebrew",
-      "repository": "https://github.com/raullenchai/Rapid-MLX",
-      "researchedAt": "2026-07-23T13:04:07Z",
-      "sources": [
-        {
-          "kind": "primary",
-          "title": "Rapid-MLX repository",
-          "url": "https://github.com/raullenchai/Rapid-MLX"
-        },
-        {
-          "kind": "primary",
-          "title": "Rapid-MLX v0.6.51 release",
-          "url": "https://github.com/raullenchai/Rapid-MLX/releases/tag/v0.6.51"
-        }
-      ],
-      "upstreamSummary": "Fast local AI engine for Apple Silicon with an OpenAI-compatible API",
       "version": null
     },
     "brew:rulesync": {
@@ -2618,7 +2577,7 @@
   },
   "schemaVersion": 1,
   "source": {
-    "generatedAt": "2026-08-04T21:18:35Z",
+    "generatedAt": "2026-08-06T07:44:58Z",
     "url": "https://www.automicvault.com/db.json"
   }
 }
