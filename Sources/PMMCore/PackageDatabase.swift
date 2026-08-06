@@ -128,6 +128,7 @@ public struct PackageDatabase: Sendable {
         return map.reduce(into: [:]) { result, pair in
             guard let raw = pair.value as? [String: Any] else { return }
             result[pair.key] = PackageMetadata(
+                displayName: nonEmptyString(raw["displayName"]),
                 summary: nonEmptyString(raw["summary"]),
                 category: raw["category"] as? String,
                 homepage: nonEmptyString(raw["homepage"]),
@@ -150,7 +151,7 @@ public struct PackageDatabase: Sendable {
             ManagedPackage(
                 manager: manager,
                 identifier: "\(identifierPrefix):\(name)",
-                displayName: name,
+                displayName: metadata.displayName ?? name,
                 installedVersion: nil,
                 latestVersion: metadata.version,
                 summary: metadata.summary,

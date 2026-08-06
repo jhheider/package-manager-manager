@@ -883,6 +883,41 @@ private func attributeRunCount(in string: NSAttributedString) -> Int {
     #expect(mainWindowMacAppMark(for: .direct) == .text("DIY"))
 }
 
+@Test func appsSectionMergesCatalogCasksWithAssociatedDirectApps() throws {
+    let installed = ManagedPackage(
+        manager: .macApp,
+        identifier: "mac-app:org.videolan.vlc",
+        catalogIdentifier: "brew:cask:vlc",
+        displayName: "VLC",
+        installedVersion: "3.0",
+        latestVersion: nil,
+        bundleIdentifier: "org.videolan.vlc",
+        appProvenance: .direct
+    )
+    let catalog = ManagedPackage(
+        manager: .homebrew,
+        identifier: "brew:cask:vlc",
+        displayName: "VLC media player",
+        installedVersion: nil,
+        latestVersion: "3.1",
+        summary: "Multimedia player",
+        category: "media"
+    )
+    let index = PackageIndex(packages: [installed], catalogPackages: [catalog], newUpdatedLastClickedAt: nil)
+    #expect(index.packagesBySection[.apps]?.count == 1)
+    let package = try #require(index.packagesBySection[.apps]?.first)
+
+    #expect(package.identifier == installed.identifier)
+    #expect(package.catalogIdentifier == catalog.identifier)
+    #expect(package.manager == .macApp)
+    #expect(package.displayName == "VLC media player")
+    #expect(package.installedVersion == "3.0")
+    #expect(package.latestVersion == "3.1")
+    #expect(package.appProvenance == .direct)
+    #expect(MainWindowPackageURLRequest(identifier: "brew:cask:vlc")?.matches(package) == true)
+    #expect(mainWindowRegistryURLString(for: package) == "https://formulae.brew.sh/cask/vlc")
+}
+
 @Test func outdatedSectionSortsMostOutdatedFirst() {
     let packages = [
         package(.npm, "patch", installedVersion: "1.0.0", latestVersion: "1.0.5"),

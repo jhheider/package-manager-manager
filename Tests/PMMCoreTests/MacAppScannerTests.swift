@@ -94,6 +94,22 @@ struct MacAppScannerTests {
         #expect(try await fixture.packages(scanner: scanner, mode: .local).first?.installedVersion == "2.0.2")
     }
 
+    @Test func associatesDirectAppsWithTheirCatalogCask() async throws {
+        let fixture = try MacAppFixture()
+        defer { fixture.remove() }
+        _ = try fixture.app("VLC.app", id: "org.videolan.vlc", shortVersion: "3.0", build: "300")
+        let database = PackageDatabase(
+            casks: ["vlc": PackageMetadata(summary: "Multimedia player", category: "media", homepage: nil, version: "3.1")],
+            apps: ["org.videolan.vlc": MacAppCatalogEntry(bundleIdentifier: "org.videolan.vlc", cask: "vlc")]
+        )
+
+        let package = try #require(try await fixture.packages(scanner: fixture.scanner(), mode: .local, database: database).first)
+
+        #expect(package.identifier == "mac-app:org.videolan.vlc")
+        #expect(package.catalogIdentifier == "brew:cask:vlc")
+        #expect(package.summary == "Multimedia player")
+    }
+
     @Test func sparkleUsesBundleBuildForAdvisoryAndCachesTheCheck() async throws {
         let fixture = try MacAppFixture()
         defer { fixture.remove() }
@@ -255,8 +271,8 @@ private struct MacAppFixture {
         )
     }
 
-    func packages(scanner: PackageScanner, mode: PackageScanMode) async throws -> [ManagedPackage] {
-        for await result in scanner.results(for: [.macApp], database: PackageDatabase(), mode: mode) {
+    func packages(scanner: PackageScanner, mode: PackageScanMode, database: PackageDatabase = PackageDatabase()) async throws -> [ManagedPackage] {
+        for await result in scanner.results(for: [.macApp], database: database, mode: mode) {
             if let error = result.errors.first { throw FixtureError(message: error) }
             return result.packages
         }

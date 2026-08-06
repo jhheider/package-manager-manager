@@ -112,6 +112,7 @@ struct MacAppScanner: @unchecked Sendable {
                 packages.append(ManagedPackage(
                     manager: .macApp,
                     identifier: "mac-app:\(bundleIdentifier)",
+                    catalogIdentifier: catalog?.cask.map { "brew:cask:\($0)" },
                     displayName: displayName,
                     installedVersion: installedVersion,
                     latestVersion: nil,
@@ -337,6 +338,7 @@ private extension ManagedPackage {
         return ManagedPackage(
             manager: manager,
             identifier: identifier,
+            catalogIdentifier: catalogIdentifier,
             displayName: displayName,
             installedVersion: installedVersion,
             installedVersions: installedVersions,

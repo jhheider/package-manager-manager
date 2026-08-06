@@ -119,11 +119,13 @@ public struct PackageDossierClient: Sendable {
     }
 
     public static func url(for package: ManagedPackage, baseURL: URL = URL(string: "https://automicvault.com")!) -> URL? {
-        guard let provider = provider(for: package) else { return nil }
+        let catalogIdentifier = package.catalogIdentifier
+        guard let provider = catalogIdentifier?.hasPrefix("brew:cask:") == true ? "brew" : provider(for: package) else { return nil }
         var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)!
         var allowed = CharacterSet.urlPathAllowed
         allowed.remove(charactersIn: "/")
-        let encodedName = package.packageToken.addingPercentEncoding(withAllowedCharacters: allowed) ?? package.packageToken
+        let name = catalogIdentifier?.split(separator: ":").last.map(String.init) ?? package.packageToken
+        let encodedName = name.addingPercentEncoding(withAllowedCharacters: allowed) ?? name
         components.percentEncodedPath = "/pkg/\(provider)/\(encodedName).json"
         return components.url
     }

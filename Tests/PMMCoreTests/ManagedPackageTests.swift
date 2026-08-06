@@ -26,6 +26,7 @@ import Testing
     let encoded = try JSONSerialization.jsonObject(with: JSONEncoder().encode(ManagedPackage(
         manager: .npm,
         identifier: "npm:typescript",
+        catalogIdentifier: "brew:cask:typescript",
         displayName: "typescript",
         installedVersion: "5.9.2",
         latestVersion: nil
@@ -34,6 +35,7 @@ import Testing
     #expect(encoded?["identifier"] as? String == "npm:typescript")
     #expect(encoded?["name"] as? String == "npm:typescript")
     #expect(encoded?["displayName"] as? String == "typescript")
+    #expect(encoded?["catalogIdentifier"] as? String == "brew:cask:typescript")
 }
 
 @Test func packageNormalizesRustupToolchainFieldsFromCachedJSON() throws {

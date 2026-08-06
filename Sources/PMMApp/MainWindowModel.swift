@@ -306,7 +306,8 @@ struct MainWindowPackageURLRequest: Equatable {
     }
 
     func matches(_ package: ManagedPackage) -> Bool {
-        package.manager == manager && (package.identifier == identifier || package.packageToken == name)
+        package.catalogIdentifier == identifier
+            || (package.manager == manager && (package.identifier == identifier || package.packageToken == name))
     }
 }
 
@@ -370,6 +371,9 @@ func mainWindowLinks(for package: ManagedPackage?) -> [MainWindowPackageLink] {
 }
 
 func mainWindowRegistryURLString(for package: ManagedPackage) -> String? {
+    if let identifier = package.catalogIdentifier, identifier.hasPrefix("brew:cask:") {
+        return "https://formulae.brew.sh/cask/\(identifier.trimmingPrefix("brew:cask:"))"
+    }
     switch package.manager {
     case .homebrew:
         let kind = package.identifier.hasPrefix("brew:cask:") ? "cask" : "formula"
@@ -1246,7 +1250,10 @@ final class MainWindowModel: NSObject, ObservableObject {
     }
 
     func canInstall(_ package: ManagedPackage) -> Bool {
-        !isRemoteSelection && PackageInstaller.supports(package) && !packages.contains { $0.identifier == package.identifier }
+        let identifier = package.catalogIdentifier ?? package.identifier
+        return !isRemoteSelection && PackageInstaller.supports(package) && !packages.contains {
+            $0.identifier == identifier || $0.catalogIdentifier == identifier || $0.identifier == package.identifier
+        }
     }
 
     private var isPackageActionRunning: Bool {
@@ -1333,6 +1340,7 @@ final class MainWindowModel: NSObject, ObservableObject {
     private func matchesSearch(_ package: ManagedPackage, query: String) -> Bool {
         package.displayName.localizedCaseInsensitiveContains(query)
             || package.identifier.localizedCaseInsensitiveContains(query)
+            || (package.catalogIdentifier?.localizedCaseInsensitiveContains(query) == true)
             || (package.summary?.localizedCaseInsensitiveContains(query) == true)
             || package.executableNames.contains { $0.localizedCaseInsensitiveContains(query) }
             || (package.binaryPath?.localizedCaseInsensitiveContains(query) == true)
@@ -1621,6 +1629,10 @@ struct PackageIndex: Sendable {
         for package in packages where installedByIdentifier[package.identifier] == nil {
             installedByIdentifier[package.identifier] = package
         }
+        for package in packages {
+            guard let identifier = package.catalogIdentifier, installedByIdentifier[identifier] == nil else { continue }
+            installedByIdentifier[identifier] = package
+        }
         let catalogPackages = catalogPackages.map { catalogPackage in
             guard let installedPackage = installedByIdentifier[catalogPackage.identifier] else { return catalogPackage }
             return Self.catalogPackage(catalogPackage, withInstalledStateFrom: installedPackage)
@@ -1629,13 +1641,19 @@ struct PackageIndex: Sendable {
             .filter { $0.pulseKind == "new" }
             .sorted(by: Self.newestUpdatedFirst)
 
+        let catalogApps = catalogPackages.filter { ($0.catalogIdentifier ?? $0.identifier).hasPrefix("brew:cask:") }
+        let representedAppIdentifiers = Set(catalogApps.map { $0.catalogIdentifier ?? $0.identifier })
+        let unmatchedApps = packages.filter {
+            mainWindowManagerSection(for: $0) == .apps
+                && !representedAppIdentifiers.contains($0.catalogIdentifier ?? $0.identifier)
+        }
         var bySection: [MainWindowSection: [ManagedPackage]] = [
             .installed: packages.sorted(by: Self.alphabetical),
             .outdated: packages.filter(\.isOutdated).sorted(by: Self.mostOutdatedFirst),
             .newUpdated: newUpdated,
             .rust: packages.filter { mainWindowManagerSection(for: $0) == .rust }.sorted(by: Self.alphabetical),
             .homebrew: packages.filter { $0.manager == .homebrew }.sorted(by: Self.alphabetical),
-            .apps: packages.filter { mainWindowManagerSection(for: $0) == .apps }.sorted(by: Self.alphabetical),
+            .apps: (catalogApps + unmatchedApps).sorted(by: Self.alphabetical),
             .javascript: packages.filter { mainWindowManagerSection(for: $0) == .javascript }.sorted(by: Self.alphabetical),
             .python: packages.filter { mainWindowManagerSection(for: $0) == .python }.sorted(by: Self.alphabetical),
             .skills: packages.filter { $0.manager == .skills }.sorted(by: Self.alphabetical),
@@ -1667,9 +1685,11 @@ struct PackageIndex: Sendable {
     }
 
     private static func catalogPackage(_ catalogPackage: ManagedPackage, withInstalledStateFrom installedPackage: ManagedPackage) -> ManagedPackage {
-        ManagedPackage(
-            manager: catalogPackage.manager,
-            identifier: catalogPackage.identifier,
+        let associatedDirectApp = installedPackage.catalogIdentifier == catalogPackage.identifier
+        return ManagedPackage(
+            manager: associatedDirectApp ? installedPackage.manager : catalogPackage.manager,
+            identifier: associatedDirectApp ? installedPackage.identifier : catalogPackage.identifier,
+            catalogIdentifier: associatedDirectApp ? catalogPackage.identifier : installedPackage.catalogIdentifier,
             displayName: catalogPackage.displayName,
             installedVersion: installedPackage.installedVersion,
             installedVersions: installedPackage.installedVersions,
@@ -1683,7 +1703,13 @@ struct PackageIndex: Sendable {
             pulseKind: catalogPackage.pulseKind,
             installLocation: installedPackage.installLocation,
             binaryPath: installedPackage.binaryPath,
-            executableNames: installedPackage.executableNames
+            executableNames: installedPackage.executableNames,
+            bundleIdentifier: installedPackage.bundleIdentifier,
+            bundleVersion: installedPackage.bundleVersion,
+            appProvenance: installedPackage.appProvenance,
+            versionSource: installedPackage.versionSource,
+            advisoryURL: installedPackage.advisoryURL,
+            versionCheckedAt: installedPackage.versionCheckedAt
         )
     }
 

@@ -123,6 +123,7 @@ public struct ManagedPackage: Codable, Equatable, Identifiable, Sendable {
 
     public let manager: PackageManagerKind
     public let identifier: String
+    public let catalogIdentifier: String?
     public let displayName: String
     public let installedVersion: String?
     public let installedVersions: [String]
@@ -149,6 +150,7 @@ public struct ManagedPackage: Codable, Equatable, Identifiable, Sendable {
     public init(
         manager: PackageManagerKind,
         name: String,
+        catalogIdentifier: String? = nil,
         displayName: String? = nil,
         installedVersion: String?,
         installedVersions: [String] = [],
@@ -173,6 +175,7 @@ public struct ManagedPackage: Codable, Equatable, Identifiable, Sendable {
         self.init(
             manager: manager,
             identifier: name,
+            catalogIdentifier: catalogIdentifier,
             displayName: displayName,
             installedVersion: installedVersion,
             installedVersions: installedVersions,
@@ -199,6 +202,7 @@ public struct ManagedPackage: Codable, Equatable, Identifiable, Sendable {
     public init(
         manager: PackageManagerKind,
         identifier: String,
+        catalogIdentifier: String? = nil,
         displayName: String? = nil,
         installedVersion: String?,
         installedVersions: [String] = [],
@@ -222,6 +226,7 @@ public struct ManagedPackage: Codable, Equatable, Identifiable, Sendable {
     ) {
         self.manager = manager
         self.identifier = identifier
+        self.catalogIdentifier = catalogIdentifier
         self.displayName = Self.normalizedDisplayName(displayName ?? identifier, manager: manager, identifier: identifier)
         self.installedVersion = installedVersion
         self.installedVersions = Self.normalizedVersions(installedVersions, including: installedVersion)
@@ -256,6 +261,7 @@ public struct ManagedPackage: Codable, Equatable, Identifiable, Sendable {
         self.init(
             manager: manager,
             identifier: identifier,
+            catalogIdentifier: try container.decodeIfPresent(String.self, forKey: .catalogIdentifier),
             displayName: displayName,
             installedVersion: installedVersion,
             installedVersions: installedVersions,
@@ -284,6 +290,7 @@ public struct ManagedPackage: Codable, Equatable, Identifiable, Sendable {
         try container.encode(manager, forKey: .manager)
         try container.encode(identifier, forKey: .identifier)
         try container.encode(identifier, forKey: .name)
+        try container.encodeIfPresent(catalogIdentifier, forKey: .catalogIdentifier)
         try container.encode(displayName, forKey: .displayName)
         try container.encodeIfPresent(installedVersion, forKey: .installedVersion)
         try container.encode(installedVersions, forKey: .installedVersions)
@@ -330,7 +337,8 @@ public struct ManagedPackage: Codable, Equatable, Identifiable, Sendable {
         return ManagedPackage(
             manager: manager,
             identifier: identifier,
-            displayName: displayName,
+            catalogIdentifier: catalogIdentifier,
+            displayName: metadata.displayName ?? displayName,
             installedVersion: installedVersion,
             installedVersions: installedVersions,
             latestVersion: latestVersion ?? metadata.version,
@@ -359,6 +367,7 @@ public struct ManagedPackage: Codable, Equatable, Identifiable, Sendable {
             return ManagedPackage(
                 manager: newest.manager,
                 identifier: newest.identifier,
+                catalogIdentifier: newest.catalogIdentifier,
                 displayName: newest.displayName,
                 installedVersion: newest.installedVersion,
                 installedVersions: normalizedVersions(group.flatMap(\.installedVersions), including: newest.installedVersion),
@@ -420,6 +429,7 @@ public struct ManagedPackage: Codable, Equatable, Identifiable, Sendable {
     private enum CodingKeys: String, CodingKey {
         case manager
         case identifier
+        case catalogIdentifier
         case name
         case displayName
         case installedVersion
@@ -470,6 +480,7 @@ public struct PackageInventory: Codable, Equatable, Sendable {
 }
 
 public struct PackageMetadata: Equatable, Sendable {
+    public let displayName: String?
     public let summary: String?
     public let category: String?
     public let homepage: String?
@@ -479,7 +490,8 @@ public struct PackageMetadata: Equatable, Sendable {
     public let lastUpdatedAt: String?
     public let pulseKind: String?
 
-    public init(summary: String?, category: String?, homepage: String?, docs: String? = nil, repo: String? = nil, version: String?, lastUpdatedAt: String? = nil, pulseKind: String? = nil) {
+    public init(displayName: String? = nil, summary: String?, category: String?, homepage: String?, docs: String? = nil, repo: String? = nil, version: String?, lastUpdatedAt: String? = nil, pulseKind: String? = nil) {
+        self.displayName = displayName
         self.summary = summary
         self.category = category
         self.homepage = homepage

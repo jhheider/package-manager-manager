@@ -194,7 +194,7 @@ def normalize_catalog(raw: dict) -> tuple[str, dict[str, dict]]:
                 updated = None
             packages[identifier] = {
                 "category": first_string(metadata.get("category")),
-                "displayName": name,
+                "displayName": first_string(metadata.get("displayName")) or name,
                 "docs": https_string(metadata.get("upstreamDocs")) or https_string(metadata.get("docs")),
                 "homepage": https_string(metadata.get("homepage")),
                 "id": identifier,
@@ -1592,6 +1592,13 @@ def fixture_response(request: dict) -> dict:
 
 
 def self_test() -> None:
+    _, normalized = normalize_catalog({
+        "generated_at": "2026-07-16T12:00:00Z",
+        "formulas": {},
+        "casks": {"vlc": {"displayName": "VLC media player", "category": "media"}},
+        "npms": {},
+    })
+    assert normalized["brew:cask:vlc"]["displayName"] == "VLC media player"
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
         (root / "www/feed").mkdir(parents=True)

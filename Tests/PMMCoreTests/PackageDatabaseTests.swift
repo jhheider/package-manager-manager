@@ -99,7 +99,7 @@ import Testing
             "git": PackageMetadata(summary: "Distributed revision control", category: "developer-tools", homepage: nil, version: "2.50.0")
         ],
         casks: [
-            "git": PackageMetadata(summary: nil, category: "productivity", homepage: nil, version: nil)
+            "git": PackageMetadata(displayName: "Git GUI", summary: nil, category: "productivity", homepage: nil, version: nil)
         ],
         crates: [
             "ripgrep": PackageMetadata(summary: "Search tool", category: "developer-tools", homepage: nil, version: "14.1.1")
@@ -109,11 +109,11 @@ import Testing
         ]
     )
 
-    #expect(db.catalogPackages.map(\.identifier) == ["cargo:ripgrep", "brew:cask:git", "brew:git", "npm:typescript"])
-    #expect(db.catalogPackages.map(\.displayName) == ["ripgrep", "git", "git", "typescript"])
+    #expect(db.catalogPackages.map(\.identifier) == ["cargo:ripgrep", "brew:git", "brew:cask:git", "npm:typescript"])
+    #expect(db.catalogPackages.map(\.displayName) == ["ripgrep", "git", "Git GUI", "typescript"])
     #expect(db.catalogPackages.map(\.installedVersion) == [nil, nil, nil, nil])
-    #expect(db.catalogPackages.map(\.latestVersion) == ["14.1.1", nil, "2.50.0", "5.9.2"])
-    #expect(db.catalogPackages.map(\.summary) == ["Search tool", nil, "Distributed revision control", "Typed JavaScript"])
+    #expect(db.catalogPackages.map(\.latestVersion) == ["14.1.1", "2.50.0", nil, "5.9.2"])
+    #expect(db.catalogPackages.map(\.summary) == ["Search tool", "Distributed revision control", nil, "Typed JavaScript"])
     #expect(Set(db.catalogPackages.compactMap(\.category)) == ["developer-tools", "language-runtime", "productivity"])
 }
 
