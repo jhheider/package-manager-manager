@@ -2,54 +2,64 @@
   "content": [
     {
       "artwork": {
-        "alt": "A glowing agent node connects a terminal-like panel to several abstract tool nodes through blue and amber data streams, with a magnifying lens inspecting one stream.",
+        "alt": "An abstract dark-blue globe linked by cyan resolver arcs, suggesting DNS propagation across a global network.",
         "attribution": "Generated with OpenAI image generation for Package Manager Manager.",
         "boxColors": {
-          "backgroundEnd": "#073D57",
-          "backgroundStart": "#01051B",
+          "backgroundEnd": "#31206A",
+          "backgroundStart": "#07162F",
           "foreground": "#FFFFFF"
         },
-        "license": "OpenAI terms of use",
-        "path": "feed/assets/mcpsnoop-tool-traffic-2026-08-04.png"
+        "license": "OpenAI generated asset; use with this feed.",
+        "path": "feed/assets/dnsglobe-global-propagation-2026-08-08.png"
       },
-      "body": "## The gap between a configured tool and a real call\n\nA Model Context Protocol integration can fail long before anyone sees a clear error. A client may not discover a capability, choose a different tool, send arguments that do not match the server’s expectations, or wait on a response that never arrives. Configuration files and server logs answer only part of that story. **mcpsnoop** takes a more direct approach: it sits in the actual path between a client and an MCP server, then presents the JSON-RPC exchange in a terminal interface. Its upstream documentation describes both a stdio shim and a reverse-proxy mode for streamable HTTP, so it is aimed at the traffic a real client sends rather than a separate test client’s session.\n\nThat makes it a useful debugging boundary. The project’s release history shows rapid 2026 development, and its early v0.8.0 release makes it a genuinely newer tool to evaluate cautiously. The right first use is a disposable client and a non-production server: wrap the existing launch command, reproduce one narrow workflow, and compare what the client intended with what the server received. Start with observation, not a new platform or a fleet-wide policy.\n\n## Observation needs data discipline\n\nTool calls can carry user prompts, file paths, API arguments, tokens, and private business context. A traffic viewer is therefore not automatically safe merely because it helps debug a protocol. mcpsnoop documents key, value, and JSON-path redaction controls, but also describes redaction as best effort. That is the honest tradeoff: redaction reduces exposure, while a capture still deserves the same retention, access, and sharing rules as application logs.\n\nBefore recording a session, decide what may enter it and where the result may go. Use test accounts, synthetic inputs, and an isolated state directory where possible. Review exported traces before attaching them to an issue. Keep the proxy local or inside the intended network boundary, and avoid treating a successful trace as permission to replay a consequential action. The important question is not only *can we see this call?* but also *who can now read it?*\n\nmcpsnoop can also make a test more specific. Its `check` command can fail on protocol errors, invalid frames, warnings, or selected conditions such as hung calls and tool-definition drift. That is valuable when a team has a known integration contract. It is less useful as a generic quality score: a passing capture verifies the observed run, not every possible prompt, server version, or authorization outcome. Keep ordinary integration tests and server-side validation in place.\n\n## n8n-mcp shows why boundaries matter\n\n**n8n-mcp** is a practical companion because it gives compatible AI clients structured access to n8n documentation, node data, templates, and validation; its optional management functions can also work with a configured n8n API. That combination makes an MCP conversation more than a read-only lookup. A wrong tool call can become a workflow change, and a broadly scoped credential can turn a helpful assistant into an overpowered operator.\n\nThe project’s own guidance recommends copying workflows, testing in development, exporting backups, and validating before deployment. Those are sound boundaries even when mcpsnoop makes the exchange legible. Trace the client against a sandbox first, verify which tools the server advertises, and make credentials narrow enough that a capture or configuration mistake cannot modify production. The goal is not to distrust automation; it is to make **intent, authority, and evidence** line up.\n\n## A broader agent system raises the stakes\n\n**LibreFang** illustrates the other end of the scale. Its documentation describes a self-hostable agent operating system with model drivers, channel adapters, MCP and A2A support, scheduling, RBAC, and audit logging. A system with that reach can be appropriate for a team that genuinely needs lifecycle management across agents and integrations. It also has a larger deployment, security, and incident-response surface than a focused traffic inspector.\n\nThat contrast is useful. mcpsnoop can answer whether a specific client-server exchange is shaped as expected; n8n-mcp can expose a rich workflow-building surface; LibreFang can organize larger agent operations. None substitutes for a threat model or an approval boundary. If a call can spend money, publish content, alter workflow state, or reach sensitive data, use explicit authorization and an environment designed for that consequence.\n\nA compact adoption path is enough:\n\n- capture one harmless MCP session with redaction enabled;\n- compare the trace with server logs and expected tool definitions;\n- turn only stable, intentional conditions into CI checks; and\n- expand permissions only after the observation path and rollback process are understood.\n\nVisibility is most valuable when it reduces guesswork without quietly widening access. mcpsnoop earns attention as a small, current tool for making that visible layer easier to inspect.",
-      "deck": "A young MCP traffic inspector can make agent integrations observable—if teams treat captured data and proxy placement as real operational concerns.",
-      "id": "editorial:2026-08-04:making-mcp-tool-traffic-visible-with-mcpsnoop",
-      "primaryPackageID": "brew:mcpsnoop",
-      "publishedAt": "2026-08-04T13:01:59Z",
+      "body": "DNS changes have an awkward failure mode: the authoritative configuration can be correct while the internet still appears inconsistent. A resolver may hold an earlier answer until its cache expires; a geographically distributed service may legitimately reply differently; and a deployment team can waste time treating those states as the same incident. **dnsglobe** is a terminal tool built to make that comparison visible instead of relying on a succession of one-off lookups.\n\n## A short, purpose-built release trail\n\nThe project’s public GitHub release history begins in 2026, with tagged releases progressing through 0.5.0 in August. Its README describes a Rust terminal UI that queries 34 public resolvers in parallel, then groups matching answers rather than calling every differing IP a failure. That is a useful framing for domains behind round-robin or geographically aware DNS: agreement is about the record set and the resolver’s point of view, not a promise that every client receives one address.\n\nThe interface is deliberately operational. It presents response state, latency, TTL, and a propagation gauge; on wide terminals it adds a map or globe. A non-interactive `--once` mode prints results and exits, which makes the tool more suitable for a scripted check than an interactive dashboard alone. It also documents EDNS Client Subnet support for comparing how a GeoDNS zone answers for specified client networks.\n\n## What the comparison actually tells you\n\nThe strongest use is after a controlled change: update a record, preserve the change time and intended answer, then compare a spread of public resolvers. A majority result can show that a change is moving through caches; a clustered minority can point to a resolver family or region worth checking. The tool also records failures and stale answers rather than silently collapsing them into a single verdict.\n\nThat visibility has limits. Public resolvers are samples, and anycast means the answering point can vary with the network path. A clean display does not validate an authoritative zone, prove client behavior inside a corporate network, or replace monitoring from the locations that matter to an application. Keep authoritative-provider tools, application probes, and ordinary DNS utilities in the workflow.\n\n## A disciplined rollout check\n\nUse the output as a checkpoint rather than a green light. Before changing DNS, note the expected record values and TTL. After publishing, query the authoritative nameservers directly, then use a resolver comparison to observe cache turnover. If a result is surprising, repeat it after the relevant TTL and test from a real application region. This sequence separates three questions that are often mixed together: whether the zone is correct, whether recursive caches have updated, and whether a user can reach the service. dnsglobe helps most with the middle question. Its world-oriented display adds context, but the response table and a saved `--once` result are the more durable evidence for a change record or incident note.\n\n## A compact field kit, not a platform\n\ndnsglobe pairs naturally with `dig` for a precise authoritative query and with deployment records that explain when a change should have taken effect. Its documented configuration can add or replace resolvers, helpful when an organization needs to include internal infrastructure. It should be treated as an investigation instrument: run it against a known domain, capture the result, and make the next decision from the evidence rather than the visualization alone.\n\nTwo nearby tools illustrate the distinction between focused utilities and broader adoption decisions. **usbtree** is likewise a local diagnostic TUI, but for USB topology and, on Linux, activity metrics. **HTTPX2** is a young Pydantic HTTP-client project intended for application code; its documentation and source are worth following, but a team should verify its API and maintenance posture before replacing an established production client.\n\nFor operators who already use terminal tooling during a DNS rollout, dnsglobe offers a clear new option: compare several resolver views in one place, use `--once` when an artifact is more valuable than a UI, and retain independent checks for the authoritative and client-side parts of the story.",
+      "deck": "A focused new terminal tool for comparing DNS answers across public resolvers while investigating a rollout.",
+      "id": "editorial:2026-08-08:dnsglobe-global-dns-propagation-in-the-terminal",
+      "primaryPackageID": "brew:dnsglobe",
+      "publishedAt": "2026-08-08T13:01:59Z",
       "relatedPackageIDs": [
-        "brew:mcpsnoop",
-        "brew:n8n-mcp",
-        "brew:librefang"
+        "brew:dnsglobe",
+        "brew:usbtree",
+        "brew:httpx2"
       ],
       "selection": {
-        "firstStableReleaseAt": "2026-07-09T12:00:00Z",
-        "firstStableReleaseSourceURL": "https://github.com/kerlenton/mcpsnoop/releases/tag/v0.8.0",
+        "firstStableReleaseAt": "2026-06-18T14:13:17Z",
+        "firstStableReleaseSourceURL": "https://github.com/514-labs/dnsglobe/releases",
         "rationale": "newer"
       },
       "sources": [
         {
           "kind": "primary",
-          "title": "mcpsnoop project repository",
-          "url": "https://github.com/kerlenton/mcpsnoop"
+          "title": "dnsglobe README",
+          "url": "https://github.com/514-labs/dnsglobe"
         },
         {
           "kind": "primary",
-          "title": "mcpsnoop release history",
-          "url": "https://github.com/kerlenton/mcpsnoop/releases"
+          "title": "dnsglobe releases",
+          "url": "https://github.com/514-labs/dnsglobe/releases"
         },
         {
           "kind": "primary",
-          "title": "n8n-mcp project repository",
-          "url": "https://github.com/czlonkowski/n8n-mcp"
+          "title": "HTTPX2 documentation",
+          "url": "https://httpx2.pydantic.dev/"
         },
         {
           "kind": "primary",
-          "title": "LibreFang documentation",
-          "url": "https://docs.librefang.ai/"
+          "title": "HTTPX2 source repository",
+          "url": "https://github.com/pydantic/httpx2"
+        },
+        {
+          "kind": "primary",
+          "title": "usbtree README",
+          "url": "https://github.com/gnomeria/usbtree"
+        },
+        {
+          "kind": "primary",
+          "title": "usbtree releases",
+          "url": "https://github.com/gnomeria/usbtree/releases"
         }
       ],
-      "title": "mcpsnoop: Inspect the Tool Calls That Actually Happen",
+      "title": "dnsglobe: Watching DNS Propagation from the Terminal",
       "type": "editorial"
     },
     {
@@ -112,10 +122,11 @@
     {
       "id": "new-packages",
       "packageIDs": [
-        "brew:open-code-review",
         "brew:dnsglobe",
-        "brew:mcpsnoop",
-        "brew:apm"
+        "brew:httpx2",
+        "brew:usbtree",
+        "brew:open-code-review",
+        "brew:mcpsnoop"
       ],
       "title": "New Packages",
       "type": "newPackages"
@@ -123,8 +134,10 @@
     {
       "id": "recently-updated",
       "packageIDs": [
-        "brew:open-code-review",
         "brew:dnsglobe",
+        "brew:httpx2",
+        "brew:usbtree",
+        "brew:open-code-review",
         "brew:ooniprobe",
         "brew:cronboard",
         "brew:dtop",
@@ -132,12 +145,62 @@
         "brew:librefang",
         "brew:n8n-mcp",
         "brew:rulesync",
-        "brew:vfox",
-        "brew:yutu",
-        "brew:apm"
+        "brew:vfox"
       ],
       "title": "Recently Updated",
       "type": "recentlyUpdated"
+    },
+    {
+      "artwork": {
+        "alt": "A glowing agent node connects a terminal-like panel to several abstract tool nodes through blue and amber data streams, with a magnifying lens inspecting one stream.",
+        "attribution": "Generated with OpenAI image generation for Package Manager Manager.",
+        "boxColors": {
+          "backgroundEnd": "#073D57",
+          "backgroundStart": "#01051B",
+          "foreground": "#FFFFFF"
+        },
+        "license": "OpenAI terms of use",
+        "path": "feed/assets/mcpsnoop-tool-traffic-2026-08-04.png"
+      },
+      "body": "## The gap between a configured tool and a real call\n\nA Model Context Protocol integration can fail long before anyone sees a clear error. A client may not discover a capability, choose a different tool, send arguments that do not match the server’s expectations, or wait on a response that never arrives. Configuration files and server logs answer only part of that story. **mcpsnoop** takes a more direct approach: it sits in the actual path between a client and an MCP server, then presents the JSON-RPC exchange in a terminal interface. Its upstream documentation describes both a stdio shim and a reverse-proxy mode for streamable HTTP, so it is aimed at the traffic a real client sends rather than a separate test client’s session.\n\nThat makes it a useful debugging boundary. The project’s release history shows rapid 2026 development, and its early v0.8.0 release makes it a genuinely newer tool to evaluate cautiously. The right first use is a disposable client and a non-production server: wrap the existing launch command, reproduce one narrow workflow, and compare what the client intended with what the server received. Start with observation, not a new platform or a fleet-wide policy.\n\n## Observation needs data discipline\n\nTool calls can carry user prompts, file paths, API arguments, tokens, and private business context. A traffic viewer is therefore not automatically safe merely because it helps debug a protocol. mcpsnoop documents key, value, and JSON-path redaction controls, but also describes redaction as best effort. That is the honest tradeoff: redaction reduces exposure, while a capture still deserves the same retention, access, and sharing rules as application logs.\n\nBefore recording a session, decide what may enter it and where the result may go. Use test accounts, synthetic inputs, and an isolated state directory where possible. Review exported traces before attaching them to an issue. Keep the proxy local or inside the intended network boundary, and avoid treating a successful trace as permission to replay a consequential action. The important question is not only *can we see this call?* but also *who can now read it?*\n\nmcpsnoop can also make a test more specific. Its `check` command can fail on protocol errors, invalid frames, warnings, or selected conditions such as hung calls and tool-definition drift. That is valuable when a team has a known integration contract. It is less useful as a generic quality score: a passing capture verifies the observed run, not every possible prompt, server version, or authorization outcome. Keep ordinary integration tests and server-side validation in place.\n\n## n8n-mcp shows why boundaries matter\n\n**n8n-mcp** is a practical companion because it gives compatible AI clients structured access to n8n documentation, node data, templates, and validation; its optional management functions can also work with a configured n8n API. That combination makes an MCP conversation more than a read-only lookup. A wrong tool call can become a workflow change, and a broadly scoped credential can turn a helpful assistant into an overpowered operator.\n\nThe project’s own guidance recommends copying workflows, testing in development, exporting backups, and validating before deployment. Those are sound boundaries even when mcpsnoop makes the exchange legible. Trace the client against a sandbox first, verify which tools the server advertises, and make credentials narrow enough that a capture or configuration mistake cannot modify production. The goal is not to distrust automation; it is to make **intent, authority, and evidence** line up.\n\n## A broader agent system raises the stakes\n\n**LibreFang** illustrates the other end of the scale. Its documentation describes a self-hostable agent operating system with model drivers, channel adapters, MCP and A2A support, scheduling, RBAC, and audit logging. A system with that reach can be appropriate for a team that genuinely needs lifecycle management across agents and integrations. It also has a larger deployment, security, and incident-response surface than a focused traffic inspector.\n\nThat contrast is useful. mcpsnoop can answer whether a specific client-server exchange is shaped as expected; n8n-mcp can expose a rich workflow-building surface; LibreFang can organize larger agent operations. None substitutes for a threat model or an approval boundary. If a call can spend money, publish content, alter workflow state, or reach sensitive data, use explicit authorization and an environment designed for that consequence.\n\nA compact adoption path is enough:\n\n- capture one harmless MCP session with redaction enabled;\n- compare the trace with server logs and expected tool definitions;\n- turn only stable, intentional conditions into CI checks; and\n- expand permissions only after the observation path and rollback process are understood.\n\nVisibility is most valuable when it reduces guesswork without quietly widening access. mcpsnoop earns attention as a small, current tool for making that visible layer easier to inspect.",
+      "deck": "A young MCP traffic inspector can make agent integrations observable—if teams treat captured data and proxy placement as real operational concerns.",
+      "id": "editorial:2026-08-04:making-mcp-tool-traffic-visible-with-mcpsnoop",
+      "primaryPackageID": "brew:mcpsnoop",
+      "publishedAt": "2026-08-04T13:01:59Z",
+      "relatedPackageIDs": [
+        "brew:mcpsnoop",
+        "brew:n8n-mcp",
+        "brew:librefang"
+      ],
+      "selection": {
+        "firstStableReleaseAt": "2026-07-09T12:00:00Z",
+        "firstStableReleaseSourceURL": "https://github.com/kerlenton/mcpsnoop/releases/tag/v0.8.0",
+        "rationale": "newer"
+      },
+      "sources": [
+        {
+          "kind": "primary",
+          "title": "mcpsnoop project repository",
+          "url": "https://github.com/kerlenton/mcpsnoop"
+        },
+        {
+          "kind": "primary",
+          "title": "mcpsnoop release history",
+          "url": "https://github.com/kerlenton/mcpsnoop/releases"
+        },
+        {
+          "kind": "primary",
+          "title": "n8n-mcp project repository",
+          "url": "https://github.com/czlonkowski/n8n-mcp"
+        },
+        {
+          "kind": "primary",
+          "title": "LibreFang documentation",
+          "url": "https://docs.librefang.ai/"
+        }
+      ],
+      "title": "mcpsnoop: Inspect the Tool Calls That Actually Happen",
+      "type": "editorial"
     },
     {
       "artwork": {
@@ -535,7 +598,7 @@
       "type": "editorial"
     }
   ],
-  "generatedAt": "2026-08-06T13:01:35Z",
+  "generatedAt": "2026-08-08T13:01:59Z",
   "packages": {
     "brew:agent-browser": {
       "agentSummary": "Agent Browser is a command-line browser automation tool for AI agents, exposing structured navigation, inspection, interaction, and session controls through a compact terminal-first interface.",
@@ -591,53 +654,6 @@
         }
       ],
       "upstreamSummary": "Browser automation CLI for AI agents",
-      "version": null
-    },
-    "brew:apm": {
-      "agentSummary": "Microsoft’s Agent Package Manager declares, installs, and governs AI-agent skills, prompts, plugins, and MCP servers across supported coding tools from a single project manifest.",
-      "assessment": {
-        "alternatives": [
-          "Manually maintained per-tool configuration files"
-        ],
-        "audiences": [
-          "Teams standardizing AI coding-agent configuration"
-        ],
-        "caveats": [
-          "The project is new; verify target compatibility and policy behavior before organization-wide adoption"
-        ],
-        "complements": [
-          "Repository-level agent instructions and CI policy checks"
-        ],
-        "prerequisites": [
-          "A supported AI coding tool and an APM project manifest"
-        ],
-        "useCases": [
-          "Reproduce skills, prompts, plugins, and MCP setup from a manifest"
-        ]
-      },
-      "category": "ai",
-      "displayName": "apm",
-      "docs": "https://microsoft.github.io/apm",
-      "homepage": "https://microsoft.github.io/apm/",
-      "id": "brew:apm",
-      "installURL": "pkgmgrmgr://install?package=brew%3Aapm",
-      "lastUpdatedAt": "2026-07-25T09:54:32Z",
-      "manager": "homebrew",
-      "repository": "https://github.com/microsoft/apm",
-      "researchedAt": "2026-07-26T13:03:11Z",
-      "sources": [
-        {
-          "kind": "primary",
-          "title": "Microsoft APM repository",
-          "url": "https://github.com/microsoft/apm"
-        },
-        {
-          "kind": "primary",
-          "title": "apm-cli 0.1.0 on PyPI",
-          "url": "https://pypi.org/project/apm-cli/0.1.0/"
-        }
-      ],
-      "upstreamSummary": "Dependency manager for AI agent configuration",
       "version": null
     },
     "brew:cronboard": {
@@ -792,25 +808,25 @@
       "version": null
     },
     "brew:dnsglobe": {
-      "agentSummary": "dnsglobe is a terminal TUI for checking DNS propagation across public resolvers, helping operators compare responses while diagnosing records, rollouts, and resolver-specific visibility.",
+      "agentSummary": "dnsglobe checks DNS records through public resolvers worldwide, grouping responses and showing propagation, latency, TTL, and disagreement in a terminal dashboard for deployment troubleshooting.",
       "assessment": {
         "alternatives": [
-          "dig, nslookup, and web-based propagation checkers"
+          "dnschecker.org, whatsmydns.net, and direct dig queries"
         ],
         "audiences": [
-          "DNS operators and developers managing domain changes"
+          "DNS operators, platform engineers, and developers shipping domain changes"
         ],
         "caveats": [
-          "Resolver responses can differ because of caching, geography, and configured resolver behavior"
+          "Public resolver results are vantage-point samples, not proof of every client’s DNS experience"
         ],
         "complements": [
-          "Authoritative DNS provider dashboards and command-line DNS tools"
+          "Authoritative DNS provider dashboards, dig, and change-management records"
         ],
         "prerequisites": [
-          "A terminal and a domain or record to query"
+          "Network access to public DNS resolvers and a supported terminal"
         ],
         "useCases": [
-          "Comparing DNS propagation across public resolvers after record updates"
+          "Checking propagation after record changes and comparing resolver-specific answers"
         ]
       },
       "category": null,
@@ -819,20 +835,20 @@
       "homepage": "https://github.com/514-labs/dnsglobe",
       "id": "brew:dnsglobe",
       "installURL": "pkgmgrmgr://install?package=brew%3Adnsglobe",
-      "lastUpdatedAt": "2026-08-04T07:04:35Z",
+      "lastUpdatedAt": "2026-08-08T03:56:20Z",
       "manager": "homebrew",
       "repository": "https://github.com/514-labs/dnsglobe",
-      "researchedAt": "2026-08-05T13:03:25Z",
+      "researchedAt": "2026-08-08T13:01:59Z",
       "sources": [
         {
           "kind": "primary",
-          "title": "dnsglobe official repository",
+          "title": "dnsglobe README",
           "url": "https://github.com/514-labs/dnsglobe"
         },
         {
           "kind": "primary",
-          "title": "dnsglobe v0.1.0 release",
-          "url": "https://github.com/514-labs/dnsglobe/releases/tag/v0.1.0"
+          "title": "dnsglobe releases",
+          "url": "https://github.com/514-labs/dnsglobe/releases"
         }
       ],
       "upstreamSummary": "Global DNS propagation checker TUI",
@@ -987,6 +1003,53 @@
         }
       ],
       "upstreamSummary": "Scanner for secrets and sensitive data in code",
+      "version": null
+    },
+    "brew:httpx2": {
+      "agentSummary": "HTTPX2 is Pydantic’s next-generation Python HTTP client, aiming to provide an ergonomic asynchronous and synchronous request interface for applications that need modern transport behavior.",
+      "assessment": {
+        "alternatives": [
+          "httpx, requests, aiohttp, and urllib3"
+        ],
+        "audiences": [
+          "Python application developers evaluating newer HTTP client APIs"
+        ],
+        "caveats": [
+          "It is young software, so API stability and production readiness require deliberate review"
+        ],
+        "complements": [
+          "Pydantic models, retry policies, observability, and tests"
+        ],
+        "prerequisites": [
+          "A compatible Python environment and careful dependency evaluation"
+        ],
+        "useCases": [
+          "Making synchronous or asynchronous application HTTP requests"
+        ]
+      },
+      "category": "developer-tools",
+      "displayName": "httpx2",
+      "docs": "https://httpx2.pydantic.dev/",
+      "homepage": "https://httpx2.pydantic.dev",
+      "id": "brew:httpx2",
+      "installURL": "pkgmgrmgr://install?package=brew%3Ahttpx2",
+      "lastUpdatedAt": "2026-08-07T09:26:59Z",
+      "manager": "homebrew",
+      "repository": "https://github.com/pydantic/httpx2",
+      "researchedAt": "2026-08-08T13:01:59Z",
+      "sources": [
+        {
+          "kind": "primary",
+          "title": "HTTPX2 documentation",
+          "url": "https://httpx2.pydantic.dev/"
+        },
+        {
+          "kind": "primary",
+          "title": "HTTPX2 source repository",
+          "url": "https://github.com/pydantic/httpx2"
+        }
+      ],
+      "upstreamSummary": "HTTP client library for Python",
       "version": null
     },
     "brew:kew": {
@@ -1568,6 +1631,53 @@
         }
       ],
       "upstreamSummary": "Extremely fast Python type checker, written in Rust",
+      "version": null
+    },
+    "brew:usbtree": {
+      "agentSummary": "usbtree presents a live USB device tree in a Rust terminal interface, exposing topology and Linux activity metrics without requiring root access or libusb.",
+      "assessment": {
+        "alternatives": [
+          "lsusb, System Information, and Device Manager"
+        ],
+        "audiences": [
+          "Desktop support engineers, hardware developers, and Linux operators"
+        ],
+        "caveats": [
+          "Activity metrics vary by platform; macOS and Windows focus on topology rather than Linux-level metrics"
+        ],
+        "complements": [
+          "System logs, lsusb, and hardware vendor documentation"
+        ],
+        "prerequisites": [
+          "A supported operating system and access to local USB device information"
+        ],
+        "useCases": [
+          "Inspecting attached USB topology and investigating device activity"
+        ]
+      },
+      "category": "system",
+      "displayName": "usbtree",
+      "docs": "https://github.com/gnomeria/usbtree#readme",
+      "homepage": "https://gnomeria.github.io/usbtree/",
+      "id": "brew:usbtree",
+      "installURL": "pkgmgrmgr://install?package=brew%3Ausbtree",
+      "lastUpdatedAt": "2026-08-07T07:32:08Z",
+      "manager": "homebrew",
+      "repository": "https://github.com/gnomeria/usbtree",
+      "researchedAt": "2026-08-08T13:01:59Z",
+      "sources": [
+        {
+          "kind": "primary",
+          "title": "usbtree README",
+          "url": "https://github.com/gnomeria/usbtree"
+        },
+        {
+          "kind": "primary",
+          "title": "usbtree releases",
+          "url": "https://github.com/gnomeria/usbtree/releases"
+        }
+      ],
+      "upstreamSummary": "Live USB device tree in your terminal",
       "version": null
     },
     "brew:vals": {
@@ -2577,7 +2687,7 @@
   },
   "schemaVersion": 1,
   "source": {
-    "generatedAt": "2026-08-06T07:44:58Z",
+    "generatedAt": "2026-08-08T04:20:55Z",
     "url": "https://www.automicvault.com/db.json"
   }
 }
