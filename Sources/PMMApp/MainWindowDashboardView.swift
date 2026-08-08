@@ -417,9 +417,12 @@ private struct DashboardDiscoverEditorialReader: View {
                     ProgressView()
                         .frame(maxWidth: .infinity, minHeight: 280)
                 case .success(let image):
-                    image
-                        .resizable()
-                        .scaledToFill()
+                    Color.clear
+                        .overlay {
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        }
                 case .failure:
                     Color.secondary.opacity(0.12)
                         .overlay { Image(systemName: "photo") }
