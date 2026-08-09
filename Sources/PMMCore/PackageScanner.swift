@@ -563,7 +563,8 @@ public struct PackageScanner: @unchecked Sendable {
                 lastUpdatedAt: curation?.lastUpdatedAt,
                 pulseKind: curation?.pulseKind,
                 installLocation: homebrewInstallLocation(prefix: prefix, kindFlag: "--cask", name: name, version: version),
-                binaryPath: homebrewCaskBinaryPath(item) ?? homebrewBinaryPath(prefix: prefix, name: name)
+                binaryPath: homebrewCaskBinaryPath(item) ?? homebrewBinaryPath(prefix: prefix, name: name),
+                appProvenance: homebrewCaskContainsApp(item) ? .homebrew : nil
             )
         }
     }
@@ -614,6 +615,11 @@ public struct PackageScanner: @unchecked Sendable {
             }
         }
         return nil
+    }
+
+    private func homebrewCaskContainsApp(_ item: [String: Any]) -> Bool {
+        guard let artifacts = item["artifacts"] as? [[String: Any]] else { return false }
+        return artifacts.contains { $0["app"] != nil }
     }
 
     private func homebrewCachedMetadata(name: String, kindFlag: String) -> PackageMetadata? {

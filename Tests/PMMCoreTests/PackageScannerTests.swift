@@ -622,6 +622,29 @@ private final class EmptyNPMRegistryURLProtocol: URLProtocol, @unchecked Sendabl
     #expect(package.identifier == "brew:cask:codex")
     #expect(package.installLocation == "/fake/homebrew/Caskroom/codex/0.142.5")
     #expect(package.binaryPath == "/fake/homebrew/bin/codex")
+    #expect(package.appProvenance == nil)
+}
+
+@Test func homebrewScannerMarksCasksWithAppArtifacts() throws {
+    let runner = FakeRunner(responses: [
+        "/fake/brew outdated --json=v2": CommandResult(stdout: #"{"formulae":[],"casks":[]}"#, stderr: "", status: 0),
+        "/fake/brew info --json=v2 --installed": CommandResult(stdout: #"""
+        {
+          "formulae": [],
+          "casks": [{
+            "token": "visual-studio-code",
+            "version": "1.102.0",
+            "installed": "1.102.0",
+            "artifacts": [{ "app": ["Visual Studio Code.app"] }]
+          }]
+        }
+        """#, stderr: "", status: 0),
+    ])
+    let scanner = PackageScanner(runner: runner, toolPaths: ["brew": "/fake/brew"])
+
+    let package = try #require(scanner.scanHomebrew(database: PackageDatabase()).first)
+
+    #expect(package.appProvenance == .homebrew)
 }
 
 @Test func homebrewScannerDoesNotMarkInstalledFormulaRevisionsOutdated() throws {

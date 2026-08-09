@@ -853,7 +853,8 @@ private func attributeRunCount(in string: NSAttributedString) -> Int {
             identifier: "brew:cask:visual-studio-code",
             displayName: "visual-studio-code",
             installedVersion: "1.0.0",
-            latestVersion: "1.0.0"
+            latestVersion: "1.0.0",
+            appProvenance: .homebrew
         ),
         ManagedPackage(
             manager: .macApp,
@@ -929,6 +930,22 @@ private func attributeRunCount(in string: NSAttributedString) -> Int {
 
     let index = PackageIndex(packages: [], catalogPackages: [catalog], newUpdatedLastClickedAt: nil)
 
+    #expect(index.packagesBySection[.apps] == [])
+}
+
+@Test func commandLineOnlyCasksAppearOnlyInHomebrew() {
+    let codex = ManagedPackage(
+        manager: .homebrew,
+        identifier: "brew:cask:codex",
+        displayName: "codex",
+        installedVersion: "0.142.5",
+        latestVersion: "0.142.5",
+        binaryPath: "/opt/homebrew/bin/codex"
+    )
+
+    let index = PackageIndex(packages: [codex], catalogPackages: [], newUpdatedLastClickedAt: nil)
+
+    #expect(index.packagesBySection[.homebrew] == [codex])
     #expect(index.packagesBySection[.apps] == [])
 }
 

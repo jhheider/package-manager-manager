@@ -1643,7 +1643,7 @@ struct PackageIndex: Sendable {
 
         let catalogApps = catalogPackages.filter {
             let identifier = $0.catalogIdentifier ?? $0.identifier
-            return identifier.hasPrefix("brew:cask:") && installedByIdentifier[identifier] != nil
+            return mainWindowManagerSection(for: $0) == .apps && installedByIdentifier[identifier] != nil
         }
         let representedAppIdentifiers = Set(catalogApps.map { $0.catalogIdentifier ?? $0.identifier })
         let unmatchedApps = packages.filter {
@@ -1761,7 +1761,9 @@ func mainWindowSetupSection(_ manager: PackageManagerKind) -> MainWindowSection?
 }
 
 func mainWindowManagerSection(for package: ManagedPackage) -> MainWindowSection {
-    if package.identifier.hasPrefix("brew:cask:") { return .apps }
+    if package.identifier.hasPrefix("brew:cask:") {
+        return package.appProvenance == .homebrew ? .apps : .homebrew
+    }
     switch package.manager {
     case .cargoInstall, .rustup: return .rust
     case .macApp: return .apps
