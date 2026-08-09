@@ -1641,7 +1641,10 @@ struct PackageIndex: Sendable {
             .filter { $0.pulseKind == "new" }
             .sorted(by: Self.newestUpdatedFirst)
 
-        let catalogApps = catalogPackages.filter { ($0.catalogIdentifier ?? $0.identifier).hasPrefix("brew:cask:") }
+        let catalogApps = catalogPackages.filter {
+            let identifier = $0.catalogIdentifier ?? $0.identifier
+            return identifier.hasPrefix("brew:cask:") && installedByIdentifier[identifier] != nil
+        }
         let representedAppIdentifiers = Set(catalogApps.map { $0.catalogIdentifier ?? $0.identifier })
         let unmatchedApps = packages.filter {
             mainWindowManagerSection(for: $0) == .apps

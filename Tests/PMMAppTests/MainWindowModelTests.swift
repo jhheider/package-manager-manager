@@ -918,6 +918,20 @@ private func attributeRunCount(in string: NSAttributedString) -> Int {
     #expect(mainWindowRegistryURLString(for: package) == "https://formulae.brew.sh/cask/vlc")
 }
 
+@Test func appsSectionExcludesCatalogAppsThatAreNotInstalled() {
+    let catalog = ManagedPackage(
+        manager: .homebrew,
+        identifier: "brew:cask:adrafinil",
+        displayName: "Adrafinil",
+        installedVersion: nil,
+        latestVersion: "1.5.3"
+    )
+
+    let index = PackageIndex(packages: [], catalogPackages: [catalog], newUpdatedLastClickedAt: nil)
+
+    #expect(index.packagesBySection[.apps] == [])
+}
+
 @Test func outdatedSectionSortsMostOutdatedFirst() {
     let packages = [
         package(.npm, "patch", installedVersion: "1.0.0", latestVersion: "1.0.5"),
