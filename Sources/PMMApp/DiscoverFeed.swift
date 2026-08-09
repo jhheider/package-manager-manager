@@ -36,6 +36,10 @@ struct DiscoverFeedContent: Decodable, Identifiable, Sendable {
 
     var artworkURL: URL? {
         guard let path = artwork?.path else { return nil }
+        if path.hasPrefix("feed/") {
+            let feedAssetPath = String(path.dropFirst("feed/".count))
+            return URL(string: feedAssetPath, relativeTo: URL(string: "https://pkg.so/discover/feed/")!)?.absoluteURL
+        }
         return URL(string: path, relativeTo: URL(string: "https://pkg.so/discover/feed/")!)?.absoluteURL
     }
 }

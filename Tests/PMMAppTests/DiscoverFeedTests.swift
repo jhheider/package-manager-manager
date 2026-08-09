@@ -7,11 +7,11 @@ import Testing
 
     let page = try decodePage("""
     {"pageID":"head","generatedAt":"2026-08-09T12:00:00Z","nextPageURL":null,"content":[
-      {"id":"editorial:one","type":"editorial","artwork":{"path":"artwork/editorial.png","boxColors":{"backgroundStart":"#000000","backgroundEnd":"#111111","foreground":"#ffffff"}}}
+      {"id":"editorial:one","type":"editorial","artwork":{"path":"feed/assets/editorial.png","boxColors":{"backgroundStart":"#000000","backgroundEnd":"#111111","foreground":"#ffffff"}}}
     ]}
     """)
 
-    #expect(page.content.first?.artworkURL == URL(string: "https://pkg.so/discover/feed/artwork/editorial.png"))
+    #expect(page.content.first?.artworkURL == URL(string: "https://pkg.so/discover/feed/assets/editorial.png"))
 }
 
 @Test func discoverFeedV2DecodesSelfContainedBlocks() throws {
