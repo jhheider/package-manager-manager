@@ -253,48 +253,48 @@
       "id": "recently-updated:science:20260808T130159Z-f220bb45",
       "packages": [
         {
+          "agentSummary": "Molecular Dynamics Simulator",
+          "category": "science",
+          "displayName": "lammps",
+          "homepage": "https://docs.lammps.org/",
+          "id": "brew:lammps",
+          "installURL": "pkgmgrmgr://install?package=brew%3Alammps",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Logic and programming language in which you can model computer systems",
+          "category": "science",
+          "displayName": "acl2",
+          "homepage": "https://www.cs.utexas.edu/~moore/acl2/",
+          "id": "brew:acl2",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aacl2",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Reference management and bibliography software",
+          "category": "science",
+          "displayName": "Bookends",
+          "homepage": "https://www.sonnysoftware.com/bookends-for-mac",
+          "id": "brew:cask:bookends",
+          "installURL": "pkgmgrmgr://install?package=brew%3Acask%3Abookends",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "3D CAD software",
+          "category": "science",
+          "displayName": "Shapr3D",
+          "homepage": "https://www.shapr3d.com/",
+          "id": "brew:cask:shapr3d",
+          "installURL": "pkgmgrmgr://install?package=brew%3Acask%3Ashapr3d",
+          "manager": "homebrew"
+        },
+        {
           "agentSummary": "3D modeling and numerical simulation software for CAD/CAM/CAE",
           "category": "science",
           "displayName": "opencascade",
           "homepage": "https://dev.opencascade.org/",
           "id": "brew:opencascade",
           "installURL": "pkgmgrmgr://install?package=brew%3Aopencascade",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Successor of BWA-MEM for short-read alignment",
-          "category": "science",
-          "displayName": "minibwa",
-          "homepage": "https://github.com/lh3/minibwa",
-          "id": "brew:minibwa",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aminibwa",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Make electronics using Typescript, React, and AI tools.",
-          "category": "science",
-          "displayName": "tscircuit",
-          "homepage": "https://github.com/tscircuit/tscircuit#readme",
-          "id": "npm:tscircuit",
-          "installURL": "pkgmgrmgr://install?package=npm%3Atscircuit",
-          "manager": "npm"
-        },
-        {
-          "agentSummary": "OFFIS DICOM toolkit command-line utilities",
-          "category": "science",
-          "displayName": "dcmtk",
-          "homepage": "https://dcmtk.org/en/dcmtk/",
-          "id": "brew:dcmtk",
-          "installURL": "pkgmgrmgr://install?package=brew%3Adcmtk",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Device drivers utilities, and interface layers for LimeSDR",
-          "category": "science",
-          "displayName": "limesuite",
-          "homepage": "https://myriadrf.org/projects/software/lime-suite/",
-          "id": "brew:limesuite",
-          "installURL": "pkgmgrmgr://install?package=brew%3Alimesuite",
           "manager": "homebrew"
         }
       ],
@@ -361,48 +361,48 @@
       "id": "recently-updated:security:20260808T130159Z-f220bb45",
       "packages": [
         {
-          "agentSummary": "CLI for Infisical",
+          "agentSummary": "Protect resources from scraper bots",
           "category": "security",
-          "displayName": "infisical",
-          "homepage": "https://infisical.com/docs/cli/overview",
-          "id": "brew:infisical",
-          "installURL": "pkgmgrmgr://install?package=brew%3Ainfisical",
+          "displayName": "anubis",
+          "homepage": "https://anubis.techaro.lol",
+          "id": "brew:anubis",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aanubis",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Reverse engineering framework",
+          "agentSummary": "HTTP/DNS scanner configurable via YAML templates",
           "category": "security",
-          "displayName": "radare2",
-          "homepage": "https://radare.org",
-          "id": "brew:radare2",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aradare2",
+          "displayName": "nuclei",
+          "homepage": "https://docs.projectdiscovery.io/tools/nuclei/overview",
+          "id": "brew:nuclei",
+          "installURL": "pkgmgrmgr://install?package=brew%3Anuclei",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Anti-virus software",
+          "agentSummary": "Prevent cloud misconfigurations during build-time for IaC tools",
           "category": "security",
-          "displayName": "clamav",
-          "homepage": "https://www.clamav.net/",
-          "id": "brew:clamav",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aclamav",
+          "displayName": "checkov",
+          "homepage": "https://www.checkov.io/",
+          "id": "brew:checkov",
+          "installURL": "pkgmgrmgr://install?package=brew%3Acheckov",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Simplify compliance baseline creation, auditing, and management",
+          "agentSummary": "Searches through git repositories for high entropy strings and secrets",
           "category": "security",
-          "displayName": "M.A.C.E.",
-          "homepage": "https://github.com/MACE-App/MACE",
-          "id": "brew:cask:mace",
-          "installURL": "pkgmgrmgr://install?package=brew%3Acask%3Amace",
+          "displayName": "tartufo",
+          "homepage": "https://tartufo.readthedocs.io/en/stable/",
+          "id": "brew:tartufo",
+          "installURL": "pkgmgrmgr://install?package=brew%3Atartufo",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Scans and monitors projects for security vulnerabilities",
+          "agentSummary": "Boost security in your dev lifecycle via SAST, SCA, Secrets & IaC scanning",
           "category": "security",
-          "displayName": "snyk-cli",
-          "homepage": "https://snyk.io",
-          "id": "brew:snyk-cli",
-          "installURL": "pkgmgrmgr://install?package=brew%3Asnyk-cli",
+          "displayName": "cycode",
+          "homepage": "https://github.com/cycodehq/cycode-cli",
+          "id": "brew:cycode",
+          "installURL": "pkgmgrmgr://install?package=brew%3Acycode",
           "manager": "homebrew"
         }
       ],
@@ -469,48 +469,48 @@
       "id": "recently-updated:system:20260808T130159Z-f220bb45",
       "packages": [
         {
-          "agentSummary": "Network monitoring and management system",
+          "agentSummary": "Git-integrated backup tool for macOS and Linux devs",
           "category": "system",
-          "displayName": "nagios",
-          "homepage": "https://www.nagios.org/",
-          "id": "brew:nagios",
-          "installURL": "pkgmgrmgr://install?package=brew%3Anagios",
+          "displayName": "shallow-backup",
+          "homepage": "https://github.com/alichtman/shallow-backup",
+          "id": "brew:shallow-backup",
+          "installURL": "pkgmgrmgr://install?package=brew%3Ashallow-backup",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Memory Pool System",
+          "agentSummary": "System cleaner, optimiser, and malware scanner",
           "category": "system",
-          "displayName": "libmps",
-          "homepage": "https://www.ravenbrook.com/project/mps/",
-          "id": "brew:libmps",
-          "installURL": "pkgmgrmgr://install?package=brew%3Alibmps",
+          "displayName": "Mac Sai",
+          "homepage": "https://github.com/iliyami/MacSai",
+          "id": "brew:cask:mac-sai",
+          "installURL": "pkgmgrmgr://install?package=brew%3Acask%3Amac-sai",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Fast and lightweight fully featured OCI runtime and C library",
+          "agentSummary": "Tool to show caps lock status",
           "category": "system",
-          "displayName": "crun",
-          "homepage": "https://github.com/containers/crun",
-          "id": "brew:crun",
-          "installURL": "pkgmgrmgr://install?package=brew%3Acrun",
+          "displayName": "Captin",
+          "homepage": "https://github.com/cool8jay/public",
+          "id": "brew:cask:captin",
+          "installURL": "pkgmgrmgr://install?package=brew%3Acask%3Acaptin",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Round Robin Database",
+          "agentSummary": "List USB devices, just like the Linux lsusb command",
           "category": "system",
-          "displayName": "rrdtool",
-          "homepage": "https://oss.oetiker.ch/rrdtool/",
-          "id": "brew:rrdtool",
-          "installURL": "pkgmgrmgr://install?package=brew%3Arrdtool",
+          "displayName": "lsusb-laniksj",
+          "homepage": "https://laniksj.github.io/lsusb/",
+          "id": "brew:lsusb-laniksj",
+          "installURL": "pkgmgrmgr://install?package=brew%3Alsusb-laniksj",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "User-friendly GUI app for Homebrew",
+          "agentSummary": "Plugins for nagios compatible monitoring systems",
           "category": "system",
-          "displayName": "Applite",
-          "homepage": "https://aerolite.dev/applite",
-          "id": "brew:cask:applite",
-          "installURL": "pkgmgrmgr://install?package=brew%3Acask%3Aapplite",
+          "displayName": "monitoring-plugins",
+          "homepage": "https://www.monitoring-plugins.org",
+          "id": "brew:monitoring-plugins",
+          "installURL": "pkgmgrmgr://install?package=brew%3Amonitoring-plugins",
           "manager": "homebrew"
         }
       ],
@@ -1115,48 +1115,48 @@
       "id": "recently-updated:cloud-infrastructure:20260808T130159Z-f220bb45",
       "packages": [
         {
-          "agentSummary": "Command-line tools for fly.io services",
+          "agentSummary": "Kubectl plugin to render watch output in a more readable fashion",
           "category": "cloud-infrastructure",
-          "displayName": "flyctl",
-          "homepage": "https://fly.io",
-          "id": "brew:flyctl",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aflyctl",
+          "displayName": "kubectl-klock",
+          "homepage": "https://github.com/applejag/kubectl-klock",
+          "id": "brew:kubectl-klock",
+          "installURL": "pkgmgrmgr://install?package=brew%3Akubectl-klock",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Create and run Linux containers using lightweight virtual machines",
+          "agentSummary": "Synchronize your DNS to multiple providers from a simple DSL",
           "category": "cloud-infrastructure",
-          "displayName": "container",
-          "homepage": "https://apple.github.io/container/documentation/",
-          "id": "brew:container",
-          "installURL": "pkgmgrmgr://install?package=brew%3Acontainer",
+          "displayName": "dnscontrol",
+          "homepage": "https://dnscontrol.org/",
+          "id": "brew:dnscontrol",
+          "installURL": "pkgmgrmgr://install?package=brew%3Adnscontrol",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Utility for connecting securely to your Cloud SQL instances",
+          "agentSummary": "Command-line interface for Vercel",
           "category": "cloud-infrastructure",
-          "displayName": "cloud-sql-proxy",
-          "homepage": "https://github.com/GoogleCloudPlatform/cloud-sql-proxy",
-          "id": "brew:cloud-sql-proxy",
-          "installURL": "pkgmgrmgr://install?package=brew%3Acloud-sql-proxy",
+          "displayName": "vercel",
+          "homepage": "https://vercel.com/home",
+          "id": "brew:vercel",
+          "installURL": "pkgmgrmgr://install?package=brew%3Avercel",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Develop and deploy code with zero configuration",
+          "agentSummary": "Production Grade K8s Installation, Upgrades, and Management",
           "category": "cloud-infrastructure",
-          "displayName": "railway",
-          "homepage": "https://railway.com/",
-          "id": "brew:railway",
-          "installURL": "pkgmgrmgr://install?package=brew%3Arailway",
+          "displayName": "kops",
+          "homepage": "https://kops.sigs.k8s.io/",
+          "id": "brew:kops",
+          "installURL": "pkgmgrmgr://install?package=brew%3Akops",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Official Amazon AWS command-line interface",
+          "agentSummary": "AWS Cloud Development Kit - framework for defining AWS infra as code",
           "category": "cloud-infrastructure",
-          "displayName": "awscli",
-          "homepage": "https://aws.amazon.com/cli/",
-          "id": "brew:awscli",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aawscli",
+          "displayName": "aws-cdk",
+          "homepage": "https://github.com/aws/aws-cdk",
+          "id": "brew:aws-cdk",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aaws-cdk",
           "manager": "homebrew"
         }
       ],
@@ -1168,6 +1168,15 @@
       "batchID": "20260804T130159Z-b54f89f3",
       "id": "new-packages:system:20260808T130159Z-f220bb45",
       "packages": [
+        {
+          "agentSummary": "Switch Magic Keyboard, Trackpad and Mouse between Macs",
+          "category": "system",
+          "displayName": "Switchy",
+          "homepage": "https://mangobuns.com/switchy/",
+          "id": "brew:cask:switchy",
+          "installURL": "pkgmgrmgr://install?package=brew%3Acask%3Aswitchy",
+          "manager": "homebrew"
+        },
         {
           "agentSummary": "Live USB device tree in your terminal",
           "category": "system",
@@ -1187,24 +1196,6 @@
       "id": "recently-updated:networking:20260808T130159Z-f220bb45",
       "packages": [
         {
-          "agentSummary": "Simple and easy-to-use DDNS",
-          "category": "networking",
-          "displayName": "ddns-go",
-          "homepage": "https://github.com/jeessy2/ddns-go",
-          "id": "brew:ddns-go",
-          "installURL": "pkgmgrmgr://install?package=brew%3Addns-go",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Command-line interface for Cyberduck (a multi-protocol file transfer tool)",
-          "category": "networking",
-          "displayName": "duck",
-          "homepage": "https://duck.sh/",
-          "id": "brew:duck",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aduck",
-          "manager": "homebrew"
-        },
-        {
           "agentSummary": "Free open source implementation of TURN and STUN Server",
           "category": "networking",
           "displayName": "coturn",
@@ -1214,21 +1205,39 @@
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Privacy-focused web browser",
+          "agentSummary": "CLI tool for a high QPS DNS benchmark",
           "category": "networking",
-          "displayName": "Brave Origin",
-          "homepage": "https://brave.com/origin",
-          "id": "brew:cask:brave-origin",
-          "installURL": "pkgmgrmgr://install?package=brew%3Acask%3Abrave-origin",
+          "displayName": "dnspyre",
+          "homepage": "https://tantalor93.github.io/dnspyre/",
+          "id": "brew:dnspyre",
+          "installURL": "pkgmgrmgr://install?package=brew%3Adnspyre",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Web browser focusing on privacy",
+          "agentSummary": "Website copier/offline browser",
           "category": "networking",
-          "displayName": "Brave Browser",
-          "homepage": "https://brave.com/",
-          "id": "brew:cask:brave-browser",
-          "installURL": "pkgmgrmgr://install?package=brew%3Acask%3Abrave-browser",
+          "displayName": "httrack",
+          "homepage": "https://www.httrack.com/",
+          "id": "brew:httrack",
+          "installURL": "pkgmgrmgr://install?package=brew%3Ahttrack",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Chromium-based web browser",
+          "category": "networking",
+          "displayName": "Helium",
+          "homepage": "https://helium.computer/",
+          "id": "brew:cask:helium-browser",
+          "installURL": "pkgmgrmgr://install?package=brew%3Acask%3Ahelium-browser",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "GNMI CLI client and collector",
+          "category": "networking",
+          "displayName": "gnmic",
+          "homepage": "https://gnmic.openconfig.net",
+          "id": "brew:gnmic",
+          "installURL": "pkgmgrmgr://install?package=brew%3Agnmic",
           "manager": "homebrew"
         }
       ],
@@ -1295,6 +1304,24 @@
       "id": "recently-updated:games:20260808T130159Z-f220bb45",
       "packages": [
         {
+          "agentSummary": "Open-source Android/Desktop remake of Civ V",
+          "category": "games",
+          "displayName": "unciv",
+          "homepage": "https://github.com/yairm210/Unciv",
+          "id": "brew:unciv",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aunciv",
+          "manager": "homebrew"
+        },
+        {
+          "agentSummary": "Official Hytale Launcher",
+          "category": "games",
+          "displayName": "Hytale",
+          "homepage": "https://hytale.com/",
+          "id": "brew:cask:hytale",
+          "installURL": "pkgmgrmgr://install?package=brew%3Acask%3Ahytale",
+          "manager": "homebrew"
+        },
+        {
           "agentSummary": "Minecraft modding platform",
           "category": "games",
           "displayName": "Modrinth App",
@@ -1319,24 +1346,6 @@
           "homepage": "https://github.com/drhelius/Gearsystem",
           "id": "brew:cask:gearsystem",
           "installURL": "pkgmgrmgr://install?package=brew%3Acask%3Agearsystem",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Game Boy and Game Boy Color emulator",
-          "category": "games",
-          "displayName": "Gearboy",
-          "homepage": "https://github.com/drhelius/Gearboy",
-          "id": "brew:cask:gearboy",
-          "installURL": "pkgmgrmgr://install?package=brew%3Acask%3Agearboy",
-          "manager": "homebrew"
-        },
-        {
-          "agentSummary": "Strong open source chess variant engine (with largeboards support)",
-          "category": "games",
-          "displayName": "fairy-stockfish",
-          "homepage": "https://fairy-stockfish.github.io/",
-          "id": "brew:fairy-stockfish",
-          "installURL": "pkgmgrmgr://install?package=brew%3Afairy-stockfish",
           "manager": "homebrew"
         }
       ],
@@ -1668,48 +1677,48 @@
       "id": "recently-updated:language-runtime:20260808T130159Z-f220bb45",
       "packages": [
         {
-          "agentSummary": "Fast, safe, gradually typed embeddable scripting language derived from Lua",
+          "agentSummary": "Tool for creating isolated virtual python environments",
           "category": "language-runtime",
-          "displayName": "luau",
-          "homepage": "https://luau.org",
-          "id": "brew:luau",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aluau",
+          "displayName": "virtualenv",
+          "homepage": "https://virtualenv.pypa.io/",
+          "id": "brew:virtualenv",
+          "installURL": "pkgmgrmgr://install?package=brew%3Avirtualenv",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Statically typed functional, imperative, and logic programming language",
+          "agentSummary": "GNU compiler collection",
           "category": "language-runtime",
-          "displayName": "flix",
-          "homepage": "https://flix.dev/",
-          "id": "brew:flix",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aflix",
+          "displayName": "gcc@11",
+          "homepage": "https://gcc.gnu.org/",
+          "id": "brew:gcc@11",
+          "installURL": "pkgmgrmgr://install?package=brew%3Agcc%4011",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Command-line tool for running AOT-compiled snapshots of Dart code",
+          "agentSummary": "GNU compiler collection",
           "category": "language-runtime",
-          "displayName": "dartaotruntime",
-          "homepage": "https://dart.dev/tools/dartaotruntime",
-          "id": "brew:dartaotruntime",
-          "installURL": "pkgmgrmgr://install?package=brew%3Adartaotruntime",
+          "displayName": "gcc@10",
+          "homepage": "https://gcc.gnu.org/",
+          "id": "brew:gcc@10",
+          "installURL": "pkgmgrmgr://install?package=brew%3Agcc%4010",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Secure runtime for JavaScript and TypeScript",
+          "agentSummary": "GNU compiler collection",
           "category": "language-runtime",
-          "displayName": "deno",
-          "homepage": "https://deno.com/",
-          "id": "brew:deno",
-          "installURL": "pkgmgrmgr://install?package=brew%3Adeno",
+          "displayName": "gcc@9",
+          "homepage": "https://gcc.gnu.org/",
+          "id": "brew:gcc@9",
+          "installURL": "pkgmgrmgr://install?package=brew%3Agcc%409",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Programming language with focus on simplicity, performance and modern systems",
+          "agentSummary": "Scheme framework for extension and scripting languages on macOS and iOS",
           "category": "language-runtime",
-          "displayName": "odin",
-          "homepage": "https://odin-lang.org/",
-          "id": "brew:odin",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aodin",
+          "displayName": "lispkit",
+          "homepage": "https://lisppad.app",
+          "id": "brew:lispkit",
+          "installURL": "pkgmgrmgr://install?package=brew%3Alispkit",
           "manager": "homebrew"
         }
       ],
@@ -1776,48 +1785,48 @@
       "id": "recently-updated:developer-tools:20260808T130159Z-f220bb45",
       "packages": [
         {
-          "agentSummary": "Stripe-level SDKs and Docs for your API",
+          "agentSummary": "Memory profiler for Python applications",
           "category": "developer-tools",
-          "displayName": "fern-api",
-          "homepage": "https://buildwithfern.com/",
-          "id": "brew:fern-api",
-          "installURL": "pkgmgrmgr://install?package=brew%3Afern-api",
+          "displayName": "memray",
+          "homepage": "https://bloomberg.github.io/memray/",
+          "id": "brew:memray",
+          "installURL": "pkgmgrmgr://install?package=brew%3Amemray",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Diff that understands syntax",
+          "agentSummary": "Menu bar app for using AI subscriptions with coding tools",
           "category": "developer-tools",
-          "displayName": "difftastic",
-          "homepage": "https://difftastic.wilfred.me.uk/",
-          "id": "brew:difftastic",
-          "installURL": "pkgmgrmgr://install?package=brew%3Adifftastic",
+          "displayName": "VibeProxy",
+          "homepage": "https://github.com/automazeio/vibeproxy",
+          "id": "brew:cask:vibeproxy",
+          "installURL": "pkgmgrmgr://install?package=brew%3Acask%3Avibeproxy",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Polyglot runtime manager (asdf rust clone)",
+          "agentSummary": "AST-based pattern checker for JavaScript",
           "category": "developer-tools",
-          "displayName": "mise",
-          "homepage": "https://mise.jdx.dev/",
-          "id": "brew:mise",
-          "installURL": "pkgmgrmgr://install?package=brew%3Amise",
+          "displayName": "eslint",
+          "homepage": "https://eslint.org",
+          "id": "brew:eslint",
+          "installURL": "pkgmgrmgr://install?package=brew%3Aeslint",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Nu Markup Checker: command-line and server HTML validator",
+          "agentSummary": "Quickly manage and navigate project directories for experiments",
           "category": "developer-tools",
-          "displayName": "vnu",
-          "homepage": "https://validator.github.io/validator/",
-          "id": "brew:vnu",
-          "installURL": "pkgmgrmgr://install?package=brew%3Avnu",
+          "displayName": "try",
+          "homepage": "https://github.com/tobi/try",
+          "id": "brew:try",
+          "installURL": "pkgmgrmgr://install?package=brew%3Atry",
           "manager": "homebrew"
         },
         {
-          "agentSummary": "Tool to verify that your files are in harmony with your .editorconfig",
+          "agentSummary": "Find newer versions of dependencies than what your package.json allows",
           "category": "developer-tools",
-          "displayName": "editorconfig-checker",
-          "homepage": "https://editorconfig-checker.github.io/",
-          "id": "brew:editorconfig-checker",
-          "installURL": "pkgmgrmgr://install?package=brew%3Aeditorconfig-checker",
+          "displayName": "npm-check-updates",
+          "homepage": "https://github.com/raineorshine/npm-check-updates",
+          "id": "brew:npm-check-updates",
+          "installURL": "pkgmgrmgr://install?package=brew%3Anpm-check-updates",
           "manager": "homebrew"
         }
       ],
@@ -1826,8 +1835,8 @@
       "type": "recentlyUpdated"
     }
   ],
-  "generatedAt": "2026-08-08T13:01:59Z",
-  "nextPageURL": "https://mxcl.dev/package-manager-manager/feed/v2/pages/20260808T130159Z-7307ee0b.json",
-  "pageID": "20260808T130159Z-e13154c2",
+  "generatedAt": "2026-08-09T13:00:49Z",
+  "nextPageURL": "https://mxcl.dev/package-manager-manager/feed/v2/pages/20260809T130049Z-7307ee0b.json",
+  "pageID": "20260809T130049Z-e13154c2",
   "schemaVersion": 2
 }
