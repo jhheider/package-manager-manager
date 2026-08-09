@@ -1,26 +1,6 @@
 import Combine
 import Foundation
 
-struct DiscoverFeed: Decodable, Sendable {
-    let content: [DiscoverFeedContent]
-    let packages: [String: DiscoverFeedPackage]
-
-    static let url = URL(string: "https://mxcl.dev/package-manager-manager/feed/v1.json")!
-
-    static func load(from url: URL = url) async throws -> Self {
-        try await loadJSON(Self.self, from: url)
-    }
-
-    var editorial: DiscoverFeedContent? { content.first { $0.type == "editorial" } }
-    var newPackages: [DiscoverFeedPackage] { packages(for: content.first { $0.type == "newPackages" }?.packageIDs ?? []) }
-    var recommendations: [DiscoverFeedPackage] { packages(for: content.first { $0.type == "personalizedRecommendations" }?.candidatePackageIDs ?? []) }
-    var recentlyUpdated: [DiscoverFeedPackage] { packages(for: content.first { $0.type == "recentlyUpdated" }?.packageIDs ?? []) }
-
-    private func packages(for ids: [String]) -> [DiscoverFeedPackage] {
-        ids.compactMap { packages[$0] }
-    }
-}
-
 struct DiscoverFeedPage: Decodable, Identifiable, Sendable {
     let pageID: String
     let generatedAt: String
@@ -29,36 +9,12 @@ struct DiscoverFeedPage: Decodable, Identifiable, Sendable {
 
     var id: String { pageID }
 
-    static let url = URL(string: "https://mxcl.dev/package-manager-manager/feed/v2.json")!
+    static let url = URL(string: "https://pkg.so/discover/feed/v2.json")!
 
     static func load(from url: URL = url) async throws -> Self {
         try await loadJSON(Self.self, from: url)
     }
 
-    init(legacy feed: DiscoverFeed) {
-        pageID = "legacy"
-        generatedAt = ""
-        nextPageURL = nil
-        content = feed.content.map { item in
-            DiscoverFeedContent(
-                id: item.id,
-                type: item.type,
-                batchID: "legacy",
-                publishedAt: item.publishedAt,
-                title: item.title,
-                deck: item.deck,
-                body: item.body,
-                primaryPackageID: item.primaryPackageID,
-                relatedPackageIDs: item.relatedPackageIDs,
-                packageIDs: item.packageIDs,
-                candidatePackageIDs: item.candidatePackageIDs,
-                artwork: item.artwork,
-                package: item.primaryPackageID.flatMap { feed.packages[$0] },
-                relatedPackages: item.relatedPackageIDs.map { ids in ids.compactMap { feed.packages[$0] } },
-                packages: (item.packageIDs ?? item.candidatePackageIDs).map { ids in ids.compactMap { feed.packages[$0] } }
-            )
-        }
-    }
 }
 
 struct DiscoverFeedContent: Decodable, Identifiable, Sendable {
@@ -80,7 +36,7 @@ struct DiscoverFeedContent: Decodable, Identifiable, Sendable {
 
     var artworkURL: URL? {
         guard let path = artwork?.path else { return nil }
-        return URL(string: path, relativeTo: URL(string: "https://mxcl.dev/package-manager-manager/")!)?.absoluteURL
+        return URL(string: path, relativeTo: URL(string: "https://pkg.so/discover/feed/")!)?.absoluteURL
     }
 }
 
@@ -117,8 +73,6 @@ struct DiscoverFeedPackage: Decodable, Identifiable, Sendable {
 @MainActor
 final class DiscoverFeedStore: ObservableObject {
     typealias PageLoader = @Sendable (URL) async throws -> DiscoverFeedPage
-    typealias LegacyLoader = @Sendable () async throws -> DiscoverFeed
-
     @Published private(set) var pages: [DiscoverFeedPage] = []
     @Published private(set) var isLoadingInitial = false
     @Published private(set) var isLoadingNext = false
@@ -126,15 +80,12 @@ final class DiscoverFeedStore: ObservableObject {
     @Published private(set) var nextPageLoadFailed = false
 
     private let pageLoader: PageLoader
-    private let legacyLoader: LegacyLoader
     private var loadedURLs: Set<URL> = []
 
     init(
-        pageLoader: @escaping PageLoader = { try await DiscoverFeedPage.load(from: $0) },
-        legacyLoader: @escaping LegacyLoader = { try await DiscoverFeed.load() }
+        pageLoader: @escaping PageLoader = { try await DiscoverFeedPage.load(from: $0) }
     ) {
         self.pageLoader = pageLoader
-        self.legacyLoader = legacyLoader
     }
 
     var newestBatch: [DiscoverFeedContent] {
@@ -158,12 +109,7 @@ final class DiscoverFeedStore: ObservableObject {
             try append(page, loadedFrom: DiscoverFeedPage.url)
         } catch is CancellationError {
         } catch {
-            do {
-                pages = [DiscoverFeedPage(legacy: try await legacyLoader())]
-            } catch is CancellationError {
-            } catch {
-                initialLoadFailed = true
-            }
+            initialLoadFailed = true
         }
     }
 

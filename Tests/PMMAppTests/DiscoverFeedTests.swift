@@ -2,26 +2,16 @@ import Foundation
 import Testing
 @testable import PMMApp
 
-@Test func discoverFeedGroupsEditorialNewPackagesAndRecommendations() throws {
-    let feed = try JSONDecoder().decode(DiscoverFeed.self, from: Data("""
-    {"content":[
-      {"id":"editorial:one","type":"editorial","title":"Featured","primaryPackageID":"npm:typescript","relatedPackageIDs":["npm:typescript","brew:faker"]},
-      {"id":"new","type":"newPackages","packageIDs":["brew:faker"]},
-      {"id":"for-you","type":"personalizedRecommendations","candidatePackageIDs":["npm:typescript"]},
-      {"id":"updated","type":"recentlyUpdated","packageIDs":["npm:typescript","brew:faker"]}
-    ],"packages":{
-      "brew:faker":{"id":"brew:faker","displayName":"Faker","agentSummary":"Fake data","manager":"homebrew","category":"data","homepage":"https://faker.readthedocs.io/"},
-      "npm:typescript":{"id":"npm:typescript","displayName":"TypeScript","agentSummary":"Static checking","homepage":"https://www.typescriptlang.org/"}
-    }}
-    """.utf8))
+@Test func discoverFeedUsesCanonicalPkgSoEndpoints() throws {
+    #expect(DiscoverFeedPage.url == URL(string: "https://pkg.so/discover/feed/v2.json"))
 
-    #expect(feed.editorial?.title == "Featured")
-    #expect(feed.newPackages.map(\.displayName) == ["Faker"])
-    #expect(feed.newPackages.first?.ecosystem == "Homebrew")
-    #expect(feed.newPackages.first?.category == "data")
-    #expect(feed.recommendations.map(\.displayName) == ["TypeScript"])
-    #expect(feed.recentlyUpdated.map(\.displayName) == ["TypeScript", "Faker"])
-    #expect(DiscoverFeedPage(legacy: feed).content.first?.relatedPackages?.map(\.id) == ["npm:typescript", "brew:faker"])
+    let page = try decodePage("""
+    {"pageID":"head","generatedAt":"2026-08-09T12:00:00Z","nextPageURL":null,"content":[
+      {"id":"editorial:one","type":"editorial","artwork":{"path":"artwork/editorial.png","boxColors":{"backgroundStart":"#000000","backgroundEnd":"#111111","foreground":"#ffffff"}}}
+    ]}
+    """)
+
+    #expect(page.content.first?.artworkURL == URL(string: "https://pkg.so/discover/feed/artwork/editorial.png"))
 }
 
 @Test func discoverFeedV2DecodesSelfContainedBlocks() throws {
@@ -92,25 +82,18 @@ import Testing
     #expect(!store.hasNextPage)
 }
 
-@Test @MainActor func discoverFeedStoreFallsBackToV1() async throws {
-    let legacy = try JSONDecoder().decode(DiscoverFeed.self, from: Data("""
-    {"content":[{"id":"new","type":"newPackages","packageIDs":["brew:faker"]}],"packages":{"brew:faker":{"id":"brew:faker","displayName":"Faker","agentSummary":"Fake data","manager":"homebrew","installURL":"pkgmgrmgr://install?package=brew%3Afaker"}}}
-    """.utf8))
-    let store = DiscoverFeedStore(
-        pageLoader: { _ in throw URLError(.cannotDecodeContentData) },
-        legacyLoader: { legacy }
-    )
+@Test @MainActor func discoverFeedStoreReportsInitialLoadFailureWithoutLegacyFallback() async throws {
+    let store = DiscoverFeedStore(pageLoader: { _ in throw URLError(.cannotDecodeContentData) })
 
     await store.loadInitial()
 
-    #expect(store.pages.map(\.pageID) == ["legacy"])
-    #expect(store.pages.first?.content.first?.packages?.first?.id == "brew:faker")
-    #expect(!store.initialLoadFailed)
+    #expect(store.pages.isEmpty)
+    #expect(store.initialLoadFailed)
 }
 
 @Test @MainActor func discoverFeedStoreRejectsPaginationCycle() async throws {
     let head = try decodePage("""
-    {"pageID":"head","generatedAt":"2026-07-16T12:00:00Z","nextPageURL":"https://mxcl.dev/package-manager-manager/feed/v2.json","content":[]}
+    {"pageID":"head","generatedAt":"2026-07-16T12:00:00Z","nextPageURL":"https://pkg.so/discover/feed/v2.json","content":[]}
     """)
     let store = DiscoverFeedStore(pageLoader: { _ in head })
 
