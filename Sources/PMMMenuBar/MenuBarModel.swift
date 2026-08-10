@@ -13,6 +13,7 @@ struct MenuBarPackageRow: Equatable {
 
 enum MenuBarEcosystemIcon: Equatable {
     case asset(name: String, fallbackSystemName: String)
+    case paired(assetName: String, fallbackSystemName: String, systemName: String)
     case system(name: String)
 }
 
@@ -75,7 +76,9 @@ struct MenuBarMenuState: Equatable {
 }
 
 func menuBarEcosystemIcon(for package: ManagedPackage) -> MenuBarEcosystemIcon {
-    if package.identifier.hasPrefix("brew:cask:") { return .system(name: "macwindow") }
+    if package.identifier.hasPrefix("brew:cask:"), package.appProvenance == .homebrew {
+        return .paired(assetName: "EcosystemHomebrew", fallbackSystemName: "mug", systemName: "macwindow")
+    }
     switch package.manager {
     case .homebrew:
         return .asset(name: "EcosystemHomebrew", fallbackSystemName: "mug")
@@ -89,10 +92,10 @@ func menuBarEcosystemIcon(for package: ManagedPackage) -> MenuBarEcosystemIcon {
         return .system(name: "wand.and.stars")
     case .macApp:
         return switch package.appProvenance ?? .unknown {
-        case .homebrew: .system(name: "macwindow")
+        case .homebrew: .paired(assetName: "EcosystemHomebrew", fallbackSystemName: "mug", systemName: "macwindow")
         case .appStore: .asset(name: "EcosystemAppStore", fallbackSystemName: "storefront")
         case .setapp: .system(name: "square.grid.2x2")
-        case .direct: .system(name: "wrench.and.screwdriver")
+        case .direct: .system(name: "macwindow")
         case .unknown: .system(name: "questionmark.app")
         }
     case .mise:

@@ -879,9 +879,10 @@ private func attributeRunCount(in string: NSAttributedString) -> Int {
     #expect(index.packagesBySection[.skills]?.map(\.displayName) == ["example"])
 }
 
-@Test func appStoreAppsUseTheBundledEcosystemMark() {
+@Test func macAppMarksDistinguishInstallSources() {
     #expect(mainWindowMacAppMark(for: .appStore) == .asset("EcosystemAppStore"))
-    #expect(mainWindowMacAppMark(for: .direct) == .text("DIY"))
+    #expect(mainWindowMacAppMark(for: .homebrew) == .paired(asset: "EcosystemHomebrew", system: "macwindow"))
+    #expect(mainWindowMacAppMark(for: .direct) == .system("macwindow"))
 }
 
 @Test func appsSectionMergesCatalogCasksWithAssociatedDirectApps() throws {

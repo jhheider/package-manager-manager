@@ -180,6 +180,7 @@ enum MainWindowLinkTab: String, CaseIterable, Identifiable {
 
 enum MainWindowMacAppMark: Equatable {
     case asset(String)
+    case paired(asset: String, system: String)
     case system(String)
     case text(String)
 }
@@ -187,9 +188,9 @@ enum MainWindowMacAppMark: Equatable {
 func mainWindowMacAppMark(for provenance: MacAppProvenance?) -> MainWindowMacAppMark {
     switch provenance ?? .unknown {
     case .appStore: .asset("EcosystemAppStore")
-    case .homebrew: .system("macwindow")
+    case .homebrew: .paired(asset: "EcosystemHomebrew", system: "macwindow")
     case .setapp: .text(MacAppProvenance.setapp.title.uppercased())
-    case .direct: .text(MacAppProvenance.direct.title.uppercased())
+    case .direct: .system("macwindow")
     case .unknown: .text(MacAppProvenance.unknown.title.uppercased())
     }
 }

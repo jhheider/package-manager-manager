@@ -1094,7 +1094,7 @@ struct PackageEcosystemMark: View {
 
     var body: some View {
         Group {
-            if package.manager == .macApp {
+            if section == .apps {
                 macAppMark(mainWindowMacAppMark(for: package.appProvenance))
             } else if let image = section.sidebarImage {
                 Image(image)
@@ -1110,7 +1110,8 @@ struct PackageEcosystemMark: View {
         }
         .foregroundStyle(color)
         .frame(height: size + 1)
-        .accessibilityLabel(package.manager == .macApp ? (package.appProvenance ?? .unknown).title : section.title)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabel)
     }
 
     @ViewBuilder
@@ -1123,6 +1124,20 @@ struct PackageEcosystemMark: View {
                 .scaledToFit()
                 .frame(width: size, height: size)
                 .offset(y: isBaselineAligned ? 1 : 0)
+        case .paired(let asset, let system):
+            HStack(spacing: 2) {
+                Image(asset)
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: size * 0.72, height: size * 0.72)
+                    .foregroundStyle(.orange)
+                Image(systemName: system)
+                    .symbolRenderingMode(.monochrome)
+                    .font(.system(size: size * 0.68, weight: .semibold))
+                    .foregroundStyle(.teal)
+            }
+            .offset(y: isBaselineAligned ? 1 : 0)
         case .system(let name):
             Image(systemName: name)
                 .symbolRenderingMode(.monochrome)
@@ -1141,6 +1156,13 @@ struct PackageEcosystemMark: View {
     }
 
     private var section: MainWindowSection { mainWindowManagerSection(for: package) }
+
+    private var accessibilityLabel: String {
+        guard section == .apps else { return section.title }
+        return package.appProvenance == .homebrew
+            ? "Homebrew Cask app"
+            : (package.appProvenance ?? .unknown).title
+    }
 
     private var color: Color {
         switch section {

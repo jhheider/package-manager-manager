@@ -89,12 +89,29 @@ private final class LockedStrings: @unchecked Sendable {
 
     #expect(state.statusSymbolName == "shippingbox")
     #expect(state.rows == [
-        .package(MenuBarPackageRow(ecosystemTitle: "DIY", ecosystemIcon: .system(name: "wrench.and.screwdriver"), name: "Fork", installedVersion: "1.0.0", latestVersion: "2.0.0"))
+        .package(MenuBarPackageRow(ecosystemTitle: "DIY", ecosystemIcon: .system(name: "macwindow"), name: "Fork", installedVersion: "1.0.0", latestVersion: "2.0.0"))
     ])
 }
 
 @Test func menuBarEcosystemIconsMatchPackageCategoriesAndAppSources() {
-    #expect(menuBarEcosystemIcon(for: ManagedPackage(manager: .homebrew, identifier: "brew:cask:fork", displayName: "Fork", installedVersion: "1", latestVersion: "2")) == .system(name: "macwindow"))
+    let caskApp = ManagedPackage(
+        manager: .homebrew,
+        identifier: "brew:cask:fork",
+        displayName: "Fork",
+        installedVersion: "1",
+        latestVersion: "2",
+        appProvenance: .homebrew
+    )
+    let commandLineCask = ManagedPackage(
+        manager: .homebrew,
+        identifier: "brew:cask:codex",
+        displayName: "Codex",
+        installedVersion: "1",
+        latestVersion: "2"
+    )
+
+    #expect(menuBarEcosystemIcon(for: caskApp) == .paired(assetName: "EcosystemHomebrew", fallbackSystemName: "mug", systemName: "macwindow"))
+    #expect(menuBarEcosystemIcon(for: commandLineCask) == .asset(name: "EcosystemHomebrew", fallbackSystemName: "mug"))
     #expect(menuBarEcosystemIcon(for: ManagedPackage(manager: .macApp, name: "Store", installedVersion: "1", latestVersion: "2", appProvenance: .appStore)) == .asset(name: "EcosystemAppStore", fallbackSystemName: "storefront"))
     #expect(menuBarEcosystemIcon(for: ManagedPackage(manager: .mise, name: "python", installedVersion: "1", latestVersion: "2")) == .asset(name: "EcosystemPython", fallbackSystemName: "arrow.forward.to.line"))
 }

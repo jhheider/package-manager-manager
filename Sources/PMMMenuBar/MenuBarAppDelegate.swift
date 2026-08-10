@@ -728,6 +728,11 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
         case .asset(let name, let fallbackSystemName):
             source = NSImage(named: name)
                 ?? NSImage(systemSymbolName: fallbackSystemName, accessibilityDescription: accessibilityDescription)
+        case .paired(let assetName, let fallbackSystemName, let systemName):
+            let first = NSImage(named: assetName)
+                ?? NSImage(systemSymbolName: fallbackSystemName, accessibilityDescription: accessibilityDescription)
+            let second = NSImage(systemSymbolName: systemName, accessibilityDescription: accessibilityDescription)
+            source = pairedEcosystemImage(first, second)
         case .system(let name):
             source = NSImage(systemSymbolName: name, accessibilityDescription: accessibilityDescription)
         }
@@ -735,6 +740,15 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
         image.isTemplate = true
         image.size = NSSize(width: 16, height: 16)
         return image
+    }
+
+    private func pairedEcosystemImage(_ first: NSImage?, _ second: NSImage?) -> NSImage? {
+        guard let first, let second else { return first ?? second }
+        return NSImage(size: NSSize(width: 18, height: 16), flipped: false) { _ in
+            first.draw(in: NSRect(x: 0, y: 3, width: 10, height: 10))
+            second.draw(in: NSRect(x: 9, y: 3, width: 9, height: 10))
+            return true
+        }
     }
 
     private func loadingItem() -> NSMenuItem {
