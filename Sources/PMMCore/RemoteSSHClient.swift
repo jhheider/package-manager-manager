@@ -390,7 +390,8 @@ public struct RemoteSSHClient: Sendable {
     printf '%s\t%s\t%s\t%s\n' "$pretty" "$(uname -m)" "$can_sudo" "$system_manager"
     if [ "$system_manager" = dnf ]; then
       printf '__PMM_DNF_FILES__\n'
-      rpm -qa --qf '[%{=NAME}\t%{=EPOCHNUM}:%{=VERSION}-%{=RELEASE}.%{=ARCH}\t%{FILEMODES:perms}\t%{FILENAMES}\n]' 2>/dev/null
+      rpm -qa --qf '[%{=NAME}\t%{=EPOCHNUM}:%{=VERSION}-%{=RELEASE}.%{=ARCH}\t%{FILEMODES:perms}\t%{FILENAMES}\n]' 2>/dev/null |
+        awk -F '\t' '$3 ~ /x/ && $4 ~ /^\/(bin|sbin|usr\/bin|usr\/sbin|usr\/local\/bin|usr\/local\/sbin)\/[^\/]+$/'
       printf '__PMM_DNF_UPDATES__\n'
       if dnf -q makecache >/dev/null 2>&1; then
         dnf -q repoquery --upgrades --qf '%{name}\t%{epoch}:%{version}-%{release}.%{arch}' 2>/dev/null || true
