@@ -22,7 +22,7 @@ public struct PackageInstaller: Sendable {
             try run("brew", arguments, onProgress: onProgress)
         case .npm:
             try run("npm", ["install", "-g", "\(package.packageToken)@latest"], onProgress: onProgress)
-        case .cargoInstall, .dnf, .macApp, .rustup, .mise, .npx, .skills, .uv, .uvx:
+        case .apk, .apt, .cargoInstall, .dnf, .zypper, .macApp, .rustup, .mise, .npx, .skills, .uv, .uvx:
             throw PackageInstallError.unsupportedManager(package.manager)
         }
     }

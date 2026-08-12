@@ -21,7 +21,7 @@ public struct PackageUpdater: Sendable {
                     .updateCommands(for: package.packageToken),
                 onProgress: onProgress
             )
-        case .dnf, .macApp, .rustup, .mise, .skills:
+        case .apk, .apt, .dnf, .zypper, .macApp, .rustup, .mise, .skills:
             throw PackageUpdateError.unsupportedManager(package.manager)
         case .homebrew:
             try run("brew", ["upgrade", package.packageToken], onProgress: onProgress)
@@ -43,7 +43,7 @@ public struct PackageUpdater: Sendable {
 
     public static func supports(_ package: ManagedPackage) -> Bool {
         switch package.manager {
-        case .cargoInstall, .dnf, .homebrew, .npm, .npx, .uv: package.isOutdated
+        case .apk, .apt, .cargoInstall, .dnf, .zypper, .homebrew, .npm, .npx, .uv: package.isOutdated
         case .macApp, .rustup, .mise, .skills, .uvx: false
         }
     }

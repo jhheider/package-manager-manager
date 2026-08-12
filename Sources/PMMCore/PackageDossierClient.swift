@@ -138,7 +138,7 @@ public struct PackageDossierClient: Sendable {
             "npm"
         case .cargoInstall:
             "cargo"
-        case .dnf, .macApp, .rustup, .mise, .skills:
+        case .apk, .apt, .dnf, .zypper, .macApp, .rustup, .mise, .skills:
             nil
         case .uv, .uvx:
             "uv"

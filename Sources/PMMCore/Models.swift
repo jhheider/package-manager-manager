@@ -1,6 +1,8 @@
 import Foundation
 
 public enum PackageManagerKind: String, Codable, CaseIterable, Sendable {
+    case apk
+    case apt
     case cargoInstall = "cargo-install"
     case dnf
     case macApp = "mac-app"
@@ -12,11 +14,21 @@ public enum PackageManagerKind: String, Codable, CaseIterable, Sendable {
     case skills
     case uv
     case uvx
+    case zypper
 
-    public static let localCases = allCases.filter { $0 != .dnf }
+    public static let localCases = allCases.filter { !$0.isLinuxSystem }
+
+    public var isLinuxSystem: Bool {
+        switch self {
+        case .apk, .apt, .dnf, .zypper: true
+        default: false
+        }
+    }
 
     public var title: String {
         switch self {
+        case .apk: "apk"
+        case .apt: "APT"
         case .cargoInstall: "cargo install"
         case .dnf: "DNF"
         case .macApp: "App"
@@ -28,6 +40,7 @@ public enum PackageManagerKind: String, Codable, CaseIterable, Sendable {
         case .skills: "Skills"
         case .uv: "uv"
         case .uvx: "uvx"
+        case .zypper: "Zypper"
         }
     }
 }

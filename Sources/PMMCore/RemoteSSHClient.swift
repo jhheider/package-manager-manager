@@ -169,33 +169,7 @@ public struct RemoteSSHClient: Sendable {
         let description = profile.first.map { profile.count > 1 ? "\($0) (\(profile[1]))" : $0 }
         let canManage = profile.count > 2 ? profile[2] == "1" : false
         let manager = profile.count > 3 ? PackageManagerKind(rawValue: profile[3]) : nil
-        let latestDNF = tabMap(sections["DNF_UPDATES"])
-        var rpmPackages: [String: LinuxRPMPackage] = [:]
-
-        for line in lines(sections["DNF_FILES"]) {
-            let fields = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
-            guard fields.count == 4,
-                  fields[2].contains("x"),
-                  linuxCommandDirectories.contains(URL(fileURLWithPath: fields[3]).deletingLastPathComponent().path) else { continue }
-            var package = rpmPackages[fields[0]] ?? LinuxRPMPackage(version: fields[1], paths: [])
-            package.paths.append(fields[3])
-            rpmPackages[fields[0]] = package
-        }
-
-        var packages = rpmPackages.map { name, package in
-            let paths = Array(Set(package.paths)).sorted()
-            return ManagedPackage(
-                manager: .dnf,
-                identifier: "dnf:\(name)",
-                displayName: name,
-                installedVersion: package.version,
-                latestVersion: latestDNF[name],
-                summary: "DNF package providing command-line tools",
-                category: "system",
-                binaryPath: paths.first,
-                executableNames: paths.map { URL(fileURLWithPath: $0).lastPathComponent }
-            )
-        }
+        var packages = manager.map { linuxSystemPackages($0, sections: sections) } ?? []
         packages += linuxNPM(sections: sections)
         packages += linuxCargo(sections["CARGO"])
         packages += linuxUV(sections: sections)
@@ -208,6 +182,80 @@ public struct RemoteSSHClient: Sendable {
             systemPackageManager: manager,
             canManageSystemPackages: manager == nil ? nil : canManage
         )
+    }
+
+    private static func linuxSystemPackages(
+        _ manager: PackageManagerKind,
+        sections: [String: String]
+    ) -> [ManagedPackage] {
+        var nativePackages: [String: LinuxNativePackage] = [:]
+        let latest: [String: String]
+
+        switch manager {
+        case .dnf, .zypper:
+            latest = tabMap(sections["SYSTEM_UPDATES"] ?? sections["DNF_UPDATES"])
+            for line in lines(sections["RPM_FILES"] ?? sections["DNF_FILES"]) {
+                let fields = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
+                guard fields.count == 4,
+                      fields[2].contains("x"),
+                      linuxCommandDirectories.contains(URL(fileURLWithPath: fields[3]).deletingLastPathComponent().path) else { continue }
+                nativePackages[fields[0], default: LinuxNativePackage(version: fields[1])].paths.append(fields[3])
+            }
+        case .apt:
+            latest = aptLatest(sections["APT_UPDATES"])
+            let versions = tabMap(sections["APT_VERSIONS"])
+            for line in lines(sections["APT_FILES"]) {
+                guard let delimiter = line.range(of: ": /", options: .backwards) else { continue }
+                let path = String(line[line.index(after: delimiter.lowerBound)...]).trimmed
+                guard linuxCommandDirectories.contains(URL(fileURLWithPath: path).deletingLastPathComponent().path) else { continue }
+                for name in line[..<delimiter.lowerBound].split(separator: ",").map({ String($0).trimmed }) {
+                    guard let version = versions[name] else { continue }
+                    nativePackages[name, default: LinuxNativePackage(version: version)].paths.append(path)
+                }
+            }
+        case .apk:
+            let installed = tabMap(sections["APK_VERSIONS"])
+            latest = apkLatest(sections["APK_UPDATES"], installed: installed)
+            for line in lines(sections["APK_FILES"]) {
+                let fields = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
+                guard fields.count == 3,
+                      linuxCommandDirectories.contains(URL(fileURLWithPath: fields[2]).deletingLastPathComponent().path) else { continue }
+                nativePackages[fields[0], default: LinuxNativePackage(version: fields[1])].paths.append(fields[2])
+            }
+        default:
+            return []
+        }
+
+        return nativePackages.map { name, package in
+            let paths = Array(Set(package.paths)).sorted()
+            return ManagedPackage(
+                manager: manager,
+                identifier: "\(manager.rawValue):\(name)",
+                displayName: name,
+                installedVersion: package.version,
+                latestVersion: latest[name],
+                summary: "\(manager.title) package providing command-line tools",
+                category: "system",
+                binaryPath: paths.first,
+                executableNames: paths.map { URL(fileURLWithPath: $0).lastPathComponent }
+            )
+        }
+    }
+
+    private static func aptLatest(_ output: String?) -> [String: String] {
+        lines(output).reduce(into: [:]) { result, line in
+            let fields = line.split(separator: " ")
+            guard fields.count >= 4, fields[0] == "Inst", let open = line.firstIndex(of: "(") else { return }
+            result[String(fields[1])] = line[line.index(after: open)...].split(separator: " ").first.map(String.init)
+        }
+    }
+
+    private static func apkLatest(_ output: String?, installed: [String: String]) -> [String: String] {
+        lines(output).reduce(into: [:]) { result, line in
+            guard let pair = installed.first(where: { line.hasPrefix("\($0.key)-\($0.value) ") }),
+                  let marker = line.range(of: " < ") else { return }
+            result[pair.key] = String(line[marker.upperBound...]).trimmed
+        }
     }
 
     private static func linuxNPM(sections: [String: String]) -> [ManagedPackage] {
@@ -369,9 +417,9 @@ public struct RemoteSSHClient: Sendable {
             : lhs.manager.rawValue < rhs.manager.rawValue
     }
 
-    private struct LinuxRPMPackage {
+    private struct LinuxNativePackage {
         let version: String
-        var paths: [String]
+        var paths: [String] = []
     }
 
     private static let linuxCommandDirectories: Set<String> = [
@@ -386,18 +434,77 @@ public struct RemoteSSHClient: Sendable {
     pretty=$(printf '%s' "$pretty" | tr '\t\r\n' '   ')
     can_sudo=0; sudo -n true >/dev/null 2>&1 && can_sudo=1
     system_manager=''
-    command -v dnf >/dev/null 2>&1 && system_manager=dnf
+    case " ${ID:-} ${ID_LIKE:-} " in
+      *" alpine "*) command -v apk >/dev/null 2>&1 && system_manager=apk ;;
+      *" debian "*|*" ubuntu "*) command -v apt-get >/dev/null 2>&1 && command -v dpkg-query >/dev/null 2>&1 && system_manager=apt ;;
+      *" suse "*) command -v zypper >/dev/null 2>&1 && command -v rpm >/dev/null 2>&1 && system_manager=zypper ;;
+      *" fedora "*|*" rhel "*|*" centos "*|*" amzn "*) command -v dnf >/dev/null 2>&1 && command -v rpm >/dev/null 2>&1 && system_manager=dnf ;;
+    esac
+    if [ -z "$system_manager" ]; then
+      if command -v dnf >/dev/null 2>&1 && command -v rpm >/dev/null 2>&1; then system_manager=dnf
+      elif command -v apt-get >/dev/null 2>&1 && command -v dpkg-query >/dev/null 2>&1; then system_manager=apt
+      elif command -v zypper >/dev/null 2>&1 && command -v rpm >/dev/null 2>&1; then system_manager=zypper
+      elif command -v apk >/dev/null 2>&1; then system_manager=apk
+      fi
+    fi
     printf '%s\t%s\t%s\t%s\n' "$pretty" "$(uname -m)" "$can_sudo" "$system_manager"
-    if [ "$system_manager" = dnf ]; then
-      printf '__PMM_DNF_FILES__\n'
+    if [ "$system_manager" = dnf ] || [ "$system_manager" = zypper ]; then
+      printf '__PMM_RPM_FILES__\n'
       rpm -qa --qf '[%{=NAME}\t%{=EPOCHNUM}:%{=VERSION}-%{=RELEASE}.%{=ARCH}\t%{FILEMODES:perms}\t%{FILENAMES}\n]' 2>/dev/null |
         awk -F '\t' '$3 ~ /x/ && $4 ~ /^\/(bin|sbin|usr\/bin|usr\/sbin|usr\/local\/bin|usr\/local\/sbin)\/[^\/]+$/'
-      printf '__PMM_DNF_UPDATES__\n'
+      printf '__PMM_SYSTEM_UPDATES__\n'
+    fi
+    if [ "$system_manager" = dnf ]; then
       if dnf -q makecache >/dev/null 2>&1; then
         dnf -q repoquery --upgrades --qf '%{name}\t%{epoch}:%{version}-%{release}.%{arch}' 2>/dev/null || true
       else
         printf '__PMM_ERRORS__\nDNF could not refresh repository metadata.\n'
       fi
+    fi
+    if [ "$system_manager" = zypper ]; then
+      refreshed=1
+      [ "$can_sudo" = 0 ] || sudo -n zypper --non-interactive refresh >/dev/null 2>&1 || refreshed=0
+      zypper --non-interactive --no-refresh list-updates 2>/dev/null |
+        awk -F '|' 'NF >= 6 { name=$3; version=$5; gsub(/^[ \t]+|[ \t]+$/, "", name); gsub(/^[ \t]+|[ \t]+$/, "", version); if (name != "" && name != "Name" && version != "" && version != "Available Version") print name "\t" version }' || true
+      [ "$refreshed" = 1 ] || printf '__PMM_ERRORS__\nZypper could not refresh repository metadata.\n'
+    fi
+    if [ "$system_manager" = apt ]; then
+      printf '__PMM_APT_VERSIONS__\n'
+      dpkg-query -W -f='${binary:Package}\t${Version}\t${db:Status-Abbrev}\n' 2>/dev/null |
+        awk -F '\t' '$3 ~ /^ii/ { print $1 "\t" $2 }'
+      printf '__PMM_APT_FILES__\n'
+      dpkg-query -S '/bin/*' '/sbin/*' '/usr/bin/*' '/usr/sbin/*' '/usr/local/bin/*' '/usr/local/sbin/*' 2>/dev/null |
+        while IFS= read -r line; do path=${line#*: }; [ -f "$path" ] && [ -x "$path" ] && printf '%s\n' "$line"; done || true
+      printf '__PMM_APT_UPDATES__\n'
+      refreshed=1
+      [ "$can_sudo" = 0 ] || sudo -n apt-get update >/dev/null 2>&1 || refreshed=0
+      LC_ALL=C apt-get -s -o Debug::NoLocking=1 upgrade 2>/dev/null | awk '/^Inst /' || true
+      [ "$refreshed" = 1 ] || printf '__PMM_ERRORS__\nAPT could not refresh repository metadata.\n'
+    fi
+    if [ "$system_manager" = apk ]; then
+      printf '__PMM_APK_VERSIONS__\n'
+      apk info 2>/dev/null | while IFS= read -r package; do
+        versioned=$(apk info -v "$package" 2>/dev/null | head -n 1)
+        printf '%s\t%s\n' "$package" "${versioned#"$package"-}"
+      done
+      printf '__PMM_APK_FILES__\n'
+      # ponytail: one apk info call per package; parse /lib/apk/db/installed if this is slow on very large hosts.
+      apk info 2>/dev/null | while IFS= read -r package; do
+        versioned=$(apk info -v "$package" 2>/dev/null | head -n 1); version=${versioned#"$package"-}
+        apk info -L "$package" 2>/dev/null | while IFS= read -r path; do
+          path=${path#/}
+          case "/$path" in
+            /bin/*|/sbin/*|/usr/bin/*|/usr/sbin/*|/usr/local/bin/*|/usr/local/sbin/*)
+              [ -f "/$path" ] && [ -x "/$path" ] && printf '%s\t%s\t/%s\n' "$package" "$version" "$path"
+              ;;
+          esac
+        done
+      done
+      printf '__PMM_APK_UPDATES__\n'
+      refreshed=1
+      [ "$can_sudo" = 0 ] || sudo -n apk update >/dev/null 2>&1 || refreshed=0
+      apk version -v -l '<' 2>/dev/null || true
+      [ "$refreshed" = 1 ] || printf '__PMM_ERRORS__\napk could not refresh repository metadata.\n'
     fi
     if command -v npm >/dev/null 2>&1; then
       printf '__PMM_NPM_ROOT__\n'; npm root -g 2>/dev/null || true
@@ -419,10 +526,17 @@ public struct RemoteSSHClient: Sendable {
 
     private static func linuxActionScript(_ action: String, package: ManagedPackage) -> String {
         let token = shellQuote(package.packageToken)
+        let systemToken = shellQuote(package.displayName)
         let command: String
         switch (action, package.manager) {
-        case ("update", .dnf): command = "sudo -n dnf -y upgrade \(token)"
-        case ("uninstall", .dnf): command = "sudo -n dnf -y remove \(token)"
+        case ("update", .apk): command = "sudo -n apk -U upgrade \(systemToken)"
+        case ("uninstall", .apk): command = "sudo -n apk del \(systemToken)"
+        case ("update", .apt): command = "sudo -n apt-get update 1>&2 && sudo -n apt-get -y --only-upgrade install \(systemToken)"
+        case ("uninstall", .apt): command = "sudo -n apt-get -y remove \(systemToken)"
+        case ("update", .dnf): command = "sudo -n dnf -y upgrade \(systemToken)"
+        case ("uninstall", .dnf): command = "sudo -n dnf -y remove \(systemToken)"
+        case ("update", .zypper): command = "sudo -n zypper --non-interactive refresh 1>&2 && sudo -n zypper --non-interactive update \(systemToken)"
+        case ("uninstall", .zypper): command = "sudo -n zypper --non-interactive remove \(systemToken)"
         case ("update", .npm):
             let arguments = "install -g \(shellQuote(package.packageToken + "@latest"))"
             command = "if [ -w \"$(npm root -g)\" ]; then npm \(arguments); else sudo -n \"$(command -v npm)\" \(arguments); fi"
@@ -441,7 +555,33 @@ public struct RemoteSSHClient: Sendable {
         return "set -e; export PATH=\"$HOME/.local/bin:$HOME/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:$PATH\"; \(command) 1>&2; printf '\\n__PMM_LINUX_ACTION_OK__\\n'"
     }
 
-    private static let linuxUpdateAllScript = "set -e; export PATH=\"$HOME/.local/bin:$HOME/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:$PATH\"; command -v dnf >/dev/null; sudo -n dnf -y upgrade 1>&2; printf '\\n__PMM_LINUX_ACTION_OK__\\n'"
+    private static let linuxUpdateAllScript = #"""
+    set -e
+    export PATH="$HOME/.local/bin:$HOME/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:$PATH"
+    [ ! -r /etc/os-release ] || . /etc/os-release
+    manager=''
+    case " ${ID:-} ${ID_LIKE:-} " in
+      *" alpine "*) manager=apk ;;
+      *" debian "*|*" ubuntu "*) manager=apt ;;
+      *" suse "*) manager=zypper ;;
+      *" fedora "*|*" rhel "*|*" centos "*|*" amzn "*) manager=dnf ;;
+    esac
+    if [ -z "$manager" ]; then
+      if command -v dnf >/dev/null 2>&1; then manager=dnf
+      elif command -v apt-get >/dev/null 2>&1; then manager=apt
+      elif command -v zypper >/dev/null 2>&1; then manager=zypper
+      elif command -v apk >/dev/null 2>&1; then manager=apk
+      fi
+    fi
+    case "$manager" in
+      apk) sudo -n apk -U upgrade 1>&2 ;;
+      apt) sudo -n apt-get update 1>&2; sudo -n apt-get -y upgrade 1>&2 ;;
+      dnf) sudo -n dnf -y upgrade 1>&2 ;;
+      zypper) sudo -n zypper --non-interactive refresh 1>&2; sudo -n zypper --non-interactive update 1>&2 ;;
+      *) echo 'No supported Linux system package manager was found.' >&2; exit 64 ;;
+    esac
+    printf '\n__PMM_LINUX_ACTION_OK__\n'
+    """#
 
     private static func error(for result: CommandResult, host: RemoteHost) -> RemoteSSHError {
         let output = (result.stderr + "\n" + result.stdout).lowercased()

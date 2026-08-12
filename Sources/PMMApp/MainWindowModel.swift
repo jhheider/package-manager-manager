@@ -297,7 +297,7 @@ struct MainWindowPackageURLRequest: Equatable {
         if manager == .homebrew, name.hasPrefix("cask/") { return .apps }
         return switch manager {
         case .cargoInstall, .rustup: .rust
-        case .dnf: .installed
+        case .apk, .apt, .dnf, .zypper: .installed
         case .macApp: .apps
         case .homebrew: .homebrew
         case .npm, .npx: .javascript
@@ -387,7 +387,7 @@ func mainWindowRegistryURLString(for package: ManagedPackage) -> String? {
     case .uv, .uvx:
         guard package.identifier.hasPrefix("uv:tool:") || package.manager == .uvx else { return nil }
         return "https://pypi.org/project/\(package.packageToken)/"
-    case .dnf, .macApp, .rustup, .mise:
+    case .apk, .apt, .dnf, .zypper, .macApp, .rustup, .mise:
         return nil
     case .skills:
         return nil
@@ -755,7 +755,7 @@ final class MainWindowModel: NSObject, ObservableObject {
     var hasMultipleSelectedPackages: Bool { selectedPackageIDs.count > 1 }
     var updateOutdatedPackagesButtonTitle: String {
         if hasMultipleSelectedPackages { return "Update Selected" }
-        return selectedRemoteState?.systemPackageManager == .dnf ? "Update System" : "Update All"
+        return selectedRemoteState?.systemPackageManager?.isLinuxSystem == true ? "Update System" : "Update All"
     }
 
     func reload() {
@@ -1276,20 +1276,20 @@ final class MainWindowModel: NSObject, ObservableObject {
 
     func canUpdate(_ package: ManagedPackage) -> Bool {
         guard PackageUpdater.supports(package) else { return false }
-        guard package.manager == .dnf else { return true }
-        return selectedRemoteState?.systemPackageManager == .dnf
+        guard package.manager.isLinuxSystem else { return true }
+        return selectedRemoteState?.systemPackageManager == package.manager
             && selectedRemoteState?.canManageSystemPackages == true
     }
 
     func canUninstall(_ package: ManagedPackage) -> Bool {
         guard PackageUninstaller.supports(package) else { return false }
-        guard package.manager == .dnf else { return true }
-        return selectedRemoteState?.systemPackageManager == .dnf
+        guard package.manager.isLinuxSystem else { return true }
+        return selectedRemoteState?.systemPackageManager == package.manager
             && selectedRemoteState?.canManageSystemPackages == true
     }
 
     func isReadOnlySystemPackage(_ package: ManagedPackage) -> Bool {
-        package.manager == .dnf && isRemoteSelection && selectedRemoteState?.canManageSystemPackages == false
+        package.manager.isLinuxSystem && isRemoteSelection && selectedRemoteState?.canManageSystemPackages == false
     }
 
     private var isPackageActionRunning: Bool {
@@ -1303,9 +1303,10 @@ final class MainWindowModel: NSObject, ObservableObject {
     private var updatableOutdatedPackages: [ManagedPackage] {
         if isRemoteSelection {
             let packages = displayedPackages.filter(canUpdate)
-            return hasMultipleSelectedPackages || selectedRemoteState?.systemPackageManager != .dnf
-                ? packages
-                : packages.filter { $0.manager == .dnf }
+            guard !hasMultipleSelectedPackages,
+                  let manager = selectedRemoteState?.systemPackageManager,
+                  manager.isLinuxSystem else { return packages }
+            return packages.filter { $0.manager == manager }
         }
         return (packageIndex.packagesBySection[.outdated] ?? []).filter(PackageUpdater.supports)
     }
@@ -1793,7 +1794,7 @@ struct PackageIndex: Sendable {
 func mainWindowSetupSection(_ manager: PackageManagerKind) -> MainWindowSection? {
     switch manager {
     case .cargoInstall, .rustup: .rust
-    case .dnf: .installed
+    case .apk, .apt, .dnf, .zypper: .installed
     case .homebrew: .homebrew
     case .npm, .npx: .javascript
     case .skills: .skills
@@ -1808,7 +1809,7 @@ func mainWindowManagerSection(for package: ManagedPackage) -> MainWindowSection 
     }
     switch package.manager {
     case .cargoInstall, .rustup: return .rust
-    case .dnf: return .installed
+    case .apk, .apt, .dnf, .zypper: return .installed
     case .macApp: return .apps
     case .homebrew: return .homebrew
     case .npm, .npx: return .javascript

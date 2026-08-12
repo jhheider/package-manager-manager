@@ -989,7 +989,7 @@ public struct PackageScanner: @unchecked Sendable {
                     switch manager {
                     case .cargoInstall:
                         packages = try scanCargoInstall(database: database) { warnings.append($0) }
-                    case .dnf: packages = []
+                    case .apk, .apt, .dnf, .zypper: packages = []
                     case .macApp: packages = []
                     case .rustup: packages = try scanRustup(database: database)
                     case .homebrew: packages = try scanHomebrew(database: database, mode: mode)

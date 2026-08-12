@@ -84,7 +84,7 @@ public struct PackageDatabase: Sendable {
         switch manager {
         case .cargoInstall:
             return crates[name]
-        case .dnf, .macApp, .rustup, .mise, .skills:
+        case .apk, .apt, .dnf, .zypper, .macApp, .rustup, .mise, .skills:
             return nil
         case .homebrew:
             return formulas[name] ?? casks[name]

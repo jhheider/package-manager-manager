@@ -63,6 +63,81 @@ import Testing
     #expect(response.inventory.packages.first(where: { $0.identifier == "npm:@openai/codex" })?.isOutdated == true)
 }
 
+@Test func remoteLinuxInventoryParsesAPTAPKAndZypperCommands() throws {
+    let apt = try #require(RemoteSSHClient.parseLinuxInventory(#"""
+    __PMM_LINUX_V1__
+    __PMM_PROFILE__
+    Debian GNU/Linux 13	x86_64	1	apt
+    __PMM_APT_VERSIONS__
+    bash:amd64	5.2.15-2
+    __PMM_APT_FILES__
+    bash:amd64: /usr/bin/bash
+    bash:amd64: /usr/share/doc/bash/README
+    __PMM_APT_UPDATES__
+    Inst bash:amd64 [5.2.15-2] (5.2.15-3 Debian:stable [amd64])
+    __PMM_END__
+    """#))
+    let apk = try #require(RemoteSSHClient.parseLinuxInventory(#"""
+    __PMM_LINUX_V1__
+    __PMM_PROFILE__
+    Alpine Linux v3.22	x86_64	0	apk
+    __PMM_APK_VERSIONS__
+    busybox	1.36.1-r7
+    __PMM_APK_FILES__
+    busybox	1.36.1-r7	/bin/sh
+    busybox	1.36.1-r7	/usr/libexec/hidden-tool
+    __PMM_APK_UPDATES__
+    busybox-1.36.1-r7 < 1.36.1-r8
+    __PMM_END__
+    """#))
+    let zypper = try #require(RemoteSSHClient.parseLinuxInventory(#"""
+    __PMM_LINUX_V1__
+    __PMM_PROFILE__
+    openSUSE Tumbleweed	x86_64	1	zypper
+    __PMM_RPM_FILES__
+    bash	0:5.2-2.x86_64	-rwxr-xr-x	/usr/bin/bash
+    __PMM_SYSTEM_UPDATES__
+    bash	5.3-1
+    __PMM_END__
+    """#))
+
+    #expect(apt.inventory.packages.first?.identifier == "apt:bash:amd64")
+    #expect(apt.inventory.packages.first?.latestVersion == "5.2.15-3")
+    #expect(apk.inventory.packages.first?.identifier == "apk:busybox")
+    #expect(apk.inventory.packages.first?.latestVersion == "1.36.1-r8")
+    #expect(apk.canManageSystemPackages == false)
+    #expect(zypper.inventory.packages.first?.identifier == "zypper:bash")
+    #expect(zypper.inventory.packages.first?.latestVersion == "5.3-1")
+}
+
+@Test func remoteLinuxSystemActionsUseEachNativeManager() async throws {
+    let response = RemoteControlResponse(inventory: PackageInventory(packages: []))
+    let expected: [(PackageManagerKind, String)] = [
+        (.apt, "apt-get -y --only-upgrade install"),
+        (.apk, "apk -U upgrade"),
+        (.dnf, "dnf -y upgrade"),
+        (.zypper, "zypper --non-interactive update"),
+    ]
+
+    for (manager, command) in expected {
+        let runner = RecordingRemoteRunner(result: CommandResult(
+            stdout: String(decoding: try JSONEncoder().encode(response), as: UTF8.self),
+            stderr: "",
+            status: 0
+        ))
+        let package = ManagedPackage(
+            manager: manager,
+            identifier: "\(manager.rawValue):curl",
+            displayName: "curl",
+            installedVersion: "1",
+            latestVersion: "2"
+        )
+
+        _ = try await RemoteSSHClient(runner: runner).update(package, on: RemoteHost(destination: "server"))
+        #expect(runner.arguments?.last?.contains(command) == true)
+    }
+}
+
 @Test @MainActor func remoteSSHExecutionLeavesMainThreadAndDecodesResponse() async throws {
     let response = RemoteControlResponse(inventory: PackageInventory(packages: []))
     let runner = RecordingRemoteRunner(result: CommandResult(
