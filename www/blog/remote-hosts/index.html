@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manage Your Other Macs | Package Manager Manager Blog</title>
-  <meta name="description" content="Connect Package Manager Manager to other Macs over SSH to inspect, update, and uninstall their packages from one window.">
+  <title>Manage Macs and Linux Hosts | Package Manager Manager Blog</title>
+  <meta name="description" content="Connect Package Manager Manager to Macs and DNF-based Linux hosts over SSH to inspect, update, and uninstall packages from one window.">
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="Package Manager Manager">
-  <meta property="og:title" content="Manage Your Other Macs">
-  <meta property="og:description" content="Inspect, update, and uninstall packages on your other Macs over SSH.">
+  <meta property="og:title" content="Manage Macs and Linux Hosts">
+  <meta property="og:description" content="Inspect, update, and uninstall packages on Macs and DNF-based Linux hosts over SSH.">
   <meta property="og:url" content="https://mxcl.dev/package-manager-manager/blog/remote-hosts/">
   <meta property="og:image" content="https://mxcl.dev/package-manager-manager/blog/remote-hosts/hero.png">
   <meta property="article:published_time" content="2026-07-23">
-  <meta property="article:modified_time" content="2026-07-23">
+  <meta property="article:modified_time" content="2026-08-12">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://mxcl.dev/package-manager-manager/blog/remote-hosts/hero.png">
-  <meta name="twitter:title" content="Manage Your Other Macs">
-  <meta name="twitter:description" content="Inspect, update, and uninstall packages on your other Macs over SSH.">
+  <meta name="twitter:title" content="Manage Macs and Linux Hosts">
+  <meta name="twitter:description" content="Inspect, update, and uninstall packages on Macs and DNF-based Linux hosts over SSH.">
   <link rel="canonical" href="https://mxcl.dev/package-manager-manager/blog/remote-hosts/">
   <script type="application/ld+json">
   {
@@ -32,11 +32,11 @@
       {
         "@type": "BlogPosting",
         "@id": "https://mxcl.dev/package-manager-manager/blog/remote-hosts/#article",
-        "headline": "Manage Your Other Macs",
-        "description": "Connect Package Manager Manager to other Macs over SSH to inspect, update, and uninstall their packages from one window.",
+        "headline": "Manage Macs and Linux Hosts",
+        "description": "Connect Package Manager Manager to Macs and DNF-based Linux hosts over SSH to inspect, update, and uninstall packages from one window.",
         "image": "https://mxcl.dev/package-manager-manager/blog/remote-hosts/hero.png",
         "datePublished": "2026-07-23",
-        "dateModified": "2026-07-23",
+        "dateModified": "2026-08-12",
         "author": {
           "@id": "https://mxcl.dev/package-manager-manager/#organization"
         },
@@ -51,7 +51,7 @@
         "@type": "WebPage",
         "@id": "https://mxcl.dev/package-manager-manager/blog/remote-hosts/#webpage",
         "url": "https://mxcl.dev/package-manager-manager/blog/remote-hosts/",
-        "name": "Manage Your Other Macs",
+        "name": "Manage Macs and Linux Hosts",
         "isPartOf": {
           "@id": "https://mxcl.dev/package-manager-manager/blog/#blog"
         }
@@ -79,7 +79,7 @@
 
       <nav class="nav" aria-label="Main navigation">
         <a href="../../">Home</a>
-        <a href="#connect">Connect a Mac</a>
+        <a href="#connect">Connect a host</a>
         <a href="#requirements">Requirements</a>
         <a href="../" aria-current="page">Blog</a>
         <a href="https://github.com/mxcl/pmm/releases/latest">Download</a>
@@ -91,12 +91,12 @@
         <header class="article-hero">
           <div class="article-hero-copy">
             <p class="eyebrow">Remote Hosts</p>
-            <h1>Manage your other Macs.</h1>
+            <h1>Manage Macs and Linux hosts.</h1>
             <p class="lede">
-              Inspect and maintain packages on every Mac you can reach over SSH, from the same pkg⋅mgr² window.
+              Inspect and maintain packages on Macs and DNF-based Linux hosts over SSH from the same pkg⋅mgr² window.
             </p>
             <div class="hero-actions">
-              <a class="button primary" href="#connect">Connect a Mac</a>
+              <a class="button primary" href="#connect">Connect a host</a>
               <a class="button text" href="#requirements">Check requirements</a>
             </div>
           </div>
@@ -107,10 +107,10 @@
 
         <section class="article-body" aria-label="Remote hosts overview">
           <p>
-            A laptop, a desktop, a build machine, and a Mac mini in a cupboard can each accumulate a different package inventory. Remote Hosts puts those inventories in one sidebar. Each Mac gets its own Installed and Outdated sections, with the same package details and search you use for the local Mac.
+            A laptop, desktop, build machine, or Linux server can each accumulate a different package inventory. Remote Hosts puts those inventories in one sidebar. Each host gets its own Installed and Outdated sections, with the same package details and search you use for the local Mac.
           </p>
           <p>
-            Select a remote package to update or uninstall it. Open the Outdated section to update every outdated package on that Mac. pkg⋅mgr² runs the work on the remote machine and streams command progress back into the app.
+            Select a remote package to update or uninstall it. On Linux, Update System runs DNF’s native system upgrade. pkg⋅mgr² runs the work on the remote machine and streams command progress back into the app.
           </p>
         </section>
 
@@ -122,25 +122,25 @@
           <div class="compare-grid">
             <article>
               <span>01 / inspect</span>
-              <h3>See what each Mac installed.</h3>
+              <h3>See what each host installed.</h3>
               <p>Browse Installed and Outdated packages by host without mixing one machine’s state into another.</p>
             </article>
             <article>
               <span>02 / update</span>
-              <h3>Update one package or all outdated packages.</h3>
-              <p>Run the native package-manager commands on the selected Mac and follow their output from pkg⋅mgr².</p>
+              <h3>Update one package or the remote system.</h3>
+              <p>Run the native package-manager commands on the selected host and follow their output from pkg⋅mgr².</p>
             </article>
             <article>
               <span>03 / remove</span>
-              <h3>Uninstall packages from the remote Mac.</h3>
+              <h3>Uninstall packages from the remote host.</h3>
               <p>Confirm the removal in the app, then let the package manager on that host handle it.</p>
             </article>
           </div>
         </section>
 
-        <section class="article-body" id="connect" aria-label="Connect a remote Mac">
+        <section class="article-body" id="connect" aria-label="Connect a remote host">
           <p>
-            Install Package Manager Manager 0.14.0 or newer in <code>/Applications</code> on both Macs. The app calls its bundled <code>pmmctl</code> helper at that exact location, so renamed apps and copies outside <code>/Applications</code> will not work.
+            Remote Macs need Package Manager Manager in <code>/Applications</code>. Linux hosts are agentless: pkg⋅mgr² reads <code>/etc/os-release</code>, detects DNF, and checks global npm, Cargo, and uv packages when those tools are present.
           </p>
           <p>
             Configure SSH before opening pkg⋅mgr². The connection must work without a password or host-key prompt. Test the same destination in Terminal:
@@ -150,7 +150,7 @@
             Verify the host key when SSH asks. Set up a key or SSH agent if the login still requests a password. Aliases from <code>~/.ssh/config</code> work, including aliases that route over a local network, VPN, or Tailscale.
           </p>
           <p>
-            Choose <strong>Package Manager Manager → Add / Edit Hosts…</strong>, press <strong>Add Host</strong>, then enter that SSH destination. You can add an optional display name. The Mac appears in the sidebar as soon as pkg⋅mgr² loads its inventory.
+            Choose <strong>Package Manager Manager → Add / Edit Hosts…</strong>, press <strong>Add Host</strong>, then enter that SSH destination. You can add an optional display name. The host appears in the sidebar as soon as pkg⋅mgr² loads its inventory.
           </p>
         </section>
 
@@ -167,16 +167,19 @@
 
         <section class="article-body" id="requirements" aria-label="Remote host requirements and caveats">
           <p>
-            Remote Hosts manages Macs only. Both machines need compatible pkg⋅mgr² versions, and the remote copy must live in <code>/Applications</code>. Keeping both Macs on the current release avoids a protocol mismatch.
+            Remote Macs need compatible pkg⋅mgr² versions, and the remote copy must live in <code>/Applications</code>. Linux system-package management currently supports DNF and RPM. DNF inventory includes packages that provide commands in standard binary directories.
+          </p>
+          <p>
+            DNF actions use noninteractive sudo. If <code>sudo -n</code> is unavailable, pkg⋅mgr² still shows system packages but keeps them read-only. Global npm packages use sudo only when npm’s global directory is not writable by the SSH user.
           </p>
           <p>
             pkg⋅mgr² enables SSH batch mode and strict host-key checking. It cannot answer interactive password, key-passphrase, two-factor, or first-connection prompts. Load passphrase-protected keys into your SSH agent and connect once in Terminal before adding the host.
           </p>
           <p>
-            The remote Mac must be awake, reachable, and accepting SSH connections. macOS exposes that service under <strong>System Settings → General → Sharing → Remote Login</strong>. Firewalls, VPN rules, and account permissions still apply.
+            The remote host must be awake, reachable, and accepting SSH connections. macOS exposes that service under <strong>System Settings → General → Sharing → Remote Login</strong>. Firewalls, VPN rules, and account permissions still apply.
           </p>
           <p>
-            The first release supports inventory, refresh, update, update all, and uninstall. Installing a new package on a remote host is not supported yet. Removing a host from pkg⋅mgr² deletes its saved entry; it does not change the remote Mac or its SSH configuration.
+            Remote actions support inventory, refresh, update, system update, and uninstall. Installing a new package on a remote host is not supported yet. Removing a host from pkg⋅mgr² deletes its saved entry; it does not change the host or its SSH configuration.
           </p>
         </section>
       </article>

@@ -2,7 +2,7 @@
   "posts": [
     {
       "slug": "remote-hosts",
-      "title": "Manage Your Other Macs",
+      "title": "Manage Macs and Linux Hosts",
       "subtitle": "Inspect and maintain packages over SSH",
       "category": "blog",
       "systemImage": "desktopcomputer",
