@@ -142,7 +142,7 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
         rescanTask?.cancel()
         rescanTask = nil
         let missingManagers = snapshot.inventory == nil
-            ? Set(PackageManagerKind.allCases)
+            ? Set(PackageManagerKind.localCases)
             : (snapshot.loadingManagers ?? [])
         let generatedAt = Date()
         snapshot.isRefreshing = true
@@ -172,7 +172,7 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
 
             let scanner = PackageScanner()
             for await result in scanner.results(
-                for: Set(PackageManagerKind.allCases),
+                for: Set(PackageManagerKind.localCases),
                 database: bootstrapDatabase,
                 mode: .local
             ) {
@@ -314,7 +314,7 @@ final class MenuBarAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private nonisolated static func scanErrors(_ errorsByManager: [PackageManagerKind: [String]]) -> [String] {
-        PackageManagerKind.allCases.flatMap { errorsByManager[$0] ?? [] }
+        PackageManagerKind.localCases.flatMap { errorsByManager[$0] ?? [] }
     }
 
     private func rescanAfterAction(errorMessage: String? = nil) {

@@ -297,6 +297,7 @@ struct MainWindowPackageURLRequest: Equatable {
         if manager == .homebrew, name.hasPrefix("cask/") { return .apps }
         return switch manager {
         case .cargoInstall, .rustup: .rust
+        case .dnf: .installed
         case .macApp: .apps
         case .homebrew: .homebrew
         case .npm, .npx: .javascript
@@ -386,7 +387,7 @@ func mainWindowRegistryURLString(for package: ManagedPackage) -> String? {
     case .uv, .uvx:
         guard package.identifier.hasPrefix("uv:tool:") || package.manager == .uvx else { return nil }
         return "https://pypi.org/project/\(package.packageToken)/"
-    case .macApp, .rustup, .mise:
+    case .dnf, .macApp, .rustup, .mise:
         return nil
     case .skills:
         return nil
@@ -436,6 +437,9 @@ enum MainWindowSidebarSelection: Hashable, Sendable {
 
 struct RemoteHostState: Equatable, Sendable {
     var inventory: PackageInventory?
+    var hostDescription: String?
+    var systemPackageManager: PackageManagerKind?
+    var canManageSystemPackages: Bool?
     var isLoading = false
     var error: String?
 }
@@ -502,7 +506,7 @@ final class MainWindowModel: NSObject, ObservableObject {
     @Published private(set) var selectedPackageIDs: Set<String> = []
     @Published var selectedLinkTab: MainWindowLinkTab?
     @Published private(set) var isReloading = true
-    @Published private(set) var loadingManagers = Set(PackageManagerKind.allCases)
+    @Published private(set) var loadingManagers = Set(PackageManagerKind.localCases)
     @Published private(set) var errors: [String] = []
     @Published private(set) var isLoadingSelectedPackageMetadata = false
     @Published private(set) var selectedPackageDossier: PackageDossierPage?
@@ -629,6 +633,7 @@ final class MainWindowModel: NSObject, ObservableObject {
     var showsLocalFilesystemActions: Bool { !isRemoteSelection }
     var showsDashboard: Bool { !isRemoteSelection && selectedSection == .home }
     var selectedRemoteHost: RemoteHost? { remoteHosts.first { $0.id == selectedRemoteHostID } }
+    private var selectedRemoteState: RemoteHostState? { selectedRemoteHostID.flatMap { remoteHostStates[$0] } }
 
     var displayedSectionTitle: String {
         guard let host = selectedRemoteHost, let selectedRemoteSection else { return selectedSection.title }
@@ -748,7 +753,10 @@ final class MainWindowModel: NSObject, ObservableObject {
     }
 
     var hasMultipleSelectedPackages: Bool { selectedPackageIDs.count > 1 }
-    var updateOutdatedPackagesButtonTitle: String { hasMultipleSelectedPackages ? "Update Selected" : "Update All" }
+    var updateOutdatedPackagesButtonTitle: String {
+        if hasMultipleSelectedPackages { return "Update Selected" }
+        return selectedRemoteState?.systemPackageManager == .dnf ? "Update System" : "Update All"
+    }
 
     func reload() {
         PackageHostNotifications.postRefreshRequested()
@@ -805,7 +813,12 @@ final class MainWindowModel: NSObject, ObservableObject {
             do {
                 let response = try await remoteClient.inventory(on: host, ignoringAppCache: ignoringAppCache)
                 guard !Task.isCancelled else { return }
-                self?.remoteHostStates[hostID] = RemoteHostState(inventory: response.inventory)
+                self?.remoteHostStates[hostID] = RemoteHostState(
+                    inventory: response.inventory,
+                    hostDescription: response.hostDescription,
+                    systemPackageManager: response.systemPackageManager,
+                    canManageSystemPackages: response.canManageSystemPackages
+                )
             } catch is CancellationError {
             } catch {
                 guard !Task.isCancelled else { return }
@@ -993,7 +1006,7 @@ final class MainWindowModel: NSObject, ObservableObject {
     }
 
     func uninstall(_ package: ManagedPackage) {
-        guard PackageUninstaller.supports(package), !isPackageActionRunning else { return }
+        guard canUninstall(package), !isPackageActionRunning else { return }
         if let host = selectedRemoteHost {
             pendingRemoteUninstall = RemoteUninstallConfirmation(host: host, package: package)
             return
@@ -1070,7 +1083,7 @@ final class MainWindowModel: NSObject, ObservableObject {
     }
 
     func update(_ package: ManagedPackage) {
-        guard PackageUpdater.supports(package), !isPackageActionRunning else { return }
+        guard canUpdate(package), !isPackageActionRunning else { return }
         if let host = selectedRemoteHost {
             runRemoteAction(.update, package: package, host: host)
             return
@@ -1167,8 +1180,12 @@ final class MainWindowModel: NSObject, ObservableObject {
                     }
                     response = RemoteControlResponse(inventory: inventory, failures: failures)
                 }
+                let previousState = remoteHostStates[host.id]
                 remoteHostStates[host.id] = RemoteHostState(
                     inventory: response.inventory,
+                    hostDescription: response.hostDescription ?? previousState?.hostDescription,
+                    systemPackageManager: response.systemPackageManager ?? previousState?.systemPackageManager,
+                    canManageSystemPackages: response.canManageSystemPackages ?? previousState?.canManageSystemPackages,
                     error: response.failures.isEmpty ? nil : response.failures.map(\.message).joined(separator: "\n")
                 )
                 if !response.failures.isEmpty {
@@ -1257,6 +1274,24 @@ final class MainWindowModel: NSObject, ObservableObject {
         }
     }
 
+    func canUpdate(_ package: ManagedPackage) -> Bool {
+        guard PackageUpdater.supports(package) else { return false }
+        guard package.manager == .dnf else { return true }
+        return selectedRemoteState?.systemPackageManager == .dnf
+            && selectedRemoteState?.canManageSystemPackages == true
+    }
+
+    func canUninstall(_ package: ManagedPackage) -> Bool {
+        guard PackageUninstaller.supports(package) else { return false }
+        guard package.manager == .dnf else { return true }
+        return selectedRemoteState?.systemPackageManager == .dnf
+            && selectedRemoteState?.canManageSystemPackages == true
+    }
+
+    func isReadOnlySystemPackage(_ package: ManagedPackage) -> Bool {
+        package.manager == .dnf && isRemoteSelection && selectedRemoteState?.canManageSystemPackages == false
+    }
+
     private var isPackageActionRunning: Bool {
         installingPackageName != nil || uninstallingPackageName != nil || updatingPackageName != nil
     }
@@ -1266,13 +1301,18 @@ final class MainWindowModel: NSObject, ObservableObject {
     }
 
     private var updatableOutdatedPackages: [ManagedPackage] {
-        if isRemoteSelection { return displayedPackages.filter(PackageUpdater.supports) }
+        if isRemoteSelection {
+            let packages = displayedPackages.filter(canUpdate)
+            return hasMultipleSelectedPackages || selectedRemoteState?.systemPackageManager != .dnf
+                ? packages
+                : packages.filter { $0.manager == .dnf }
+        }
         return (packageIndex.packagesBySection[.outdated] ?? []).filter(PackageUpdater.supports)
     }
 
     private var packagesToUpdate: [ManagedPackage] {
         guard hasMultipleSelectedPackages else { return updatableOutdatedPackages }
-        return displayedPackages.filter { selectedPackageIDs.contains($0.id) && PackageUpdater.supports($0) }
+        return displayedPackages.filter { selectedPackageIDs.contains($0.id) && canUpdate($0) }
     }
 
     private func reconcilePackageSelection() {
@@ -1442,7 +1482,7 @@ final class MainWindowModel: NSObject, ObservableObject {
             hasInventory = false
             installedPackageFirstSeenAtByID = nil
             isReloading = true
-            loadingManagers = Set(PackageManagerKind.allCases)
+            loadingManagers = Set(PackageManagerKind.localCases)
             return
         }
         if snapshot.catalogPackages.isEmpty {
@@ -1456,7 +1496,7 @@ final class MainWindowModel: NSObject, ObservableObject {
             hasInventory = false
             installedPackageFirstSeenAtByID = nil
             isReloading = true
-            loadingManagers = Set(PackageManagerKind.allCases)
+            loadingManagers = Set(PackageManagerKind.localCases)
             packageIndex = PackageIndex(
                 packages: [],
                 catalogPackages: snapshot.catalogPackages,
@@ -1507,7 +1547,7 @@ final class MainWindowModel: NSObject, ObservableObject {
     private func apply(snapshot: PackageHostSnapshot, inventory: PackageInventory) {
         let packageActionWasRunning = isPackageActionRunning
         isReloading = snapshot.isRefreshing
-        loadingManagers = snapshot.loadingManagers ?? (snapshot.isRefreshing ? Set(PackageManagerKind.allCases) : [])
+        loadingManagers = snapshot.loadingManagers ?? (snapshot.isRefreshing ? Set(PackageManagerKind.localCases) : [])
         var nextErrors = inventory.errors
         if let errorMessage = snapshot.errorMessage, !nextErrors.contains(errorMessage) {
             nextErrors.insert(errorMessage, at: 0)
@@ -1753,6 +1793,7 @@ struct PackageIndex: Sendable {
 func mainWindowSetupSection(_ manager: PackageManagerKind) -> MainWindowSection? {
     switch manager {
     case .cargoInstall, .rustup: .rust
+    case .dnf: .installed
     case .homebrew: .homebrew
     case .npm, .npx: .javascript
     case .skills: .skills
@@ -1767,6 +1808,7 @@ func mainWindowManagerSection(for package: ManagedPackage) -> MainWindowSection 
     }
     switch package.manager {
     case .cargoInstall, .rustup: return .rust
+    case .dnf: return .installed
     case .macApp: return .apps
     case .homebrew: return .homebrew
     case .npm, .npx: return .javascript

@@ -23,12 +23,13 @@ brew install --cask mxcl/made/package-manager-manager
 
 &nbsp;
 
-## Manage Your Other Macs
+## Manage Remote Hosts
 
-pkg⋅mgr² can update and uninstall packages on any Mac you already reach over
-SSH, including Macs on your local network or Tailscale network.
+pkg⋅mgr² can inspect, update, and uninstall packages on hosts you already reach
+over SSH, including hosts on your local network or Tailscale network.
 
-1. Install Package Manager Manager in `/Applications` on each Mac.
+1. On a remote Mac, install Package Manager Manager in `/Applications`. Linux
+   hosts are agentless; Amazon Linux and other DNF-based systems are supported.
 2. Make sure SSH works non-interactively and the host key is trusted:
 
    ```sh
@@ -38,9 +39,10 @@ SSH, including Macs on your local network or Tailscale network.
 3. Choose **Package Manager Manager → Add / Edit Hosts…** and add the SSH host
    or an alias from `~/.ssh/config`.
 
-Each Mac gets its own Installed and Outdated sections in the sidebar. You can
-update one package, update everything outdated, or uninstall a package from the
-remote Mac.
+Each host gets its own Installed and Outdated sections in the sidebar. Linux
+inventory includes DNF packages that provide command-line tools, plus global npm,
+cargo-install, and uv packages when those tools are present. DNF actions use
+non-interactive sudo; without it, system packages remain visible but read-only.
 
 pkg⋅mgr² uses OpenSSH directly. Your keys, agent, host aliases, and
 `known_hosts` stay where they already live; the app stores no SSH credentials.
@@ -156,7 +158,8 @@ Homebrew metadata requires `brew update` in the helper refresh path. Network
 metadata is best-effort; local inventory should still work when that data is
 unavailable.
 
-Remote management requires a compatible version of Package Manager Manager in
-`/Applications` on the other Mac. Interactive SSH passwords and first-connection
+Remote Mac management requires a compatible version of Package Manager Manager
+in `/Applications`. Linux hosts currently require DNF/RPM for system-package
+management. Interactive SSH passwords, sudo passwords, and first-connection
 host-key prompts are not supported inside the app; connect once in Terminal
 before adding the host.

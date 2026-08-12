@@ -162,7 +162,7 @@ struct RemoteHostsManagementView: View {
                     ContentUnavailableView {
                         Label("No Remote Hosts", systemImage: "desktopcomputer")
                     } description: {
-                        Text("Add a Mac you can already access with SSH.")
+                        Text("Add a Mac or Linux host you can already access with SSH.")
                     } actions: {
                         Button("Add Host") { editingHost = RemoteHostEditorItem(host: nil) }
                     }
@@ -173,6 +173,11 @@ struct RemoteHostsManagementView: View {
                                 Text(host.displayName)
                                 if host.name != nil {
                                     Text(host.destination)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                if let description = model.remoteHostStates[host.id]?.hostDescription {
+                                    Text(description)
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
@@ -459,7 +464,7 @@ struct MainWindowDossierView: View {
                             .disabled(isPackageActionRunning)
                         }
                         if package.isOutdated {
-                            if PackageUpdater.supports(package) {
+                            if model.canUpdate(package) {
                                 Button {
                                     model.update(package)
                                 } label: {
@@ -472,7 +477,7 @@ struct MainWindowDossierView: View {
                                 .disabled(isPackageActionRunning)
                             }
                         }
-                        if PackageUninstaller.supports(package) {
+                        if model.canUninstall(package) {
                             Button { model.uninstall(package) } label: {
                                 Label("Uninstall", systemImage: "trash")
                                     .frame(maxWidth: .infinity)
@@ -481,6 +486,11 @@ struct MainWindowDossierView: View {
                             .controlSize(.large)
                             .tint(.red)
                             .disabled(isPackageActionRunning)
+                        }
+                        if model.isReadOnlySystemPackage(package) {
+                            Label("Read-only: passwordless sudo is unavailable on this host.", systemImage: "lock")
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
                         }
                         PackagePageSection(model: model)
                         if model.showsLocalFilesystemActions {

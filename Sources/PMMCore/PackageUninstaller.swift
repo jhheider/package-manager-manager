@@ -20,7 +20,7 @@ public struct PackageUninstaller: Sendable {
         switch package.manager {
         case .cargoInstall:
             try run("cargo", ["uninstall", package.packageToken, "--color", "always"], onProgress: onProgress)
-        case .macApp, .rustup, .mise:
+        case .dnf, .macApp, .rustup, .mise:
             throw PackageUninstallError.unsupportedManager(package.manager)
         case .homebrew:
             try run("brew", ["uninstall", package.packageToken], onProgress: onProgress)
@@ -45,7 +45,7 @@ public struct PackageUninstaller: Sendable {
 
     public static func supports(_ package: ManagedPackage) -> Bool {
         switch package.manager {
-        case .cargoInstall, .homebrew, .npm, .npx, .uv, .uvx:
+        case .cargoInstall, .dnf, .homebrew, .npm, .npx, .uv, .uvx:
             package.installedVersion != nil
         case .skills:
             package.installedVersion != nil && package.identifier.hasPrefix("skills:global:")

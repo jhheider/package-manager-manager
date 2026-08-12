@@ -23,7 +23,44 @@ import Testing
     #expect(arguments.contains("StrictHostKeyChecking=yes"))
     #expect(arguments.contains("--"))
     #expect(arguments[arguments.count - 2] == "mac-mini")
-    #expect(arguments.last == "'/Applications/Package Manager Manager.app/Contents/Helpers/pmmctl' 'remote' 'update' '--id' 'npm:it'\"'\"'s-a-package'")
+    #expect(arguments.last?.contains("'/Applications/Package Manager Manager.app/Contents/Helpers/pmmctl' 'remote' 'update' '--id' 'npm:it'\"'\"'s-a-package'") == true)
+    #expect(arguments.last?.contains("uname -s") == true)
+}
+
+@Test func remoteLinuxInventoryFindsDNFCommandsAndExistingUserManagers() throws {
+    let response = try #require(RemoteSSHClient.parseLinuxInventory(#"""
+    __PMM_LINUX_V1__
+    __PMM_PROFILE__
+    Amazon Linux 2023	aarch64	1	dnf
+    __PMM_DNF_FILES__
+    bash	0:5.2-1.aarch64	-rwxr-xr-x	/usr/bin/bash
+    bash	0:5.2-1.aarch64	-rw-r--r--	/usr/share/licenses/bash/COPYING
+    hidden-tool	0:1.0-1.aarch64	-rwxr-xr-x	/usr/libexec/hidden-tool
+    __PMM_DNF_UPDATES__
+    bash	0:5.3-1.aarch64
+    __PMM_NPM_ROOT__
+    /usr/local/lib/node_modules
+    __PMM_NPM_INSTALLED__
+    {"dependencies":{"@openai/codex":{"version":"0.146.0"}}}
+    __PMM_NPM_OUTDATED__
+    {"@openai/codex":{"latest":"0.147.0"}}
+    __PMM_CARGO__
+    ripgrep v14.1.1:
+        rg
+    __PMM_UV_PYTHON_DIR__
+    /home/ec2-user/.local/share/uv/python
+    __PMM_UV_PYTHONS__
+    [{"path":"/home/ec2-user/.local/share/uv/python/cpython-3.10/bin/python3.10","implementation":"cpython","version":"3.10.19","version_parts":{"major":3,"minor":10}}]
+    __PMM_END__
+    """#))
+
+    #expect(response.hostDescription == "Amazon Linux 2023 (aarch64)")
+    #expect(response.systemPackageManager == .dnf)
+    #expect(response.canManageSystemPackages == true)
+    #expect(response.inventory.packages.map(\.identifier) == ["cargo:ripgrep", "dnf:bash", "npm:@openai/codex", "uv:cpython:3.10"])
+    #expect(response.inventory.packages.first(where: { $0.identifier == "dnf:bash" })?.latestVersion == "0:5.3-1.aarch64")
+    #expect(response.inventory.packages.contains(where: { $0.identifier == "dnf:hidden-tool" }) == false)
+    #expect(response.inventory.packages.first(where: { $0.identifier == "npm:@openai/codex" })?.isOutdated == true)
 }
 
 @Test @MainActor func remoteSSHExecutionLeavesMainThreadAndDecodesResponse() async throws {

@@ -80,6 +80,8 @@ func menuBarEcosystemIcon(for package: ManagedPackage) -> MenuBarEcosystemIcon {
         return .paired(assetName: "EcosystemHomebrew", fallbackSystemName: "mug", systemName: "macwindow")
     }
     switch package.manager {
+    case .dnf:
+        return .system(name: "shippingbox")
     case .homebrew:
         return .asset(name: "EcosystemHomebrew", fallbackSystemName: "mug")
     case .npm, .npx:

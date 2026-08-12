@@ -16,15 +16,24 @@ public struct RemoteControlResponse: Codable, Equatable, Sendable {
     public let protocolVersion: Int
     public let inventory: PackageInventory
     public let failures: [RemoteControlFailure]
+    public let hostDescription: String?
+    public let systemPackageManager: PackageManagerKind?
+    public let canManageSystemPackages: Bool?
 
     public init(
         protocolVersion: Int = remoteControlProtocolVersion,
         inventory: PackageInventory,
-        failures: [RemoteControlFailure] = []
+        failures: [RemoteControlFailure] = [],
+        hostDescription: String? = nil,
+        systemPackageManager: PackageManagerKind? = nil,
+        canManageSystemPackages: Bool? = nil
     ) {
         self.protocolVersion = protocolVersion
         self.inventory = inventory
         self.failures = failures
+        self.hostDescription = hostDescription
+        self.systemPackageManager = systemPackageManager
+        self.canManageSystemPackages = canManageSystemPackages
     }
 }
 

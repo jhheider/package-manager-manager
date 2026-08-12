@@ -2,6 +2,7 @@ import Foundation
 
 public enum PackageManagerKind: String, Codable, CaseIterable, Sendable {
     case cargoInstall = "cargo-install"
+    case dnf
     case macApp = "mac-app"
     case rustup
     case homebrew
@@ -12,9 +13,12 @@ public enum PackageManagerKind: String, Codable, CaseIterable, Sendable {
     case uv
     case uvx
 
+    public static let localCases = allCases.filter { $0 != .dnf }
+
     public var title: String {
         switch self {
         case .cargoInstall: "cargo install"
+        case .dnf: "DNF"
         case .macApp: "App"
         case .rustup: "rustup"
         case .homebrew: "Homebrew"

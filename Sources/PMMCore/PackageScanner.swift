@@ -61,7 +61,7 @@ public struct PackageScanner: @unchecked Sendable {
         let generatedAt = Date()
         var errorsByManager: [PackageManagerKind: [String]] = [:]
         var packages: [ManagedPackage] = []
-        for await result in results(for: Set(PackageManagerKind.allCases), database: database, mode: mode) {
+        for await result in results(for: Set(PackageManagerKind.localCases), database: database, mode: mode) {
             packages += result.packages
             errorsByManager[result.manager] = result.errors
         }
@@ -72,7 +72,7 @@ public struct PackageScanner: @unchecked Sendable {
                 if $0.manager != $1.manager { return $0.manager.rawValue < $1.manager.rawValue }
                 return packageDisplayOrder($0, $1)
             },
-            errors: PackageManagerKind.allCases.flatMap { errorsByManager[$0] ?? [] }
+            errors: PackageManagerKind.localCases.flatMap { errorsByManager[$0] ?? [] }
         )
     }
 
@@ -989,6 +989,7 @@ public struct PackageScanner: @unchecked Sendable {
                     switch manager {
                     case .cargoInstall:
                         packages = try scanCargoInstall(database: database) { warnings.append($0) }
+                    case .dnf: packages = []
                     case .macApp: packages = []
                     case .rustup: packages = try scanRustup(database: database)
                     case .homebrew: packages = try scanHomebrew(database: database, mode: mode)
