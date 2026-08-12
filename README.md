@@ -29,7 +29,7 @@ pkg⋅mgr² can inspect, update, and uninstall packages on hosts you already rea
 over SSH, including hosts on your local network or Tailscale network.
 
 1. On a remote Mac, install Package Manager Manager in `/Applications`. Linux
-   hosts are agentless; Amazon Linux and other DNF-based systems are supported.
+   hosts are agentless; APT/dpkg, apk, DNF/RPM, and Zypper/RPM systems are supported.
 2. Make sure SSH works non-interactively and the host key is trusted:
 
    ```sh
@@ -40,9 +40,9 @@ over SSH, including hosts on your local network or Tailscale network.
    or an alias from `~/.ssh/config`.
 
 Each host gets its own Installed and Outdated sections in the sidebar. Linux
-inventory includes DNF packages that provide command-line tools, plus global npm,
-cargo-install, and uv packages when those tools are present. DNF actions use
-non-interactive sudo; without it, system packages remain visible but read-only.
+inventory includes native packages that provide command-line tools, plus global npm,
+cargo-install, and uv packages when those tools are present. System-package actions
+use non-interactive sudo; without it, those packages remain visible but read-only.
 
 pkg⋅mgr² uses OpenSSH directly. Your keys, agent, host aliases, and
 `known_hosts` stay where they already live; the app stores no SSH credentials.
@@ -159,7 +159,7 @@ metadata is best-effort; local inventory should still work when that data is
 unavailable.
 
 Remote Mac management requires a compatible version of Package Manager Manager
-in `/Applications`. Linux hosts currently require DNF/RPM for system-package
-management. Interactive SSH passwords, sudo passwords, and first-connection
+in `/Applications`. Linux system-package management supports APT/dpkg, apk,
+DNF/RPM, and Zypper/RPM. Interactive SSH passwords, sudo passwords, and first-connection
 host-key prompts are not supported inside the app; connect once in Terminal
 before adding the host.
