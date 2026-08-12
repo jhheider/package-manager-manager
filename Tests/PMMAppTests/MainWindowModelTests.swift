@@ -1656,6 +1656,30 @@ private func package(
 }
 
 @MainActor
+@Test func remoteDNFPackagesAreReadOnlyWithoutPasswordlessSudo() async throws {
+    let package = package(.dnf, "bash", installedVersion: "1", latestVersion: "2")
+    let runner = MainWindowRemoteRunner(response: RemoteControlResponse(
+        inventory: PackageInventory(packages: [package]),
+        hostDescription: "Amazon Linux 2023 (aarch64)",
+        systemPackageManager: .dnf,
+        canManageSystemPackages: false
+    ))
+    let model = MainWindowModel(
+        userDefaults: UserDefaults(suiteName: UUID().uuidString)!,
+        remoteClient: RemoteSSHClient(runner: runner)
+    )
+    let host = try model.saveRemoteHost(name: "Atlas", destination: "atlas")
+    await waitForRemoteModel { model.remoteHostStates[host.id]?.inventory != nil }
+    model.selectRemoteHost(host.id, section: .outdated)
+
+    #expect(model.remoteHostStates[host.id]?.hostDescription == "Amazon Linux 2023 (aarch64)")
+    #expect(model.updateOutdatedPackagesButtonTitle == "Update System")
+    #expect(!model.canUpdate(package))
+    #expect(!model.canUninstall(package))
+    #expect(model.isReadOnlySystemPackage(package))
+}
+
+@MainActor
 @Test func remoteMultipleSelectionUpdatesOnlySelectedPackages() async throws {
     let eslint = package(.npm, "eslint", installedVersion: "1.0.0", latestVersion: "2.0.0")
     let prettier = package(.npm, "prettier", installedVersion: "1.0.0", latestVersion: "2.0.0")
