@@ -423,8 +423,12 @@ public struct RemoteSSHClient: Sendable {
         switch (action, package.manager) {
         case ("update", .dnf): command = "sudo -n dnf -y upgrade \(token)"
         case ("uninstall", .dnf): command = "sudo -n dnf -y remove \(token)"
-        case ("update", .npm): command = "npm install -g \(shellQuote(package.packageToken + "@latest"))"
-        case ("uninstall", .npm): command = "npm uninstall -g \(token)"
+        case ("update", .npm):
+            let arguments = "install -g \(shellQuote(package.packageToken + "@latest"))"
+            command = "if [ -w \"$(npm root -g)\" ]; then npm \(arguments); else sudo -n \"$(command -v npm)\" \(arguments); fi"
+        case ("uninstall", .npm):
+            let arguments = "uninstall -g \(token)"
+            command = "if [ -w \"$(npm root -g)\" ]; then npm \(arguments); else sudo -n \"$(command -v npm)\" \(arguments); fi"
         case ("update", .uv) where package.summary == "uv-managed Python":
             command = "uv python install \(shellQuote(package.latestVersion ?? package.packageToken)) --color always"
         case ("uninstall", .uv) where package.summary == "uv-managed Python":
@@ -446,13 +450,16 @@ public struct RemoteSSHClient: Sendable {
             || output.contains("remote host identification has changed") {
             return .untrustedHost(host.destination)
         }
-        if output.contains("permission denied") || output.contains("authentication failed") {
+        if result.status == 255 && (output.contains("permission denied") || output.contains("authentication failed")) {
             return .authenticationFailed(host.destination)
         }
         if output.contains("package manager manager is not installed on this mac") {
             return .missingRemotePMM
         }
-        return .connectionFailed(host.destination, (result.stderr.isEmpty ? result.stdout : result.stderr).trimmed)
+        let detail = (result.stderr.isEmpty ? result.stdout : result.stderr).trimmed
+        return result.status == 255
+            ? .connectionFailed(host.destination, detail)
+            : .remoteCommandFailed(host.destination, detail)
     }
 }
 
@@ -469,6 +476,7 @@ public enum RemoteSSHError: LocalizedError, Equatable {
     case connectionFailed(String, String)
     case incompatibleProtocol
     case missingRemotePMM
+    case remoteCommandFailed(String, String)
     case untrustedHost(String)
 
     public var errorDescription: String? {
@@ -481,6 +489,8 @@ public enum RemoteSSHError: LocalizedError, Equatable {
             "Update Package Manager Manager on the remote Mac."
         case .missingRemotePMM:
             "Package Manager Manager was not found in /Applications on the remote Mac."
+        case .remoteCommandFailed(let host, let detail):
+            detail.isEmpty ? "The command failed on \(host)." : "The command failed on \(host): \(detail)"
         case .untrustedHost(let host):
             "The SSH host key for \(host) is not trusted. Connect with ssh in Terminal once, verify the key, and try again."
         }

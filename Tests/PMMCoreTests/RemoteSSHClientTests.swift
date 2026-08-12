@@ -119,6 +119,37 @@ import Testing
     }
 }
 
+@Test func remoteSSHDoesNotMislabelPackageManagerPermissionErrorsAsAuthenticationFailures() async {
+    let runner = RecordingRemoteRunner(result: CommandResult(
+        stdout: "",
+        stderr: "npm ERR! EACCES: permission denied, rename",
+        status: 243
+    ))
+    await #expect(throws: RemoteSSHError.remoteCommandFailed("atlas", "npm ERR! EACCES: permission denied, rename")) {
+        try await RemoteSSHClient(runner: runner).inventory(on: RemoteHost(destination: "atlas"))
+    }
+}
+
+@Test func remoteNPMActionFallsBackToNoninteractiveSudoForSystemGlobalPackages() async throws {
+    let response = RemoteControlResponse(inventory: PackageInventory(packages: []))
+    let runner = RecordingRemoteRunner(result: CommandResult(
+        stdout: String(decoding: try JSONEncoder().encode(response), as: UTF8.self),
+        stderr: "",
+        status: 0
+    ))
+    let package = ManagedPackage(
+        manager: .npm,
+        identifier: "npm:@openai/codex",
+        installedVersion: "0.146.0",
+        latestVersion: "0.147.0"
+    )
+
+    _ = try await RemoteSSHClient(runner: runner).update(package, on: RemoteHost(destination: "atlas"))
+
+    #expect(runner.arguments?.last?.contains(#"[ -w "$(npm root -g)" ]"#) == true)
+    #expect(runner.arguments?.last?.contains(#"sudo -n "$(command -v npm)" install -g"#) == true)
+}
+
 private final class RecordingRemoteRunner: CommandRunning, @unchecked Sendable {
     private let result: CommandResult
     private let lock = NSLock()
